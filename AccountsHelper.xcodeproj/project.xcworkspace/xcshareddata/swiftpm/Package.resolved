@@ -1,0 +1,15 @@
+{
+  "originHash" : "bde9f922d25e2b0fbb24e2c9efd4b28406d54c0d08ce56d5ce9160e9e4708182",
+  "pins" : [
+    {
+      "identity" : "itmklibrary",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/TS200010/ItMkLibrary",
+      "state" : {
+        "branch" : "main",
+        "revision" : "384c32b4b2b726816edf157718e73cbeff1ed393"
+      }
+    }
+  ],
+  "version" : 3
+}

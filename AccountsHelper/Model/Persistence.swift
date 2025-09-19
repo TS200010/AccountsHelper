@@ -2,7 +2,7 @@
 //  Persistence.swift
 //  AccountsHelper
 //
-//  Created by Anthony Stanners on 19/09/2025.
+//  Created by Anthony Stanners on 13/09/2025.
 //
 
 import CoreData
@@ -32,10 +32,54 @@ struct PersistenceController {
     let container: NSPersistentCloudKitContainer
 
     init(inMemory: Bool = false) {
+        
+        UserDefaults.standard.set(true, forKey: "com.apple.CoreData.CloudKitDebug")
+
+        container = NSPersistentCloudKitContainer(name: "AccountsHelperModel") // CoreData model name
+
+        if gUseLiveStore {
+            if let storeDescription = container.persistentStoreDescriptions.first {
+                storeDescription.cloudKitContainerOptions =
+                NSPersistentCloudKitContainerOptions(containerIdentifier: "iCloud.ItMk.AccountsHelper.live")
+            }
+        } else {
+            if let storeDescription = container.persistentStoreDescriptions.first {
+                storeDescription.cloudKitContainerOptions =
+                NSPersistentCloudKitContainerOptions(containerIdentifier: "iCloud.ItMk.AccountsHelper.dev")
+            }
+        }
+        
+
+        container.loadPersistentStores { storeDescription, error in
+            if let error = error as NSError? {
+                fatalError("Unresolved error \(error), \(error.userInfo)")
+            }
+        }
+        
+        container.viewContext.automaticallyMergesChangesFromParent = true
+        
+#if DEBUG
+        if let storeURL = container.persistentStoreDescriptions.first?.url {
+            print("CoreData SQLite file is at: \(storeURL.path)")
+        }
+#endif
+
+        /*
+        // Loads xcdatatamodeld file
         container = NSPersistentCloudKitContainer(name: "AccountsHelper")
+        
         if inMemory {
             container.persistentStoreDescriptions.first!.url = URL(fileURLWithPath: "/dev/null")
         }
+        
+        // Now set up CloudKit
+        if let storeDescription = container.persistentStoreDescriptions.first {
+            storeDescription.cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(
+                containerIdentifier: "iCloud.AccountsHelper"  // Use the exact string from Xcode
+            )
+        }
+
+        // Load the persistent stores
         container.loadPersistentStores(completionHandler: { (storeDescription, error) in
             if let error = error as NSError? {
                 // Replace this implementation with code to handle the error appropriately.
@@ -52,6 +96,8 @@ struct PersistenceController {
                 fatalError("Unresolved error \(error), \(error.userInfo)")
             }
         })
+        
         container.viewContext.automaticallyMergesChangesFromParent = true
+         */
     }
 }
