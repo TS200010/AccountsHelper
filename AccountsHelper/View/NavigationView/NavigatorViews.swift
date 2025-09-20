@@ -24,7 +24,7 @@ struct NavigatorViews: View {
                 Text("Select an action from the toolbar" )
                 
             case .edit:
-                NavigatorEditView()
+                NavigatorEditAddView()
                 
             case .reconcile:
                 Text("Navigator Reconcile View" )

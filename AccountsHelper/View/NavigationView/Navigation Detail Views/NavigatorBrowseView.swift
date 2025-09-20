@@ -17,9 +17,6 @@ struct NavigatorBrowseView: View {
         VStack {
             Button("Browse Transactions") {
                 uiState.selectedCentralView = .browseTransactions
-                #if os(iOS)
-                BrowseTransactionsView()
-                #endif
             }
 
             Button("Browse Currencies") {

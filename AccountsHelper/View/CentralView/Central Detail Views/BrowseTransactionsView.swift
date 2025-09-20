@@ -160,7 +160,7 @@ struct BrowseTransactionsView: View {
 
     @State private var selectedTransactionIDs = Set<NSManagedObjectID>()
     @State private var transactionToShow: Transaction?
-    @State private var showingAddTransactionSheet = false
+    @State private var showingTransactionSheet = false
     @State private var showingDeleteConfirmation = false
     @State private var transactionsToDelete: Set<NSManagedObjectID> = []
     
@@ -193,8 +193,14 @@ struct BrowseTransactionsView: View {
             statusBar
         }
         .toolbar { toolbarItems }
-        .sheet(item: $transactionToShow) { ShowTransactionView(transaction: $0) }
-        .sheet(isPresented: $showingAddTransactionSheet) { EditTransactionView() }
+        .sheet(item: $transactionToShow) { transaction in
+            ShowTransactionView(transaction: transaction)
+        }
+        .sheet(isPresented: $showingTransactionSheet) {
+            EditTransactionView(transaction: transactionToShow)
+        }
+//        .sheet(item: $transactionToShow) { ShowTransactionView(transaction: $0) }
+//        .sheet(isPresented: $showingTransactionSheet) { EditTransactionView() }
         .confirmationDialog(
             "Are you sure?",
             isPresented: $showingDeleteConfirmation,
@@ -211,6 +217,7 @@ struct BrowseTransactionsView: View {
     // MARK: - Transactions Table
     private var transactionsTable: some View {
         Table(transactionRows, selection: $selectedTransactionIDs) {
+//        Table(transactionRows, selection: $selectedTransactionIDs, rowID: \.transaction.objectID) {
             #if os(macOS)
             TableColumn("Date") { row in
                 tableCell(row.transactionDate, formatter: dateOnlyFormatter, for: row)
@@ -272,6 +279,7 @@ struct BrowseTransactionsView: View {
         }
     }
     
+    // MARK: - UpdateSortColumn
     private func updateSortColumn(_ column: SortColumn) {
         if sortColumn == column {
             ascending.toggle()
@@ -279,6 +287,9 @@ struct BrowseTransactionsView: View {
             sortColumn = column
             ascending = true
         }
+        
+        // Safe: remove any selection (even if empty, harmless)
+        selectedTransactionIDs.removeAll()
     }
 
     // MARK: - Status Bar
@@ -297,7 +308,7 @@ struct BrowseTransactionsView: View {
     private var toolbarItems: some ToolbarContent {
         Group {
             ToolbarItem {
-                Button(action: { showingAddTransactionSheet.toggle() }) {
+                Button(action: { showingTransactionSheet.toggle() }) {
                     Label("Add Item", systemImage: "plus")
                 }
             }
@@ -361,6 +372,10 @@ struct BrowseTransactionsView: View {
             if selectedTransactionIDs.count == 1 {
                 Button("View Transaction") {
                     transactionToShow = row.transaction
+                }
+                Button("Edit Transaction") {
+                    transactionToShow = row.transaction
+                    showingTransactionSheet = true
                 }
             }
             Button(role: .destructive) {

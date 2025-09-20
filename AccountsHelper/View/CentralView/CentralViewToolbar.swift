@@ -18,20 +18,18 @@ struct CentralViewToolbar: View {
         HStack {
             
             Text(uiState.selectedCentralView.rawValue )
-                .frame( width: gCentralViewGeadingSize, alignment: .leading )
+                .frame( width: gCentralViewHeadingSize, alignment: .leading )
                 .padding( [.leading], 10 )
             
             Spacer()
             
             HStack( /*alignment: .center*/ ) {
                 
-                // MARK: --- Edit Transaction Button
+                // MARK: --- Add Transaction Button
                 ItMkToolBarButton(
-                    action: { uiState.selectedCentralView = .editTransaction  },
-                    name: "square.and.arrow.up.circle",
-                    isSelected: uiState.selectedCentralView == .editTransaction )
-                
-
+                    action: { uiState.selectedCentralView = .addTransaction  },
+                    name: "plus.app",
+                    isSelected: uiState.selectedCentralView == .addTransaction )
                 
                 Divider()
                     .frame( width: 1)

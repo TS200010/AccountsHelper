@@ -27,6 +27,9 @@ enum AmountFieldIdentifier: Hashable {
 
 // MARK: --- EditTransactionView
 struct EditTransactionView: View {
+    
+    @State var transaction: Transaction?
+    
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
     @Environment(UIState.self) var uiState

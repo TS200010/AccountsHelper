@@ -16,6 +16,8 @@ enum CentralViewsEnum: String {
     case editPayee                  = "Edit Payee"
     case editPayer                  = "Edit Payer"
     
+    case addTransaction             = "Add Transaction"
+    
     case reconcileTransactions      = "Reconcile Transactions"
     
     case browseTransactions         = "Browse Transactions"

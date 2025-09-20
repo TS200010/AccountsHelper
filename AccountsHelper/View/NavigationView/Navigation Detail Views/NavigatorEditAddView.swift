@@ -1,5 +1,5 @@
 //
-//  NavigatorEditView.swift
+//  NavigatorEditAddView.swift
 //  AccountsHelper
 //
 //  Created by Anthony Stanners on 12/09/2025.
@@ -8,26 +8,26 @@
 import SwiftUI
 import ItMkLibrary
 
-struct NavigatorEditView: View {
+struct NavigatorEditAddView: View {
     
     // MARK: --- Environment
     @Environment(UIState.self) var uiState
     @Environment(\.managedObjectContext) private var viewContext
     
     // MARK: --- Properties
-    @State private var showingEditTransactionSheet = false
+    @State private var showingAddTransactionSheet = false
     @State private var showingBrowseTransactionsView = false
     
     // MARK: --- Body
     var body: some View {
         
         VStack {
-            Button("Edit Transaction") {
+            Button("Add Transaction") {
                 #if os(macOS)
-                uiState.selectedCentralView = .editTransaction
+                uiState.selectedCentralView = .addTransaction
                 #else
-                uiState.selectedCentralView = .editTransaction
-                showingEditTransactionSheet = true
+                uiState.selectedCentralView = .addTransaction
+                showingEditAddTransactionSheet = true
                 #endif
                 
             }
@@ -60,7 +60,7 @@ struct NavigatorEditView: View {
             }
         }
         .buttonStyle( ItMkButton() )
-        .sheet(isPresented: $showingEditTransactionSheet) {
+        .sheet(isPresented: $showingAddTransactionSheet) {
                 EditTransactionView()
         }
         .sheet(isPresented: $showingBrowseTransactionsView) {

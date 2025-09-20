@@ -25,6 +25,9 @@ struct CentralViews: View {
         VStack (spacing: 0) {
             
             switch uiState.selectedCentralView {
+                
+            case .addTransaction:
+                EditTransactionView()
         
             case .emptyView:
                 Text("Select an action from the toolbar" )
