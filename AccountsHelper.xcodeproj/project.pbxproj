@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		45C1C9DC2E7D52B8002608BC /* ItMkLibrary in Frameworks */ = {isa = PBXBuildFile; productRef = 45C1C9DB2E7D52B8002608BC /* ItMkLibrary */; };
+		4528B9BB2E835CEF00B7AED4 /* ItMkLibrary in Frameworks */ = {isa = PBXBuildFile; productRef = 4528B9BA2E835CEF00B7AED4 /* ItMkLibrary */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -69,7 +69,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				45C1C9DC2E7D52B8002608BC /* ItMkLibrary in Frameworks */,
+				4528B9BB2E835CEF00B7AED4 /* ItMkLibrary in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -130,7 +130,7 @@
 			);
 			name = AccountsHelper;
 			packageProductDependencies = (
-				45C1C9DB2E7D52B8002608BC /* ItMkLibrary */,
+				4528B9BA2E835CEF00B7AED4 /* ItMkLibrary */,
 			);
 			productName = AccountsHelper;
 			productReference = 45C1C93C2E7D522B002608BC /* AccountsHelper.app */;
@@ -215,7 +215,7 @@
 			mainGroup = 45C1C9332E7D522B002608BC;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				45C1C9DA2E7D52B8002608BC /* XCRemoteSwiftPackageReference "ItMkLibrary" */,
+				4528B9B92E835CEF00B7AED4 /* XCRemoteSwiftPackageReference "ItMkLibrary" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 45C1C93D2E7D522B002608BC /* Products */;
@@ -645,7 +645,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		45C1C9DA2E7D52B8002608BC /* XCRemoteSwiftPackageReference "ItMkLibrary" */ = {
+		4528B9B92E835CEF00B7AED4 /* XCRemoteSwiftPackageReference "ItMkLibrary" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/TS200010/ItMkLibrary";
 			requirement = {
@@ -656,9 +656,9 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		45C1C9DB2E7D52B8002608BC /* ItMkLibrary */ = {
+		4528B9BA2E835CEF00B7AED4 /* ItMkLibrary */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 45C1C9DA2E7D52B8002608BC /* XCRemoteSwiftPackageReference "ItMkLibrary" */;
+			package = 4528B9B92E835CEF00B7AED4 /* XCRemoteSwiftPackageReference "ItMkLibrary" */;
 			productName = ItMkLibrary;
 		};
 /* End XCSwiftPackageProductDependency section */
