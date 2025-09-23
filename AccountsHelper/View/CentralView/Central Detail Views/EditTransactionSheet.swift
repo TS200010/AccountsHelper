@@ -5,13 +5,6 @@
 //  Created by Anthony Stanners on 13/09/2025.
 //
 
-//
-//  EditTransactionView.swift
-//  AccountsHelper
-//
-//  Created by Anthony Stanners on 13/09/2025.
-//
-
 import SwiftUI
 import CoreData
 
@@ -26,31 +19,57 @@ enum AmountFieldIdentifier: Hashable {
 }
 
 // MARK: --- EditTransactionView
-struct EditTransactionView: View {
+struct EditTransactionSheet: View {
     
-    @State var transaction: Transaction?
+//    @State var transaction: Transaction?
     
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
-    @Environment(UIState.self) var uiState
+    @Environment(AppState.self) var appState
     
     @FocusState private var focusedField: AmountFieldIdentifier?
+
+//    private var existingTransaction: Transaction?
+    @State private var existingTransaction: Transaction?
     
     // MARK: --- State Variables
     @State private var category: Category = .unknown
     @State private var splitCategory: Category = .unknown
     @State private var currency: Currency = .GBP
     @State private var debitCredit: DebitCredit = .DR
-    @State private var exchangeRate: Decimal = 0.00
+    @State private var exchangeRate: Decimal = 1.00
     @State private var explanation: String = ""
     @State private var payee: String = ""
     @State private var payer: Payer = .tony
     @State private var paymentMethod: PaymentMethod = .AMEX
-    @State private var TXAmount: Decimal = 0.00
-    @State private var splitAmount: Decimal = 0.00
+    @State private var TXAmount: Decimal = Decimal(0)
+    @State private var splitAmount: Decimal = Decimal(0)
     @State private var splitTransaction: Bool = false
     @State private var transactionDate: Date = Date()
     @State private var timeStamp: Date = Date()
+    @State private var hasLoaded: Bool = false
+    
+//    init(){
+//        resetForm()
+//    }
+    
+    init(transaction: Transaction? = nil) {
+        self.existingTransaction = transaction
+        _category        = State(initialValue: transaction?.category ?? .unknown)
+        _splitCategory   = State(initialValue: transaction?.splitCategory ?? .unknown)
+        _currency        = State(initialValue: transaction?.currency ?? .GBP)
+        _debitCredit     = State(initialValue: transaction?.debitCredit ?? .DR)
+        _exchangeRate    = State(initialValue: transaction?.exchangeRate ?? Decimal(1))
+        _explanation     = State(initialValue: transaction?.explanation ?? "")
+        _payee           = State(initialValue: transaction?.payee ?? "")
+        _payer           = State(initialValue: transaction?.payer ?? .tony)
+        _paymentMethod   = State(initialValue: transaction?.paymentMethod ?? .AMEX)
+        _TXAmount        = State(initialValue: transaction?.txAmount ?? Decimal(0))
+        _splitAmount     = State(initialValue: transaction?.splitAmount ?? Decimal(0))
+        _transactionDate = State(initialValue: transaction?.transactionDate ?? Date.distantPast)
+        _splitTransaction = State(initialValue: transaction?.splitAmount != Decimal(0)) // optional
+        _timeStamp       = State(initialValue: transaction?.timestamp ?? Date.distantPast)
+    }
     
     // MARK: --- Validation
     private var canSave: Bool {
@@ -61,9 +80,9 @@ struct EditTransactionView: View {
         isCategoryValid()
     }
     
-    func isTXAmountValid() -> Bool { TXAmount != 0 }
+    func isTXAmountValid() -> Bool { TXAmount != Decimal(0) }
     func isCategoryValid() -> Bool { category != .unknown }
-    func isExchangeRateValid() -> Bool { currency == .GBP || (exchangeRate != 0 && (currency == .JPY ? exchangeRate < 300 : true)) }
+    func isExchangeRateValid() -> Bool { currency == .GBP || (exchangeRate != Decimal(0) && (currency == .JPY ? exchangeRate < 300 : true)) }
     func isDebitCreditValid() -> Bool { debitCredit != .unknown }
     func isPayeeValid() -> Bool { !payee.isEmpty }
     func isSplitAmountValid() -> Bool { splitAmount != 0 && splitAmount < TXAmount }
@@ -75,13 +94,13 @@ struct EditTransactionView: View {
         splitCategory = .unknown
         currency = .GBP
         debitCredit = .DR
-        exchangeRate = 0.00
+        exchangeRate = Decimal(0)
         explanation = ""
         payee = ""
         payer = .tony
         paymentMethod = .AMEX
-        TXAmount = 0.00
-        splitAmount = 0.00
+        TXAmount = Decimal(0)
+        splitAmount = Decimal(0)
         splitTransaction = false
         transactionDate = Date()
         timeStamp = Date()
@@ -89,20 +108,21 @@ struct EditTransactionView: View {
     
     // MARK: --- Save
     func saveTransaction() {
-        let newTransaction = Transaction(context: viewContext)
-        newTransaction.category = category
-        newTransaction.splitCategory = splitCategory
-        newTransaction.currency = currency
-        newTransaction.debitCredit = debitCredit
-        newTransaction.exchangeRate = exchangeRate
-        newTransaction.explanation = explanation
-        newTransaction.payee = payee
-        newTransaction.payer = payer
-        newTransaction.paymentMethod = paymentMethod
-        newTransaction.txAmount = TXAmount
-        newTransaction.splitAmount = splitAmount
-        newTransaction.transactionDate = transactionDate
-        newTransaction.timestamp = timeStamp
+        let transaction = existingTransaction ?? Transaction(context: viewContext)
+
+        transaction.category = category
+        transaction.splitCategory = splitCategory
+        transaction.currency = currency
+        transaction.debitCredit = debitCredit
+        transaction.exchangeRate = exchangeRate
+        transaction.explanation = explanation
+        transaction.payee = payee
+        transaction.payer = payer
+        transaction.paymentMethod = paymentMethod
+        transaction.txAmount = TXAmount
+        transaction.splitAmount = splitAmount
+        transaction.transactionDate = transactionDate
+        transaction.timestamp = timeStamp
         
         do {
             try viewContext.save()
@@ -111,6 +131,11 @@ struct EditTransactionView: View {
             print("Failed to save transaction: \(error)")
             assert(false)
         }
+        
+        // Update the CategoryMatcher
+        let matcher = CategoryMatcher(context: viewContext)
+        matcher.teachMapping(for: payee, category: category)
+        
     }
     
     // MARK: --- Body
@@ -143,7 +168,14 @@ struct EditTransactionView: View {
                 
                 LabeledPicker(label: "Payment Method", selection: $paymentMethod, isValid: true)
                 
+//                LabeledTextField(label: "Payee", text: $payee, isValid: isPayeeValid())
                 LabeledTextField(label: "Payee", text: $payee, isValid: isPayeeValid())
+                    .onChange(of: payee) { newValue in
+                        guard !newValue.isEmpty else { return }
+                        let matcher = CategoryMatcher(context: viewContext)
+                        category = matcher.matchCategory(for: newValue)
+                    }
+
                 
                 LabeledPicker(label: "Category", selection: $category, isValid: isCategoryValid())
                 
@@ -158,12 +190,12 @@ struct EditTransactionView: View {
                 } else {
                     Button("Unsplit Transaction") {
                         splitTransaction.toggle()
-                        splitAmount = 0.00
+                        splitAmount = Decimal(0)
                         splitCategory = .unknown
                     }
                     .buttonStyle(.borderedProminent)
                     
-                    VStack(spacing: 10) {
+                    VStack(spacing: 0) {
                         // --- Split 1 (editable)
                         LabeledDecimalWithFX(
                             label: "Split 1",
@@ -193,26 +225,26 @@ struct EditTransactionView: View {
                     }
                 }
                 
-                
                 Spacer()
                 
                 HStack {
                     Spacer()
                     
-                    Button("Cancel", role: .cancel) {
-                        uiState.selectedCentralView = .emptyView
-#if os(iOS)
-                        dismiss()
-#endif
+                    Button("Don't Save", role: .cancel) {
+                        appState.popCentralView( )
+//                        appState.selectedCentralView = .emptyView
+//                        dismiss()
                     }
                     .padding()
                     
                     Button("Save") {
                         saveTransaction()
-                        resetForm()
-#if os(iOS)
-                        dismiss()
-#endif
+                        if existingTransaction == nil {
+                            resetForm() // only reset when adding a new one
+                        }
+                        appState.popCentralView( )
+//                        appState.selectedCentralView = .emptyView
+//                        dismiss()
                     }
                     .disabled(!canSave)
                     .buttonStyle(.borderedProminent)
@@ -226,6 +258,34 @@ struct EditTransactionView: View {
             .padding()
             .onTapGesture {
                 focusedField = nil
+            }
+        }
+        .onAppear {
+            guard !hasLoaded else { return }
+            hasLoaded = true
+            
+            if let selectedID = appState.selectedTransactionID {
+                // Existing transaction: fetch and populate
+                if let tx = try? viewContext.existingObject(with: selectedID) as? Transaction {
+                    existingTransaction = tx
+                    category = tx.category
+                    splitCategory = tx.splitCategory
+                    currency = tx.currency
+                    debitCredit = tx.debitCredit
+                    exchangeRate = tx.exchangeRate
+                    explanation = tx.explanation ?? ""
+                    payee = tx.payee ?? ""
+                    payer = tx.payer
+                    paymentMethod = tx.paymentMethod
+                    TXAmount = tx.txAmount
+                    splitAmount = tx.splitAmount
+                    transactionDate = tx.transactionDate ?? Date.distantPast
+                    splitTransaction = tx.splitAmount != Decimal(0)
+                    timeStamp = tx.timestamp ?? Date.distantPast
+                }
+            } else {
+                // New transaction: keep defaults (already set in @State)
+                resetForm()
             }
         }
     }
@@ -500,7 +560,7 @@ struct LabeledDecimalWithFX: View {
     @State private var text: String = ""
     
     private var amountInGBP: Decimal? {
-        guard currency != .GBP && fxRate != 0 else { return nil }
+        guard currency != .GBP && fxRate != Decimal(0) else { return nil }
         return amount / fxRate
     }
     
@@ -603,7 +663,7 @@ struct LabeledDecimalWithFX: View {
     @State private var text: String = ""
     
     private var amountInGBP: Decimal? {
-        guard currency != .GBP && fxRate != 0 else { return nil }
+        guard currency != .GBP && fxRate != Decimal(0) else { return nil }
         return amount / fxRate
     }
     

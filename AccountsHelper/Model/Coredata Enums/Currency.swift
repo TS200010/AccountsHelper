@@ -27,11 +27,13 @@ import ItMkLibrary
     
     static func fromString( _ s: String ) -> Currency {
         switch s {
-        case "GBP":     return .GBP
-        case "USD":     return .USD
-        case "JPY":     return .JPY
-        case "EUR":     return .EUR
-        default:        return .unknown
+        case "GBP":             return .GBP
+        case "USD":             return .USD
+        case "JPY":             return .JPY
+        case "JAPANESE YEN":    return .JPY
+        case "JAPANESEYEN":     return .JPY
+        case "EUR":             return .EUR
+        default:                return .unknown
         }
     }
     

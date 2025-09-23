@@ -4,6 +4,12 @@
 //
 //  Created by Anthony Stanners on 16/09/2025.
 //
+//
+//  BrowseTransactionsView.swift
+//  AccountsHelper
+//
+//  Created by Anthony Stanners on 16/09/2025.
+//
 
 import Foundation
 import SwiftUI
@@ -14,59 +20,77 @@ fileprivate struct TransactionRow: Identifiable, Hashable {
     let transaction: Transaction
     var id: NSManagedObjectID { transaction.objectID }
 
+    // All stringified through extensions or safe unwraps
     var category: String { transaction.category.description }
     var splitCategory: String { transaction.splitCategory.description }
+    var splitRemainderCategory: String { transaction.splitRemainderCategory.description }
     var currency: String { transaction.currency.description }
     var debitCredit: String { transaction.debitCredit.description }
-    var exchangeRate: Double { (transaction.exchangeRate as NSDecimalNumber?)?.doubleValue ?? 0.0 }
-    
-    var transactionDate: Date { transaction.transactionDate ?? .distantPast }
+
+    var transactionDate: String { transaction.transactionDateAsString() ?? "" }
+    var txAmount: String { transaction.txAmountAsString() ?? "" }
+    var exchangeRate: String { transaction.exchangeRateAsString() ?? "" }
+
     var paymentMethod: String { transaction.paymentMethod.description }
     var payee: String { transaction.payee ?? "" }
     var payer: String { transaction.payer.description }
     var explanation: String { transaction.explanation ?? "" }
-    var splitAmount1: Double { (transaction.splitAmount as NSDecimalNumber?)?.doubleValue ?? 0.0 }
-    var txAmount: Double { (transaction.txAmount as NSDecimalNumber?)?.doubleValue ?? 0.0 }
-    var txAmountGBP: Double {
-        txAmount / exchangeRate
-    }
 
-//    var displayAmountX: String {
-//        "\(currency) \(String(format: "%.2f", txAmount)) \(transaction.debitCredit == .DR ? debitCredit : "" )"
-//    }
-    
+    // Derived formatting
     var displayAmount: String {
+        let rawAmount = NSDecimalNumber(decimal: transaction.txAmount)
+        let rawFx = NSDecimalNumber(decimal: transaction.exchangeRate)
+
+        let txAmount: Double = rawAmount.doubleValue
+        let exchangeRate: Double = rawFx.doubleValue
+        let txAmountGBP: Double = txAmount / (exchangeRate == Double(0) ? Double(1) : exchangeRate)
+
         let formattedAmount: String
-        let formattedAmountGBP: String
-        formattedAmountGBP = String(format: "%.2f", txAmountGBP )
+        let formattedAmountGBP = String(format: "%.2f", txAmountGBP)
+
         if transaction.currency == .JPY {
-            // No decimal places for Japanese Yen
             formattedAmount = String(format: "%.0f", txAmount)
         } else {
-            // Two decimal places for other currencies
             formattedAmount = String(format: "%.2f", txAmount)
         }
+
         var resultWIP = "\(currency) \(formattedAmount) \(transaction.debitCredit == .DR ? debitCredit : "")"
         if transaction.currency == .GBP {
             return resultWIP
         } else {
-            
-            return resultWIP + "in GBP \(formattedAmountGBP)"
+            return resultWIP + "\nGBP \(formattedAmountGBP)"
         }
     }
     
-    var displayFx: String {
-        let formattedFx: String
+    var displaySplitAmount: String {
+        
+        if transaction.splitAmount == Decimal(0) { return "" }
+        
+        let rawSplitAmount = NSDecimalNumber(decimal: transaction.splitAmount).doubleValue
+        let rawRemainderAmount = NSDecimalNumber(decimal: transaction.splitRemainderAmount).doubleValue
+        
+        var formattedSplitAmount: String = ""
+        var formattedRemainderAmount: String = ""
         if transaction.currency == .JPY {
-            // No decimal places for Japanese Yen
-            formattedFx = String(format: "%.0f", exchangeRate)
+            formattedSplitAmount = String(format: "%.0f", rawSplitAmount )
+            formattedRemainderAmount = String(format: "%.0f", rawRemainderAmount )
         } else {
-            // Two decimal places for other currencies
-            formattedFx = String(format: "%.2f", exchangeRate)
+            formattedSplitAmount = String(format: "%.2f", rawSplitAmount )
+            formattedRemainderAmount = String(format: "%.2f", rawRemainderAmount )
         }
-        return "\(formattedFx)"
+        var splitAmountPad = String(repeating: " ", count: max(0, 5 - formattedSplitAmount.count))
+        var remainderAmountPad = String(repeating: " ", count: max(0, 5 - formattedRemainderAmount.count))
+        var resultWIP = "\(currency) \(formattedSplitAmount)" + splitAmountPad + " \(splitCategory)"
+        resultWIP += "\n\(currency) \(formattedRemainderAmount)" + remainderAmountPad + " \(splitRemainderCategory)"
+        
+        return resultWIP
     }
     
+    var splitRemainderAsString: String {
+        guard let amount = transaction.splitRemainderAmount as? NSDecimalNumber else { return "" }
+        return String(format: "%.2f", amount.doubleValue)
+    }
+
     static func == (lhs: TransactionRow, rhs: TransactionRow) -> Bool {
         lhs.id == rhs.id
     }
@@ -78,15 +102,15 @@ fileprivate struct TransactionRow: Identifiable, Hashable {
 
 // MARK: - SortColumn
 enum SortColumn: CaseIterable, Identifiable {
-    case category, splitaCategory, currency, debitCredit, exchangeRate,
+    case category, splitCategory, currency, debitCredit, exchangeRate,
          explanation, payee, payer, paymentMethod, splitAmount, transactionDate, txAmount
-    
+
     var id: Self { self }
-    
+
     var title: String {
         switch self {
         case .category:        return "Category"
-        case .splitaCategory:  return "SplitCategory"
+        case .splitCategory:   return "SplitCategory"
         case .currency:        return "Currency"
         case .debitCredit:     return "Debit/Credit"
         case .exchangeRate:    return "Fx"
@@ -94,17 +118,17 @@ enum SortColumn: CaseIterable, Identifiable {
         case .payee:           return "Payee"
         case .payer:           return "Payer"
         case .paymentMethod:   return "Payment Method"
-        case .splitAmount:    return "SplitAmount"
+        case .splitAmount:     return "SplitAmount"
         case .transactionDate: return "Date"
         case .txAmount:        return "Amount"
         }
     }
-    
+
     var systemImage: String {
         switch self {
         case .transactionDate: return "calendar"
         case .category:        return "folder"
-        case .splitaCategory:       return "folder.fill"
+        case .splitCategory:   return "folder.fill"
         case .currency:        return "dollarsign.circle"
         case .debitCredit:     return "arrow.left.arrow.right"
         case .exchangeRate:    return "chart.line.uptrend.xyaxis"
@@ -112,39 +136,25 @@ enum SortColumn: CaseIterable, Identifiable {
         case .payee:           return "person"
         case .payer:           return "person.crop.circle"
         case .explanation:     return "text.alignleft"
-        case .splitAmount:    return "number"
+        case .splitAmount:     return "number"
         case .txAmount:        return "sum"
         }
     }
-    
-    // Extract comparable values
+
     fileprivate func stringKey(for row: TransactionRow) -> String? {
         switch self {
         case .category:       return row.category
-        case .splitaCategory:      return row.splitCategory
+        case .splitCategory:  return row.splitCategory
         case .currency:       return row.currency
         case .debitCredit:    return row.debitCredit
         case .payee:          return row.payee
         case .payer:          return row.payer
         case .paymentMethod:  return row.paymentMethod
         case .explanation:    return row.explanation
+        case .transactionDate:return row.transactionDate
+        case .txAmount:       return row.txAmount
+        case .exchangeRate:   return row.exchangeRate
         default:              return nil
-        }
-    }
-    
-    fileprivate func doubleKey(for row: TransactionRow) -> Double? {
-        switch self {
-        case .exchangeRate: return row.exchangeRate
-        case .splitAmount: return row.splitAmount1
-        case .txAmount:     return row.txAmount
-        default:            return nil
-        }
-    }
-    
-    fileprivate func dateKey(for row: TransactionRow) -> Date? {
-        switch self {
-        case .transactionDate: return row.transactionDate
-        default: return nil
         }
     }
 }
@@ -153,39 +163,35 @@ enum SortColumn: CaseIterable, Identifiable {
 struct BrowseTransactionsView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.undoManager) private var undoManager
+    @Environment(AppState.self) var appState
 
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Transaction.timestamp, ascending: true)]
     ) private var transactions: FetchedResults<Transaction>
 
     @State private var selectedTransactionIDs = Set<NSManagedObjectID>()
-    @State private var transactionToShow: Transaction?
-    @State private var showingTransactionSheet = false
+    @State private var selectedTransaction: Transaction?
+    @State private var showingEditTransactionSheet = false
     @State private var showingDeleteConfirmation = false
     @State private var transactionsToDelete: Set<NSManagedObjectID> = []
-    
+
     // Sorting state
     @State private var sortColumn: SortColumn = .transactionDate
     @State private var ascending: Bool = true
-    
+
     // MARK: - Derived Rows
     private var transactionRows: [TransactionRow] {
         let rows = transactions.map { TransactionRow(transaction: $0) }
         return rows.sorted { lhs, rhs in
-            if let l = sortColumn.stringKey(for: lhs), let r = sortColumn.stringKey(for: rhs) {
+            if let l = sortColumn.stringKey(for: lhs),
+               let r = sortColumn.stringKey(for: rhs) {
                 let cmp = l.localizedCompare(r)
                 return ascending ? cmp == .orderedAscending : cmp == .orderedDescending
-            }
-            if let l = sortColumn.doubleKey(for: lhs), let r = sortColumn.doubleKey(for: rhs) {
-                return ascending ? l < r : l > r
-            }
-            if let l = sortColumn.dateKey(for: lhs), let r = sortColumn.dateKey(for: rhs) {
-                return ascending ? l < r : l > r
             }
             return false
         }
     }
-    
+
     // MARK: - Body
     var body: some View {
         VStack(spacing: 0) {
@@ -193,14 +199,9 @@ struct BrowseTransactionsView: View {
             statusBar
         }
         .toolbar { toolbarItems }
-        .sheet(item: $transactionToShow) { transaction in
-            ShowTransactionView(transaction: transaction)
+        .sheet(isPresented: $showingEditTransactionSheet) {
+            EditTransactionSheet(transaction: selectedTransaction)
         }
-        .sheet(isPresented: $showingTransactionSheet) {
-            EditTransactionView(transaction: transactionToShow)
-        }
-//        .sheet(item: $transactionToShow) { ShowTransactionView(transaction: $0) }
-//        .sheet(isPresented: $showingTransactionSheet) { EditTransactionView() }
         .confirmationDialog(
             "Are you sure?",
             isPresented: $showingDeleteConfirmation,
@@ -217,56 +218,49 @@ struct BrowseTransactionsView: View {
     // MARK: - Transactions Table
     private var transactionsTable: some View {
         Table(transactionRows, selection: $selectedTransactionIDs) {
-//        Table(transactionRows, selection: $selectedTransactionIDs, rowID: \.transaction.objectID) {
-            #if os(macOS)
-            TableColumn("Date") { row in
-                tableCell(row.transactionDate, formatter: dateOnlyFormatter, for: row)
-            }
-            TableColumn("Amount") { row in
-                tableCell(row.displayAmount, for: row)
-            }
-            TableColumn("Category") { row in
-                tableCell(row.category, for: row)
-            }
-            TableColumn("Fx") { row in
-//                tableCell(String(format: "%.4f", row.exchangeRate), for: row)
-                tableCell(row.displayFx, for: row)
-            }
-            TableColumn("Payee") { row in
-                tableCell(row.payee, for: row)
-            }
-            TableColumn("Payer") { row in
-                tableCell(row.payer, for: row)
-            }
-            TableColumn("Payment Method") { row in
-                tableCell(row.paymentMethod, for: row)
-            }
-            TableColumn("SplitCategory") { row in
-                tableCell(row.splitCategory, for: row)
-            }
-            TableColumn("SplitAmount") { row in
-                tableCell(String(format: "%.2f", row.splitAmount1), for: row)
-            }
-            TableColumn("Explanation") { row in
-                tableCell(row.explanation, for: row)
-                    .foregroundColor(.secondary)
-            }
-            #else
-            TableColumn("Date") { row in
-                tableCell(row.transactionDate, formatter: dateOnlyFormatter, for: row)
-            }
-            TableColumn("Amount") { row in
-                tableCell(row.displayAmount, for: row)
-            }
-            #endif
+#if os(macOS)
+            
+            TableColumn("Payment Method") { row in tableCell(row.paymentMethod, for: row) }
+                .width(min: 50, ideal: 80, max: 100)
+            
+            TableColumn("Date") { row in tableCell(row.transactionDate, for: row) }
+                .width(min: 80, ideal: 100, max: 150)
 
+            TableColumn("Amount") { row in multiLineTableCell(row.displayAmount, for: row) }
+                .width(min: 120, ideal: 130, max: 150)
+            
+            TableColumn("Fx") { row in tableCell(row.exchangeRate, for: row) }
+                .width(min: 50, ideal: 55, max: 60)
+
+            TableColumn("Category") { row in tableCell(row.category, for: row) }
+                .width(min: 50, ideal: 80, max: 100)
+            
+            TableColumn("Split") { row in multiLineTableCell(row.displaySplitAmount, for: row) }
+                .width(min: 200, ideal: 2100, max: 300)
+
+            TableColumn("Payee") { row in tableCell(row.payee, for: row) }
+                .width(min: 50, ideal: 80, max: 100)
+
+#else
+            TableColumn("Date") { row in tableCell(row.transactionDate, for: row) }
+            TableColumn("Amount") { row in tableCell(row.displayAmount, for: row) }
+#endif
         }
         .font(.system(.body, design: .monospaced))
         .frame(minHeight: 300)
         .tableStyle(.inset)
         .contextMenu { SortContextMenu() }
+        .onChange(of: selectedTransactionIDs) { newSelection in
+            if let firstID = newSelection.first {
+                appState.selectedTransactionID = firstID
+                appState.selectedInspectorView = .viewTransaction
+            } else {
+                selectedTransaction = nil
+                appState.selectedTransactionID = nil
+            }
+        }
     }
-    
+
     // MARK: - SortContextMenu
     @ViewBuilder
     private func SortContextMenu() -> some View {
@@ -278,8 +272,7 @@ struct BrowseTransactionsView: View {
             }
         }
     }
-    
-    // MARK: - UpdateSortColumn
+
     private func updateSortColumn(_ column: SortColumn) {
         if sortColumn == column {
             ascending.toggle()
@@ -287,12 +280,10 @@ struct BrowseTransactionsView: View {
             sortColumn = column
             ascending = true
         }
-        
-        // Safe: remove any selection (even if empty, harmless)
         selectedTransactionIDs.removeAll()
     }
 
-    // MARK: - Status Bar
+    // MARK: - StatusBar
     private var statusBar: some View {
         HStack {
             Spacer()
@@ -301,17 +292,12 @@ struct BrowseTransactionsView: View {
                  : "Selected: \(selectedTransactionIDs.count)")
         }
         .padding(8)
-        .background( Color.platformWindowBackgroundColor )
+        .background(Color.platformWindowBackgroundColor)
     }
 
     // MARK: - Toolbar
     private var toolbarItems: some ToolbarContent {
         Group {
-            ToolbarItem {
-                Button(action: { showingTransactionSheet.toggle() }) {
-                    Label("Add Item", systemImage: "plus")
-                }
-            }
             ToolbarItem {
                 Button(role: .destructive) {
                     transactionsToDelete = selectedTransactionIDs
@@ -322,60 +308,54 @@ struct BrowseTransactionsView: View {
                 .disabled(selectedTransactionIDs.isEmpty)
             }
             ToolbarItem {
-                Button {
-                    undoManager?.undo()
-                } label: {
+                Button { undoManager?.undo() } label: {
                     Label("Undo", systemImage: "arrow.uturn.backward")
                 }
                 .disabled(!(undoManager?.canUndo ?? false))
             }
             ToolbarItem {
-                Button {
-                    undoManager?.redo()
-                } label: {
+                Button { undoManager?.redo() } label: {
                     Label("Redo", systemImage: "arrow.uturn.forward")
                 }
                 .disabled(!(undoManager?.canRedo ?? false))
             }
         }
     }
-    
+
     // MARK: - Table Cell Helpers
     @ViewBuilder
     private func tableCell(_ content: String, for row: TransactionRow) -> some View {
         HStack {
             Text(content)
-//                .font(.system(.body, design: .monospaced))
             Spacer()
         }
+    
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
         .contextMenu { contextMenu(for: row) }
     }
     
     @ViewBuilder
-    private func tableCell(_ date: Date, formatter: DateFormatter, for row: TransactionRow) -> some View {
+    private func multiLineTableCell(_ content: String, for row: TransactionRow) -> some View {
         HStack {
-            Text(date, formatter: formatter)
-//                .font(.system(.body, design: .monospaced))
+            Text(content)
+                .lineLimit(nil)
             Spacer()
         }
+    
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
         .contextMenu { contextMenu(for: row) }
     }
 
-    // MARK: - Context Menu for Row
+    // MARK: - Context Menu (for Row)
     @ViewBuilder
     private func contextMenu(for row: TransactionRow) -> some View {
         if selectedTransactionIDs.contains(row.id) {
             if selectedTransactionIDs.count == 1 {
-                Button("View Transaction") {
-                    transactionToShow = row.transaction
-                }
                 Button("Edit Transaction") {
-                    transactionToShow = row.transaction
-                    showingTransactionSheet = true
+                    appState.selectedTransactionID = row.id
+                    appState.pushCentralView(.editTransaction)
                 }
             }
             Button(role: .destructive) {
@@ -387,7 +367,7 @@ struct BrowseTransactionsView: View {
         }
     }
 
-    // MARK: - Actions
+    // MARK: - Delete with Undo Support
     private func deleteTransactions(with ids: Set<NSManagedObjectID>) {
         viewContext.perform {
             let fetchRequest: NSFetchRequest<Transaction> = Transaction.fetchRequest()
@@ -400,7 +380,9 @@ struct BrowseTransactionsView: View {
                 }
                 transactionsToDelete.forEach { viewContext.delete($0) }
                 try viewContext.save()
+
                 selectedTransactionIDs.removeAll()
+
                 undoManager?.registerUndo(withTarget: viewContext) { context in
                     for data in deletedObjectsData {
                         let restored = Transaction(context: context)

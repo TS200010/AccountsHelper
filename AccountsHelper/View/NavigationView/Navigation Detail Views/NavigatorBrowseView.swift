@@ -10,25 +10,25 @@ import ItMkLibrary
 
 struct NavigatorBrowseView: View {
     
-    @Environment(UIState.self) var uiState
+    @Environment(AppState.self) var appState
     
     var body: some View {
         
         VStack {
             Button("Browse Transactions") {
-                uiState.selectedCentralView = .browseTransactions
+                appState.selectedCentralView = .browseTransactions
             }
 
             Button("Browse Currencies") {
-                uiState.selectedCentralView = .browseCurrencies
+                appState.selectedCentralView = .browseCurrencies
             }
 
             Button("Browse Payers") {
-                uiState.selectedCentralView = .browsePayees
+                appState.selectedCentralView = .browsePayees
             }
             
             Button("Browse Payees") {
-                uiState.selectedCentralView = .browsePayers
+                appState.selectedCentralView = .browsePayers
             }
         } .buttonStyle( ItMkButton() )
     }

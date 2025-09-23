@@ -17,14 +17,14 @@ struct AccountsHelperApp: App {
     let persistenceController = PersistenceController.shared
     
     // MARK: --- State: Tracks Global UI states between NavigatorView, CentralView and InspectorView
-    @State private var uiState = UIState()
+    @State private var appState = AppState()
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
                 .environmentObject( gGlobalAlert )
-                .environment( uiState )
+                .environment( appState )
         }
     }
 }

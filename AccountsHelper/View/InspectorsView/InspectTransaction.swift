@@ -1,0 +1,123 @@
+//
+//  InspectTransaction.swift
+//  AccountsHelper
+//
+//  Created by Anthony Stanners on 16/09/2025.
+//
+
+//
+//  InspectTransaction.swift
+//  AccountsHelper
+//
+//  Created by Anthony Stanners on 16/09/2025.
+//
+
+import SwiftUI
+import CoreData
+
+struct InspectTransaction: View {
+    @Environment(\.managedObjectContext) private var viewContext
+    @Environment(AppState.self) var appState
+
+    var transaction: Transaction? {
+        guard let id = appState.selectedTransactionID else { return nil }
+        return try? viewContext.existingObject(with: id) as? Transaction
+    }
+
+    var body: some View {
+        GeometryReader { geo in
+            if let transaction {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 20) {
+                        
+                        // MARK: - Header
+                        Text("Transaction Details")
+                            .font(.title2)
+                            .bold()
+                            .padding(.bottom, 10)
+                        
+                        // MARK: - General Section
+                        inspectorSection("General") {
+                            transactionRow("Timestamp:", transaction.timestamp?.formatted(date: .abbreviated, time: .standard) ?? "N/A")
+                            Divider()
+                            transactionRow("Transaction Date:", transaction.transactionDate?.formatted(date: .abbreviated, time: .standard) ?? "N/A")
+                            Divider()
+                            transactionRow("Category:", transaction.category.description)
+                            Divider()
+                            transactionRow("Split Category:", transaction.splitCategory.description)
+                        }
+                        
+                        // MARK: - Amounts Section
+                        inspectorSection("Amounts") {
+                            transactionRow("Currency:", transaction.currency.description)
+                            Divider()
+                            transactionRow("Debit/Credit:", transaction.debitCredit.description)
+                            Divider()
+                            transactionRow("Exchange Rate:", String(format: "%.2f", (transaction.exchangeRate as NSDecimalNumber?)?.doubleValue ?? 0))
+                            Divider()
+                            transactionRow("Split Amount:", String(format: "%.2f", (transaction.splitAmount as NSDecimalNumber?)?.doubleValue ?? 0))
+                            Divider()
+                            transactionRow("Transaction Amount:", String(format: "%.2f", (transaction.txAmount as NSDecimalNumber?)?.doubleValue ?? 0))
+                        }
+                        
+                        // MARK: - Parties Section
+                        inspectorSection("Parties") {
+                            transactionRow("Payee:", transaction.payee ?? "N/A")
+                            Divider()
+                            transactionRow("Payer:", transaction.payer.description)
+                            Divider()
+                            transactionRow("Payment Method:", transaction.paymentMethod.description)
+                        }
+                        
+                        // MARK: - Notes Section
+                        inspectorSection("Notes") {
+                            transactionRow("Explanation:", transaction.explanation ?? "N/A")
+                        }
+                        
+                        Spacer(minLength: 20)
+                    }
+                    .padding(20)
+                    .background(.ultraThinMaterial) // LiquidGlass effect
+                    .cornerRadius(12)
+                    .padding()
+                }
+            } else {
+                Text("No Transaction Selected")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+    }
+
+    // MARK: - Section Wrapper
+    @ViewBuilder
+    private func inspectorSection<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(title)
+                .font(.headline)
+            VStack(spacing: 0) {
+                content()
+            }
+            .padding(.vertical, 5)
+            .padding(.horizontal, 8)
+            .background(.ultraThinMaterial.opacity(0.5))
+            .cornerRadius(8)
+        }
+        .padding(.vertical, 5)
+    }
+
+    // MARK: - Row Helper
+    @ViewBuilder
+    private func transactionRow(_ label: String, _ value: String) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Text(label)
+                .font(.system(.body, weight: .medium))
+                .foregroundColor(.secondary)
+                .frame(minWidth: 120, alignment: .trailing) // minimum width to avoid cropping
+                .alignmentGuide(.leading) { d in d[.leading] }
+            Text(value)
+                .font(.system(.body))
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.vertical, 2)
+    }
+}

@@ -1,5 +1,5 @@
 //
-//  InspectorViewOne.swift
+//  viewTransaction.swift
 // From SkeletonMacOSApp
 //
 //  Created by Anthony Stanners on 09/09/2025.

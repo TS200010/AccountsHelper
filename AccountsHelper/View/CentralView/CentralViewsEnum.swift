@@ -18,9 +18,12 @@ enum CentralViewsEnum: String {
     
     case addTransaction             = "Add Transaction"
     
+    case AMEXCSVImport              = "AMEX CSV Import"
+    
     case reconcileTransactions      = "Reconcile Transactions"
     
     case browseTransactions         = "Browse Transactions"
+    case browseAMEXTransactions     = "Browse AMEX Transactions"
     case browseCurrencies           = "Browse Currencies"
     case browsePayees               = "Browse Payees"
     case browsePayers               = "Browse Payers"

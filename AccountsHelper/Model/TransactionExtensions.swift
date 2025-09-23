@@ -8,6 +8,20 @@
 import Foundation
 import CoreData
 
+extension Transaction {
+    
+    public var commissionAmount: Decimal {
+        get { Decimal(commissionAmountCD) / 100.0 }
+        set {
+            // Multiply by 100 to store cents
+            var scaled = newValue * Decimal(100)
+            var rounded = Decimal()
+            NSDecimalRound(&rounded, &scaled, 0, .plain)
+            commissionAmountCD = Int32(truncating: NSDecimalNumber(decimal: rounded))
+        }
+    }
+}
+
 // MARK: --- Computed properties for Transaction
 extension Transaction {
     var category: Category {
@@ -65,13 +79,13 @@ extension Transaction {
     }
 
     // We only keeps the txAmount and the first split value. The remaining split value is computed.
-    var splitRemainder: Decimal {
+    var splitRemainderAmount: Decimal {
         get { Decimal(txAmountCD - splitAmountCD)/100 }
         set { }
     }
 
     // Remainder Category is a new category entered for the calculated remainder
-    var remainderCategory: Category {
+    var splitRemainderCategory: Category {
         get { Category(rawValue: categoryCD) ?? .unknown }
         set { }
     }
@@ -87,6 +101,45 @@ extension Transaction {
         }
     }
 }
+
+// MARK: --- Estensions to make Table Viewing much simpler
+extension Transaction {
+    
+    func transactionDateAsString() -> String? {
+        guard let date = transactionDate else { return nil }
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short   // or .medium / .long
+        formatter.timeStyle = .none
+        return formatter.string(from: date)
+    }
+    
+    func txAmountAsString() -> String? {
+        guard let amount = txAmount as? NSDecimalNumber else { return nil }
+        return String(format: "%.2f", amount.doubleValue)
+    }
+    
+    func exchangeRateAsString() -> String? {
+        guard let fx = exchangeRate as? NSDecimalNumber else { return nil }
+        switch currency {
+            
+        case .GBP:
+            return ""
+
+        case .JPY:
+            return String(format: "%.0f", fx.doubleValue)
+            
+        default:
+            return String(format: "%.2f", fx.doubleValue)
+        }
+
+    }
+    
+    func splitRemainderAsString() -> String? {
+        guard let amount = splitRemainderAmount as? NSDecimalNumber else { return nil }
+        return String(format: "%.2f", amount.doubleValue)
+    }
+}
+
 
 
 // MARK: --- GenerateRandomTransactions
@@ -115,7 +168,7 @@ extension Transaction {
             case .EUR:
                 transaction.exchangeRateCD = Int32.random(in: 120...150)
             case .unknown:
-                transaction.exchangeRateCD = 0
+                transaction.exchangeRateCD = Int32(0)
             }
             
             transaction.payerCD = Int32.random(in: 1...2)

@@ -11,20 +11,23 @@ import ItMkLibrary
 struct NavigatorViews: View {
     
     // MARK: --- Environment
-    @Environment(UIState.self) var uiState
+    @Environment(AppState.self) var appState
     
     // MARK: --- Body
     var body: some View {
         
         VStack (spacing: 0) {
             
-            switch uiState.selectedNavigatorView {
+            switch appState.selectedNavigatorView {
                 
             case .emptyView:
                 Text("Select an action from the toolbar" )
                 
             case .edit:
                 NavigatorEditAddView()
+                
+            case .txImport:
+                CSVImportView()
                 
             case .reconcile:
                 Text("Navigator Reconcile View" )

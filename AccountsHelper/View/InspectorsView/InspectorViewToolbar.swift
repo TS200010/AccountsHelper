@@ -10,7 +10,7 @@ import ItMkLibrary
 
 struct InspectorViewToolbar: View {
 
-    @Environment(UIState.self) var uiState
+    @Environment(AppState.self) var appState
     
     // MARK: --- Body
     var body: some View {
@@ -21,21 +21,21 @@ struct InspectorViewToolbar: View {
                 
                 // MARK: --- InspectorViewOne Button
                 ItMkToolBarButton(
-                    action: { uiState.selectedInspectorView = .InspectorViewOne  },
+                    action: { appState.selectedInspectorView = .viewTransaction  },
                     name: "star.hexagon.fill",
-                    isSelected: uiState.selectedInspectorView == .InspectorViewOne )
+                    isSelected: appState.selectedInspectorView == .viewTransaction )
                 
                 // MARK: --- InspectorViewTwo Button
                 ItMkToolBarButton(
-                    action: { uiState.selectedInspectorView = .InspectorViewTwo  },
+                    action: { appState.selectedInspectorView = .InspectorViewTwo  },
                     name: "xmark.seal",
-                    isSelected: uiState.selectedInspectorView == .InspectorViewTwo )
+                    isSelected: appState.selectedInspectorView == .InspectorViewTwo )
                 
                 // MARK: --- InspectorViewThree Button
                 ItMkToolBarButton(
-                    action: { uiState.selectedInspectorView = .InspectorViewThree  },
+                    action: { appState.selectedInspectorView = .InspectorViewThree  },
                     name: "heart.fill",
-                    isSelected: uiState.selectedInspectorView == .InspectorViewThree )
+                    isSelected: appState.selectedInspectorView == .InspectorViewThree )
             }
         } .frame( maxWidth: .infinity, maxHeight: gMaxToolbarHeight )
           .bottomBorder( )

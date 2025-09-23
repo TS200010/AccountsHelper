@@ -14,7 +14,7 @@ import ItMkLibrary
 @objc enum Category: Int32, CaseIterable, Codable, HasStringRepresentation, CustomStringConvertible {
     
     case Spare1             = 1
-    case GargenHome         = 2
+    case GardenHome         = 2
     case Insurance          = 3
     case CarTax             = 4
     case CarMaintenance     = 5
@@ -50,7 +50,7 @@ func rawValueAsString() -> String {
     var description: String {
         switch self {
         case .Spare1:           return String( localized: "Spare1" )
-        case .GargenHome:       return String( localized: "GargenHome" )
+        case .GardenHome:       return String( localized: "GardenHome" )
         case .Insurance:        return String( localized: "Insurance" )
         case .CarTax:           return String( localized: "CarTax" )
         case .CarMaintenance:   return String( localized: "CarMaintenance" )

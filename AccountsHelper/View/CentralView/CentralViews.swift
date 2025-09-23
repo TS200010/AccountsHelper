@@ -10,11 +10,11 @@ import ItMkLibrary
 
 struct CentralViews: View {
     
-    @Environment(UIState.self) var uiState
+    @Environment(AppState.self) var appState
     
     //TODO: See if we need this. We probably dont if we follow List selection binding
 //    func tapAction( rowTapped: Int ) -> Void {
-//        uiState.selectedRecord = rowTapped
+//        appState.selectedRecord = rowTapped
 //
 //    }
     
@@ -24,17 +24,27 @@ struct CentralViews: View {
         
         VStack (spacing: 0) {
             
-            switch uiState.selectedCentralView {
+            switch appState.selectedCentralView {
                 
-            case .addTransaction:
-                EditTransactionView()
-        
             case .emptyView:
                 Text("Select an action from the toolbar" )
                 
+            case .addTransaction:
+                EditTransactionSheet()
+                
+            case .AMEXCSVImport:
+                #if os(macOS)
+                CSVImportView()
+                #else
+                Text("Not implemented on iOS" )
+                #endif
+                
+            case .browseAMEXTransactions:
+                Text("Remove this View")
+                
             case .editTransaction:
-//                EditTransactionViewOld()
-                EditTransactionView()
+                //                EditTransactionViewOld()
+                EditTransactionSheet()
                 
             case .editCurrency:
                 Text("Edit Currency View")
@@ -59,10 +69,11 @@ struct CentralViews: View {
                 
             case .browsePayers:
                 Text("Browse Payers View")
-
+                
                 
             case .reports:
                 Text("Reports View")
+                
             }
             
         } .frame(maxWidth: .infinity, maxHeight: .infinity)

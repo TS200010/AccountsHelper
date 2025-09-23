@@ -10,14 +10,14 @@ import ItMkLibrary
 
 struct CentralViewToolbar: View {
     
-    @Environment(UIState.self) var uiState
+    @Environment(AppState.self) var appState
     
     // MARK: --- Body
     var body: some View {
 
         HStack {
             
-            Text(uiState.selectedCentralView.rawValue )
+            Text(appState.selectedCentralView.rawValue )
                 .frame( width: gCentralViewHeadingSize, alignment: .leading )
                 .padding( [.leading], 10 )
             
@@ -27,9 +27,9 @@ struct CentralViewToolbar: View {
                 
                 // MARK: --- Add Transaction Button
                 ItMkToolBarButton(
-                    action: { uiState.selectedCentralView = .addTransaction  },
+                    action: { appState.selectedCentralView = .addTransaction  },
                     name: "plus.app",
-                    isSelected: uiState.selectedCentralView == .addTransaction )
+                    isSelected: appState.selectedCentralView == .addTransaction )
                 
                 Divider()
                     .frame( width: 1)

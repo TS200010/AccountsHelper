@@ -9,6 +9,7 @@ enum NavigatorViewsEnum: String {
     
     case emptyView
     case edit
+    case txImport
     case reconcile
     case browse
     case report

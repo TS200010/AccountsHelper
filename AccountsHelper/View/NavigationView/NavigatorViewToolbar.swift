@@ -10,7 +10,7 @@ import ItMkLibrary
 
 struct NavigatorViewToolbar: View {
     
-    @Environment(UIState.self)             var uiState
+    @Environment(AppState.self)             var appState
     
     // MARK: --- Body
     var body: some View {
@@ -21,27 +21,27 @@ struct NavigatorViewToolbar: View {
                 
                 // MARK: --- Edit Transaction Button
                 ItMkToolBarButton(
-                    action: { uiState.selectedNavigatorView = .edit  },
+                    action: { appState.selectedNavigatorView = .edit  },
                     name: "square.and.pencil",
-                    isSelected: uiState.selectedNavigatorView == .edit )
+                    isSelected: appState.selectedNavigatorView == .edit )
                 
                 // MARK: --- Reconcile Button
                 ItMkToolBarButton(
-                    action: { uiState.selectedNavigatorView = .reconcile   },
+                    action: { appState.selectedNavigatorView = .reconcile   },
                     name: "arrow.triangle.2.circlepath",
-                    isSelected: uiState.selectedNavigatorView == .reconcile )
+                    isSelected: appState.selectedNavigatorView == .reconcile )
                 
                 // MARK: --- Browse Button
                 ItMkToolBarButton(
-                    action: { uiState.selectedNavigatorView = .browse  },
+                    action: { appState.selectedNavigatorView = .browse  },
                     name: "magnifyingglass",
-                    isSelected: uiState.selectedNavigatorView == .browse )
+                    isSelected: appState.selectedNavigatorView == .browse )
                 
                 // MARK: --- Repport Button
                 ItMkToolBarButton(
-                    action: { uiState.selectedNavigatorView = .report  },
+                    action: { appState.selectedNavigatorView = .report  },
                     name: "doc.text",
-                    isSelected: uiState.selectedNavigatorView == .report )
+                    isSelected: appState.selectedNavigatorView == .report )
             }
 
             

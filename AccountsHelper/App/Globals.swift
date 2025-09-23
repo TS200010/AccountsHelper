@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import CoreData
 import ItMkLibrary
 import SwiftUI
 
@@ -38,17 +39,28 @@ var gGlobalAlert: GlobalAlert = GlobalAlert()
 
 // MARK: --- Global UI State
 @Observable
-class UIState {
+class AppState {
     
-    var selectedRecord: Int = 0
+    var selectedTransactionID: NSManagedObjectID? = nil
     
     var selectedNavigatorView: NavigatorViewsEnum = .emptyView
     
+    // MARK: --- Central View Management
+    // TODO: Make this a bit more general purpose - for the other views too.
     var selectedCentralView: CentralViewsEnum = .emptyView
+    private var savedCentralView: CentralViewsEnum = .emptyView
+    func pushCentralView( _ view: CentralViewsEnum ) -> Void {
+        savedCentralView = selectedCentralView
+        selectedCentralView = view
+    }
+    func popCentralView() -> Void {
+        selectedCentralView = savedCentralView
+        savedCentralView = .emptyView
+    }
     
     var selectedInspectorView: InspectorViewsEnum = .emptyView
     
-    func reset() -> Void {
-        selectedRecord = 0
-    }
+//    func reset() -> Void {
+//        selectedTransactio = nil
+//    }
 }

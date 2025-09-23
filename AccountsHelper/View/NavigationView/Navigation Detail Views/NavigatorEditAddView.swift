@@ -11,7 +11,7 @@ import ItMkLibrary
 struct NavigatorEditAddView: View {
     
     // MARK: --- Environment
-    @Environment(UIState.self) var uiState
+    @Environment(AppState.self) var appState
     @Environment(\.managedObjectContext) private var viewContext
     
     // MARK: --- Properties
@@ -24,10 +24,10 @@ struct NavigatorEditAddView: View {
         VStack {
             Button("Add Transaction") {
                 #if os(macOS)
-                uiState.selectedCentralView = .addTransaction
+                appState.selectedCentralView = .addTransaction
                 #else
-                uiState.selectedCentralView = .addTransaction
-                showingEditAddTransactionSheet = true
+                appState.selectedCentralView = .addTransaction
+//                showingEditAddTransactionSheet = true
                 #endif
                 
             }
@@ -37,31 +37,46 @@ struct NavigatorEditAddView: View {
             }
             .disabled( gUseLiveStore )
             
+            Button("Import AMEX CSV Transactions") {
+                appState.selectedCentralView = .AMEXCSVImport
+            }
+
+            
             Button("Browse Transactions") {
                 #if os(macOS)
-                uiState.selectedCentralView = .browseTransactions
+                appState.selectedCentralView = .browseTransactions
                 #else
-                uiState.selectedCentralView = .browseTransactions
+                appState.selectedCentralView = .browseTransactions
+                showingBrowseTransactionsView = true
+                #endif
+                
+            }
+            
+            Button("Browse AMEX Transactions") {
+                #if os(macOS)
+                appState.selectedCentralView = .browseAMEXTransactions
+                #else
+                appState.selectedCentralView = .browseTransactions
                 showingBrowseTransactionsView = true
                 #endif
                 
             }
 
             Button("Edit Currency") {
-                uiState.selectedCentralView = .editCurrency
+                appState.selectedCentralView = .editCurrency
             }
 
             Button("Edit Payer") {
-                uiState.selectedCentralView = .editPayer
+                appState.selectedCentralView = .editPayer
             }
             
             Button("Edit Payee") {
-                uiState.selectedCentralView = .editPayee
+                appState.selectedCentralView = .editPayee
             }
         }
         .buttonStyle( ItMkButton() )
         .sheet(isPresented: $showingAddTransactionSheet) {
-                EditTransactionView()
+                EditTransactionSheet()
         }
         .sheet(isPresented: $showingBrowseTransactionsView) {
                 BrowseTransactionsView()

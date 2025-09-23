@@ -10,17 +10,17 @@ import ItMkLibrary
 
 struct InspectorViews: View {
     
-    @Environment(UIState.self) var uiState
+    @Environment(AppState.self) var appState
     
     // MARK: --- Body
     var body: some View {
         
         VStack (spacing: 0) {
             
-            switch uiState.selectedInspectorView {
+            switch appState.selectedInspectorView {
                 
-            case .InspectorViewOne:
-                InspectorViewOne()
+            case .viewTransaction:
+                InspectTransaction()
                 
             case .InspectorViewTwo:
                 InspectorViewTwo()

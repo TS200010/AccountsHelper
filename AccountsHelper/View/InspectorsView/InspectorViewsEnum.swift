@@ -8,7 +8,7 @@
 enum InspectorViewsEnum: String {
     
     case emptyView
-    case InspectorViewOne
+    case viewTransaction
     case InspectorViewTwo
     case InspectorViewThree
 }

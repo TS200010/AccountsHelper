@@ -25,8 +25,10 @@ import ItMkLibrary
     
     static func fromString( _ s: String ) -> Payer {
         switch s {
-        case "Tony":    return .tony
-        case "Yokko":   return .yokko
+        case "Tony":                return .tony
+        case "Yokko":               return .yokko
+        case "ANTHONY J STANNERS":  return .tony
+        case "YOSHIKO STANNERS":    return .yokko
         default:        return .unknown
         }
     }
