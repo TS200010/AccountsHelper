@@ -39,8 +39,12 @@ struct CentralViews: View {
                 Text("Not implemented on iOS" )
                 #endif
                 
-            case .browseAMEXTransactions:
-                Text("Remove this View")
+            case .browseCategories:
+#if os(macOS)
+BrowseCategoriesView()
+#else
+Text("Not implemented on iOS" )
+#endif
                 
             case .editTransaction:
                 //                EditTransactionViewOld()

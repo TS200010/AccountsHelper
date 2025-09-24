@@ -40,7 +40,6 @@ struct NavigatorEditAddView: View {
             Button("Import AMEX CSV Transactions") {
                 appState.selectedCentralView = .AMEXCSVImport
             }
-
             
             Button("Browse Transactions") {
                 #if os(macOS)
@@ -52,9 +51,10 @@ struct NavigatorEditAddView: View {
                 
             }
             
-            Button("Browse AMEX Transactions") {
+            
+            Button("Browse Categories") {
                 #if os(macOS)
-                appState.selectedCentralView = .browseAMEXTransactions
+                appState.selectedCentralView = .browseCategories
                 #else
                 appState.selectedCentralView = .browseTransactions
                 showingBrowseTransactionsView = true

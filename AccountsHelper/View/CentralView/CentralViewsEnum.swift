@@ -23,7 +23,7 @@ enum CentralViewsEnum: String {
     case reconcileTransactions      = "Reconcile Transactions"
     
     case browseTransactions         = "Browse Transactions"
-    case browseAMEXTransactions     = "Browse AMEX Transactions"
+    case browseCategories           = "Browse Categories"
     case browseCurrencies           = "Browse Currencies"
     case browsePayees               = "Browse Payees"
     case browsePayers               = "Browse Payers"
