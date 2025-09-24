@@ -13,6 +13,7 @@ import ItMkLibrary
 
 @objc enum Category: Int32, CaseIterable, Codable, HasStringRepresentation, CustomStringConvertible {
     
+    // Do not use zero as it is also effectively unknown
     case Spare1             = 1
     case GardenHome         = 2
     case Insurance          = 3

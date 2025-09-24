@@ -5,6 +5,8 @@
 //  Created by Anthony Stanners on 24/09/2025.
 //
 
+
+
 import Foundation
 
 import SwiftUI
@@ -18,6 +20,13 @@ struct BrowseCategoriesView: View {
     ) private var mappings: FetchedResults<CategoryMapping>
 
     @State private var selectedMappingIDs = Set<NSManagedObjectID>()
+    
+    
+    private func manualRescanUnknown() {
+        let matcher = CategoryMatcher(context: viewContext)
+        // This will reapply mappings to unknown transactions (runs on the context queue)
+        matcher.reapplyMappingsToUnknownTransactions()
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -25,6 +34,13 @@ struct BrowseCategoriesView: View {
             statusBar
         }
         .frame(minWidth: 400, minHeight: 500)
+        .toolbar {
+            ToolbarItem(placement: .automatic) {
+                Button(action: { manualRescanUnknown() }) {
+                    Label("Rescan unknown transactions", systemImage: "arrow.triangle.2.circlepath")
+                }
+            }
+        }
     }
 
     // MARK: - Table
