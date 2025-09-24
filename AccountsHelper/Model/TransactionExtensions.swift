@@ -8,6 +8,61 @@
 import Foundation
 import CoreData
 
+/*
+extension Transaction {
+
+    @nonobjc public class func fetchRequest() -> NSFetchRequest<Transaction> {
+        return NSFetchRequest<Transaction>(entityName: "Transaction")
+    }
+
+    @NSManaged public var accountNumber: String?
+    @NSManaged public var address: String?
+    @NSManaged public var categoryCD: Int32
+    @NSManaged public var commissionAmountCD: Int32
+    @NSManaged public var currencyCD: Int32
+    @NSManaged public var debitCreditCD: Int32
+    @NSManaged public var exchangeRateCD: Int32
+    @NSManaged public var explanation: String?
+    @NSManaged public var extendedDetails: String?
+    @NSManaged public var payee: String?
+    @NSManaged public var payerCD: Int32
+    @NSManaged public var paymentMethodCD: Int32
+    @NSManaged public var reference: String?
+    @NSManaged public var splitAmountCD: Int32
+    @NSManaged public var splitCategoryCD: Int32
+    @NSManaged public var timestamp: Date?
+    @NSManaged public var transactionDate: Date?
+    @NSManaged public var txAmountCD: Int32
+
+}
+ */
+/*
+ | --------------------------- | --------------- | -------------------------------------------------------- |
+ | Property / Method           | Type            | Description                                              |
+ | --------------------------- | --------------- | -------------------------------------------------------- |
+ | `txAmount`                  | `Decimal`       | Transaction amount                                       |
+ | `splitAmount`               | `Decimal`       | First split amount                                       |
+ | `splitRemainderAmount`      | `Decimal`       | Computed remainder = `txAmount - splitAmount`            |
+ | `commissionAmount`          | `Decimal`       | Commission amount                                        |
+ | `exchangeRate`              | `Decimal`       | Exchange rate                                            |
+ | `totalInGBP`                | `Decimal`       | `(txAmount * exchangeRate) + commissionAmount` (rounded) |
+ | --------------------------- | --------------- | -------------------------------------------------------- |
+ | `category`                  | `Category`      | Transaction category                                     |
+ | `splitCategory`             | `Category`      | Split transaction category                               |
+ | `splitRemainderCategory`    | `Category`      | Category for the remainder (same as main category)       |
+ | --------------------------- | --------------- | -------------------------------------------------------- |
+ | `currency`                  | `Currency`      | Transaction currency                                     |
+ | `debitCredit`               | `DebitCredit`   | Debit or credit type                                     |
+ | `payer`                     | `Payer`         | Who paid the transaction                                 |
+ | `paymentMethod`             | `PaymentMethod` | Payment method used                                      |
+ | --------------------------- | --------------- | -------------------------------------------------------- |
+ | `txAmountAsString()`        | `String?`       | Formatted transaction amount                             |
+ | `splitRemainderAsString()`  | `String?`       | Formatted remainder amount                               |
+ | `exchangeRateAsString()`    | `String?`       | Formatted exchange rate                                  |
+ | `transactionDateAsString()` | `String?`       | Formatted transaction date                               |
+ | --------------------------- | --------------- | -------------------------------------------------------- |
+*/
+
 extension Transaction {
     
 //    public var commissionAmount: Decimal {
@@ -126,7 +181,7 @@ extension Transaction {
     }
     
     var totalInGBP: Decimal {
-        let converted = txAmount * exchangeRate
+        let converted = txAmount / exchangeRate
         let total = converted + commissionAmount
         var roundedTotal = Decimal()
         var totalCopy = total

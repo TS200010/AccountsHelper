@@ -5,13 +5,6 @@
 //  Created by Anthony Stanners on 16/09/2025.
 //
 
-//
-//  InspectTransaction.swift
-//  AccountsHelper
-//
-//  Created by Anthony Stanners on 16/09/2025.
-//
-
 import SwiftUI
 import CoreData
 
@@ -40,24 +33,35 @@ struct InspectTransaction: View {
                         inspectorSection("General") {
                             transactionRow("Timestamp:", transaction.timestamp?.formatted(date: .abbreviated, time: .standard) ?? "N/A")
                             Divider()
-                            transactionRow("Transaction Date:", transaction.transactionDate?.formatted(date: .abbreviated, time: .standard) ?? "N/A")
-                            Divider()
+                            transactionRow("TX Date:", transaction.transactionDate?.formatted(date: .abbreviated, time: .standard) ?? "N/A")
+                        }
+                        
+                        // MARK: - Categories Section (optional)
+                        inspectorSection("Categories") {
                             transactionRow("Category:", transaction.category.description)
                             Divider()
-                            transactionRow("Split Category:", transaction.splitCategory.description)
+                            transactionRow("Split Cat:", transaction.splitCategory.description)
+                            Divider()
+                            transactionRow("Rem Cat:", transaction.splitRemainderCategory.description)
                         }
                         
                         // MARK: - Amounts Section
                         inspectorSection("Amounts") {
                             transactionRow("Currency:", transaction.currency.description)
                             Divider()
-                            transactionRow("Debit/Credit:", transaction.debitCredit.description)
+                            transactionRow("DR/CR:", transaction.debitCredit.description)
                             Divider()
-                            transactionRow("Exchange Rate:", String(format: "%.2f", (transaction.exchangeRate as NSDecimalNumber?)?.doubleValue ?? 0))
+                            transactionRow("Fx:", transaction.exchangeRateAsString() ?? "N/A")
                             Divider()
-                            transactionRow("Split Amount:", String(format: "%.2f", (transaction.splitAmount as NSDecimalNumber?)?.doubleValue ?? 0))
+                            transactionRow("Split Amt:", String(format: "%.2f", (transaction.splitAmount as NSDecimalNumber?)?.doubleValue ?? 0))
                             Divider()
-                            transactionRow("Transaction Amount:", String(format: "%.2f", (transaction.txAmount as NSDecimalNumber?)?.doubleValue ?? 0))
+                            transactionRow("Rem Amt:", String(format: "%.2f", (transaction.splitRemainderAmount as NSDecimalNumber?)?.doubleValue ?? 0))
+                            Divider()
+                            transactionRow("TX Amt:", String(format: "%.2f", (transaction.txAmount as NSDecimalNumber?)?.doubleValue ?? 0))
+                            Divider()
+                            transactionRow("Comm Amt:", String(format: "%.2f", (transaction.commissionAmount as NSDecimalNumber?)?.doubleValue ?? 0))
+                            Divider()
+                            transactionRow("Total in GBP:", String(format: "%.2f", (transaction.totalInGBP as NSDecimalNumber?)?.doubleValue ?? 0))
                         }
                         
                         // MARK: - Parties Section
@@ -66,14 +70,21 @@ struct InspectTransaction: View {
                             Divider()
                             transactionRow("Payer:", transaction.payer.description)
                             Divider()
-                            transactionRow("Payment Method:", transaction.paymentMethod.description)
+                            transactionRow("Pmt Method:", transaction.paymentMethod.description)
                         }
                         
-                        // MARK: - Notes Section
-                        inspectorSection("Notes") {
+                        // MARK: --- Additional Info Section
+                        inspectorSection("Additional Info") {
+                            transactionRow("A/C Number:", transaction.accountNumber ?? "N/A")
+                            Divider()
+                            transactionRow("Address:", transaction.address ?? "N/A")
+                            Divider()
+                            transactionRow("Reference:", transaction.reference ?? "N/A")
+                            Divider()
+                            transactionRow("Extended", transaction.extendedDetails ?? "N/A")
+                            Divider()
                             transactionRow("Explanation:", transaction.explanation ?? "N/A")
                         }
-                        
                         Spacer(minLength: 20)
                     }
                     .padding(20)
@@ -112,7 +123,7 @@ struct InspectTransaction: View {
             Text(label)
                 .font(.system(.body, weight: .medium))
                 .foregroundColor(.secondary)
-                .frame(minWidth: 120, alignment: .trailing) // minimum width to avoid cropping
+                .frame(minWidth: 80, alignment: .trailing) // minimum width to avoid cropping
                 .alignmentGuide(.leading) { d in d[.leading] }
             Text(value)
                 .font(.system(.body))
