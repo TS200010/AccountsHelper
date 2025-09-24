@@ -45,28 +45,52 @@ class AppState {
     
     var selectedNavigatorView: NavigatorViewsEnum = .emptyView
     
+    var selectedCentralView: CentralViewsEnum = .emptyView
+    private var savedCentralViewInternal: CentralViewsEnum? = nil
+    var savedCentralView: CentralViewsEnum? { savedCentralViewInternal }
+    
+    var selectedInspectorView: InspectorViewsEnum = .emptyView
+    
     // MARK: --- Central View Management
     // TODO: Make this a bit more general purpose - for the other views too.
-    var selectedCentralView: CentralViewsEnum = .emptyView
-    private var savedCentralView: CentralViewsEnum = .emptyView
-    func pushCentralView( _ view: CentralViewsEnum ) -> Void {
-        savedCentralView = selectedCentralView
+//    private var savedCentralView: CentralViewsEnum = .emptyView
+//    func pushCentralView( _ view: CentralViewsEnum ) -> Void {
+//        savedCentralView = selectedCentralView
+//        selectedCentralView = view
+//    }
+    func pushCentralView(_ view: CentralViewsEnum) {
+        savedCentralViewInternal = selectedCentralView
         selectedCentralView = view
     }
-    // Full replacement (reset everything)
+//    func replaceCentralView(with view: CentralViewsEnum) {
+//        if view == .addTransaction {
+//            selectedTransactionID = nil
+//        }
+//        savedCentralView = .emptyView
+//        selectedCentralView = view
+//    }
     func replaceCentralView(with view: CentralViewsEnum) {
         if view == .addTransaction {
             selectedTransactionID = nil
         }
-        savedCentralView = .emptyView
+        savedCentralViewInternal = nil
         selectedCentralView = view
     }
-    func popCentralView() -> Void {
-        selectedCentralView = savedCentralView
-        savedCentralView = .emptyView
+//    func popCentralView() -> Void {
+//        selectedCentralView = savedCentralView
+//        savedCentralView = .emptyView
+//    }
+    func popCentralView() {
+        if let saved = savedCentralViewInternal {
+            selectedCentralView = saved
+            savedCentralViewInternal = nil
+        }
     }
     
-    var selectedInspectorView: InspectorViewsEnum = .emptyView
+    // MARK: --- Inspector View Management
+    func replaceInspectorView(with view: InspectorViewsEnum) {
+        selectedInspectorView = view
+    }
     
 //    func reset() -> Void {
 //        selectedTransactio = nil

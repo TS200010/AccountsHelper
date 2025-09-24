@@ -266,6 +266,8 @@ struct EditTransactionView: View {
                 focusedField = nil
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity) // fills parent
+//        .background(Color(Color.platformTextBackgroundColor))
         .onAppear {
             guard !hasLoaded else { return }
             hasLoaded = true
