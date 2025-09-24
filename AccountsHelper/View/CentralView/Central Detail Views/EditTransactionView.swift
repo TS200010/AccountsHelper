@@ -19,7 +19,7 @@ enum AmountFieldIdentifier: Hashable {
 }
 
 // MARK: --- EditTransactionView
-struct EditTransactionSheet: View {
+struct EditTransactionView: View {
     
 //    @State var transaction: Transaction?
     
@@ -30,6 +30,7 @@ struct EditTransactionSheet: View {
     @FocusState private var focusedField: AmountFieldIdentifier?
 
 //    private var existingTransaction: Transaction?
+    // TODO: --- Consider removing the optional
     @State private var existingTransaction: Transaction?
     
     // MARK: --- State Variables
@@ -184,7 +185,10 @@ struct EditTransactionSheet: View {
                 // MARK: --- Split Transaction
                 if !splitTransaction {
                     Button("Split Transaction") {
-                        splitTransaction.toggle()
+                        splitTransaction = true
+                        let half = (TXAmount / 2).rounded(scale: 2, roundingMode: .up)
+                        splitAmount = half
+                        splitCategory = .unknown
                     }
                     .buttonStyle(.borderedProminent)
                 } else {
@@ -231,6 +235,7 @@ struct EditTransactionSheet: View {
                     Spacer()
                     
                     Button("Don't Save", role: .cancel) {
+                        appState.selectedTransactionID = nil   // Clear selection
                         appState.popCentralView( )
 //                        appState.selectedCentralView = .emptyView
 //                        dismiss()
@@ -239,6 +244,7 @@ struct EditTransactionSheet: View {
                     
                     Button("Save") {
                         saveTransaction()
+                        appState.selectedTransactionID = nil   // Clear selection
                         if existingTransaction == nil {
                             resetForm() // only reset when adding a new one
                         }
@@ -287,6 +293,9 @@ struct EditTransactionSheet: View {
                 // New transaction: keep defaults (already set in @State)
                 resetForm()
             }
+        }
+        .onDisappear {
+            appState.selectedTransactionID = nil
         }
     }
 }

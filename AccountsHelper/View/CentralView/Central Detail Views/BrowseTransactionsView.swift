@@ -171,7 +171,7 @@ struct BrowseTransactionsView: View {
 
     @State private var selectedTransactionIDs = Set<NSManagedObjectID>()
     @State private var selectedTransaction: Transaction?
-    @State private var showingEditTransactionSheet = false
+    @State private var showingEditTransactionView = false
     @State private var showingDeleteConfirmation = false
     @State private var transactionsToDelete: Set<NSManagedObjectID> = []
 
@@ -199,8 +199,8 @@ struct BrowseTransactionsView: View {
             statusBar
         }
         .toolbar { toolbarItems }
-        .sheet(isPresented: $showingEditTransactionSheet) {
-            EditTransactionSheet(transaction: selectedTransaction)
+        .sheet(isPresented: $showingEditTransactionView) {
+            EditTransactionView(transaction: selectedTransaction)
         }
         .confirmationDialog(
             "Are you sure?",
@@ -236,10 +236,10 @@ struct BrowseTransactionsView: View {
                 .width(min: 50, ideal: 80, max: 100)
             
             TableColumn("Split") { row in multiLineTableCell(row.displaySplitAmount, for: row) }
-                .width(min: 200, ideal: 2100, max: 300)
+                .width(min: 200, ideal: 200, max: 300)
 
             TableColumn("Payee") { row in tableCell(row.payee, for: row) }
-                .width(min: 50, ideal: 80, max: 100)
+                .width(min: 50, ideal: 100, max: 300)
 
 #else
             TableColumn("Date") { row in tableCell(row.transactionDate, for: row) }

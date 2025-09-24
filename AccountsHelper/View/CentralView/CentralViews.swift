@@ -12,78 +12,182 @@ struct CentralViews: View {
     
     @Environment(AppState.self) var appState
     
-    //TODO: See if we need this. We probably dont if we follow List selection binding
-//    func tapAction( rowTapped: Int ) -> Void {
-//        appState.selectedRecord = rowTapped
-//
-//    }
-    
-    
     // MARK: --- Body
     var body: some View {
-        
-        VStack (spacing: 0) {
-            
+        ZStack {
             switch appState.selectedCentralView {
                 
             case .emptyView:
-                Text("Select an action from the toolbar" )
+                Text("Select an action from the toolbar")
+                    .id(UUID())
+                    .transition(.opacity)
                 
             case .addTransaction:
-                EditTransactionSheet()
+                EditTransactionView()
+                    .id(UUID())
+                    .transition(.opacity)
+                
+            case .editTransaction:
+                EditTransactionView()
+                    .id(UUID())
+                    .transition(.opacity)
                 
             case .AMEXCSVImport:
                 #if os(macOS)
                 CSVImportView()
+                    .id(UUID())
+                    .transition(.opacity)
+
                 #else
-                Text("Not implemented on iOS" )
+                Text("Not implemented on iOS")
+                    .id(UUID())
+                    .transition(.opacity)
                 #endif
                 
             case .browseCategories:
-#if os(macOS)
-BrowseCategoriesView()
-#else
-Text("Not implemented on iOS" )
-#endif
-                
-            case .editTransaction:
-                //                EditTransactionViewOld()
-                EditTransactionSheet()
+                #if os(macOS)
+                BrowseCategoriesView()
+                    .id(UUID())
+                    .transition(.opacity)
+                #else
+                Text("Not implemented on iOS")
+                    .id(UUID())
+                    .transition(.opacity)
+                #endif
                 
             case .editCurrency:
                 Text("Edit Currency View")
+                    .id(UUID())
+                    .transition(.opacity)
                 
             case .editPayee:
                 Text("Edit Payee View")
+                    .id(UUID())
+                    .transition(.opacity)
                 
             case .editPayer:
                 Text("Edit Payer View")
+                    .id(UUID())
+                    .transition(.opacity)
                 
             case .reconcileTransactions:
                 Text("Reconcile Transactions View")
+                    .id(UUID())
+                    .transition(.opacity)
                 
             case .browseTransactions:
                 BrowseTransactionsView()
+                    .id(UUID())
+                    .transition(.opacity)
                 
             case .browseCurrencies:
                 Text("Browse Currencies View")
+                    .id(UUID())
+                    .transition(.opacity)
                 
             case .browsePayees:
                 Text("Browse Payees View")
+                    .id(UUID())
+                    .transition(.opacity)
                 
             case .browsePayers:
                 Text("Browse Payers View")
-                
+                    .id(UUID())
+                    .transition(.opacity)
                 
             case .reports:
                 Text("Reports View")
-                
+                    .id(UUID())
+                    .transition(.opacity)
             }
-            
-        } .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background( Color( Color.platformTextBackgroundColor ) )
-          .if( gViewCheck ) { view in view.border( .red )}
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(Color.platformTextBackgroundColor))
+        .animation(.default, value: appState.selectedCentralView)
     }
 }
 
 
+
+//import SwiftUI
+//import ItMkLibrary
+//
+//struct CentralViews: View {
+//    
+//    @Environment(AppState.self) var appState
+//    
+//    //TODO: See if we need this. We probably dont if we follow List selection binding
+////    func tapAction( rowTapped: Int ) -> Void {
+////        appState.selectedRecord = rowTapped
+////
+////    }
+//    
+//    
+//    // MARK: --- Body
+//    var body: some View {
+//        
+//        VStack (spacing: 0) {
+//            
+//            switch appState.selectedCentralView {
+//                
+//            case .emptyView:
+//                Text("Select an action from the toolbar" )
+//                
+//            case .addTransaction:
+//                EditTransactionView()
+//                
+//            case .AMEXCSVImport:
+//                #if os(macOS)
+//                CSVImportView()
+//                #else
+//                Text("Not implemented on iOS" )
+//                #endif
+//                
+//            case .browseCategories:
+//#if os(macOS)
+//BrowseCategoriesView()
+//#else
+//Text("Not implemented on iOS" )
+//#endif
+//                
+//            case .editTransaction:
+//                //                EditTransactionViewOld()
+//                EditTransactionView()
+//                
+//            case .editCurrency:
+//                Text("Edit Currency View")
+//                
+//            case .editPayee:
+//                Text("Edit Payee View")
+//                
+//            case .editPayer:
+//                Text("Edit Payer View")
+//                
+//            case .reconcileTransactions:
+//                Text("Reconcile Transactions View")
+//                
+//            case .browseTransactions:
+//                BrowseTransactionsView()
+//                
+//            case .browseCurrencies:
+//                Text("Browse Currencies View")
+//                
+//            case .browsePayees:
+//                Text("Browse Payees View")
+//                
+//            case .browsePayers:
+//                Text("Browse Payers View")
+//                
+//                
+//            case .reports:
+//                Text("Reports View")
+//                
+//            }
+//            
+//        } .frame(maxWidth: .infinity, maxHeight: .infinity)
+//            .background( Color( Color.platformTextBackgroundColor ) )
+//          .if( gViewCheck ) { view in view.border( .red )}
+//    }
+//}
+//
+//

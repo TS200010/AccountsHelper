@@ -15,8 +15,8 @@ struct NavigatorEditAddView: View {
     @Environment(\.managedObjectContext) private var viewContext
     
     // MARK: --- Properties
-    @State private var showingAddTransactionSheet = false
-    @State private var showingBrowseTransactionsView = false
+//    @State private var showingAddTransactionSheet = false
+//    @State private var showingBrowseTransactionsView = false
     
     // MARK: --- Body
     var body: some View {
@@ -24,7 +24,8 @@ struct NavigatorEditAddView: View {
         VStack {
             Button("Add Transaction") {
                 #if os(macOS)
-                appState.selectedCentralView = .addTransaction
+                appState.replaceCentralView(with: .addTransaction)
+//                appState.selectedCentralView = .addTransaction
                 #else
                 appState.selectedCentralView = .addTransaction
 //                showingEditAddTransactionSheet = true
@@ -38,12 +39,14 @@ struct NavigatorEditAddView: View {
             .disabled( gUseLiveStore )
             
             Button("Import AMEX CSV Transactions") {
-                appState.selectedCentralView = .AMEXCSVImport
+                appState.replaceCentralView(with: .AMEXCSVImport)
+//                appState.selectedCentralView = .AMEXCSVImport
             }
             
             Button("Browse Transactions") {
                 #if os(macOS)
-                appState.selectedCentralView = .browseTransactions
+                appState.replaceCentralView(with: .browseTransactions)
+//                appState.selectedCentralView = .browseTransactions
                 #else
                 appState.selectedCentralView = .browseTransactions
                 showingBrowseTransactionsView = true
@@ -54,7 +57,8 @@ struct NavigatorEditAddView: View {
             
             Button("Browse Categories") {
                 #if os(macOS)
-                appState.selectedCentralView = .browseCategories
+                appState.replaceCentralView(with: .browseCategories)
+//                appState.selectedCentralView = .browseCategories
                 #else
                 appState.selectedCentralView = .browseTransactions
                 showingBrowseTransactionsView = true
@@ -63,23 +67,26 @@ struct NavigatorEditAddView: View {
             }
 
             Button("Edit Currency") {
-                appState.selectedCentralView = .editCurrency
+                appState.replaceCentralView(with: .editCurrency)
+//                appState.selectedCentralView = .editCurrency
             }
 
             Button("Edit Payer") {
-                appState.selectedCentralView = .editPayer
+                appState.replaceCentralView(with: .editPayer)
+//                appState.selectedCentralView = .editPayer
             }
             
             Button("Edit Payee") {
-                appState.selectedCentralView = .editPayee
+                appState.replaceCentralView(with: .editPayee)
+//                appState.selectedCentralView = .editPayee
             }
         }
         .buttonStyle( ItMkButton() )
-        .sheet(isPresented: $showingAddTransactionSheet) {
-                EditTransactionSheet()
-        }
-        .sheet(isPresented: $showingBrowseTransactionsView) {
-                BrowseTransactionsView()
-        }
+//        .sheet(isPresented: $showingAddTransactionSheet) {
+//                EditTransactionView()
+//        }
+//        .sheet(isPresented: $showingBrowseTransactionsView) {
+//                BrowseTransactionsView()
+//        }
     }
 }

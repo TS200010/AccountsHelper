@@ -53,6 +53,14 @@ class AppState {
         savedCentralView = selectedCentralView
         selectedCentralView = view
     }
+    // Full replacement (reset everything)
+    func replaceCentralView(with view: CentralViewsEnum) {
+        if view == .addTransaction {
+            selectedTransactionID = nil
+        }
+        savedCentralView = .emptyView
+        selectedCentralView = view
+    }
     func popCentralView() -> Void {
         selectedCentralView = savedCentralView
         savedCentralView = .emptyView

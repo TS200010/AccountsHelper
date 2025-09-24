@@ -41,24 +41,43 @@ struct BrowseCategoriesView: View {
                 }
             }
         }
+        .onAppear {
+            for m in mappings {
+                print("Mapping \(m.inputString ?? "") -> usageCount: \(m.usageCount)")
+            }
+        }
     }
 
     // MARK: - Table
     private var categoriesTable: some View {
         Table(mappingRows, selection: $selectedMappingIDs) {
-            TableColumn("Category") { row in
-                Text(row.category.description)
+            TableColumn("Category") { mapping in
+                Text(mapping.category.description)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
-            TableColumn("Input String") { row in
-                Text(row.inputString)
+            TableColumn("Input String") { mapping in
+                Text(mapping.inputString ?? "")
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
-            TableColumn("Usage Count") { row in
-                Text("\(row.usageCount)")
+            TableColumn("Usage Count") { mapping in
+                Text("\(mapping.usageCount)")
                     .frame(maxWidth: .infinity, alignment: .trailing)
             }
         }
+//        Table(mappingRows, selection: $selectedMappingIDs) {
+//            TableColumn("Category") { row in
+//                Text(row.category.description)
+//                    .frame(maxWidth: .infinity, alignment: .leading)
+//            }
+//            TableColumn("Input String") { row in
+//                Text(row.inputString)
+//                    .frame(maxWidth: .infinity, alignment: .leading)
+//            }
+//            TableColumn("Usage Count") { row in
+//                Text("\(row.usageCount)")
+//                    .frame(maxWidth: .infinity, alignment: .trailing)
+//            }
+//        }
         .font(.system(.body, design: .monospaced))
         .frame(minHeight: 300)
         .tableStyle(.inset)
@@ -91,10 +110,3 @@ struct CategoryMappingRow: Identifiable, Hashable {
     var usageCount: Int { Int(mapping.usageCount) }
 }
 
-// MARK: - Preview
-struct BrowseCategoriesView_Previews: PreviewProvider {
-    static var previews: some View {
-        BrowseCategoriesView()
-            .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
-    }
-}
