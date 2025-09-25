@@ -43,7 +43,7 @@ class AppState {
     
     var selectedTransactionID: NSManagedObjectID? = nil
     
-    var selectedNavigatorView: NavigatorViewsEnum = .emptyView
+    var selectedNavigatorView: NavigatorViewsEnum = .edit
     
     var selectedCentralView: CentralViewsEnum = .emptyView
     private var savedCentralViewInternal: CentralViewsEnum? = nil

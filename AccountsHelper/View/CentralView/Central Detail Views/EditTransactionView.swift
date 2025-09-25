@@ -43,7 +43,7 @@ struct EditTransactionView: View {
     @State private var payee: String = ""
     @State private var payer: Payer = .tony
     @State private var paymentMethod: PaymentMethod = .AMEX
-    @State private var TXAmount: Decimal = Decimal(0)
+    @State private var txAmount: Decimal = Decimal(0)
     @State private var splitAmount: Decimal = Decimal(0)
     @State private var splitTransaction: Bool = false
     @State private var transactionDate: Date = Date()
@@ -65,7 +65,7 @@ struct EditTransactionView: View {
         _payee           = State(initialValue: transaction?.payee ?? "")
         _payer           = State(initialValue: transaction?.payer ?? .tony)
         _paymentMethod   = State(initialValue: transaction?.paymentMethod ?? .AMEX)
-        _TXAmount        = State(initialValue: transaction?.txAmount ?? Decimal(0))
+        _txAmount        = State(initialValue: transaction?.txAmount ?? Decimal(0))
         _splitAmount     = State(initialValue: transaction?.splitAmount ?? Decimal(0))
         _transactionDate = State(initialValue: transaction?.transactionDate ?? Date.distantPast)
         _splitTransaction = State(initialValue: transaction?.splitAmount != Decimal(0)) // optional
@@ -81,12 +81,12 @@ struct EditTransactionView: View {
         isCategoryValid()
     }
     
-    func isTXAmountValid() -> Bool { TXAmount != Decimal(0) }
+    func isTXAmountValid() -> Bool { txAmount != Decimal(0) }
     func isCategoryValid() -> Bool { category != .unknown }
     func isExchangeRateValid() -> Bool { currency == .GBP || (exchangeRate != Decimal(0) && (currency == .JPY ? exchangeRate < 300 : true)) }
     func isDebitCreditValid() -> Bool { debitCredit != .unknown }
     func isPayeeValid() -> Bool { !payee.isEmpty }
-    func isSplitAmountValid() -> Bool { splitAmount != 0 && splitAmount < TXAmount }
+    func isSplitAmountValid() -> Bool { splitAmount != 0 && splitAmount < txAmount }
     func isTransactionDateValid() -> Bool { transactionDate <= Date() }
     
     // MARK: --- Reset
@@ -100,7 +100,7 @@ struct EditTransactionView: View {
         payee = ""
         payer = .tony
         paymentMethod = .AMEX
-        TXAmount = Decimal(0)
+        txAmount = Decimal(0)
         splitAmount = Decimal(0)
         splitTransaction = false
         transactionDate = Date()
@@ -120,7 +120,7 @@ struct EditTransactionView: View {
         transaction.payee = payee
         transaction.payer = payer
         transaction.paymentMethod = paymentMethod
-        transaction.txAmount = TXAmount
+        transaction.txAmount = txAmount
         transaction.splitAmount = splitAmount
         transaction.transactionDate = transactionDate
         transaction.timestamp = timeStamp

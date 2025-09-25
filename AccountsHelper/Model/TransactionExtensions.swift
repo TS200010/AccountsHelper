@@ -1,5 +1,5 @@
 //
-//  CoredataExtensions.swift
+//  TransactionExtensions.swift
 //  AccountsHelper
 //
 //  Created by Anthony Stanners on 13/09/2025.
@@ -171,6 +171,53 @@ extension Transaction {
         var totalCopy = total
         NSDecimalRound(&roundedTotal, &totalCopy, 2, .plain)
         return roundedTotal
+    }
+}
+
+// MARK: --- Extensions for validitiy chexking
+extension Transaction {
+    
+    /// Returns true if all key transaction fields are valid
+    func isValid() -> Bool {
+        return isTXAmountValid()
+        && isCategoryValid()
+        && isExchangeRateValid()
+        && isDebitCreditValid()
+        && isPayeeValid()
+        && isSplitAmountValid()
+        && isTransactionDateValid()
+    }
+    
+    // MARK: - Individual checks
+    
+    func isTXAmountValid() -> Bool {
+        txAmount != Decimal(0)
+    }
+    
+    func isCategoryValid() -> Bool {
+        category != .unknown
+    }
+    
+    func isExchangeRateValid() -> Bool {
+        currency == .GBP
+        || (exchangeRate != Decimal(0)
+            && (currency == .JPY ? exchangeRate < 300 : true))
+    }
+    
+    func isDebitCreditValid() -> Bool {
+        debitCredit != .unknown
+    }
+    
+    func isPayeeValid() -> Bool {
+        !(payee?.isEmpty ?? true)
+    }
+    
+    func isSplitAmountValid() -> Bool {
+        splitAmount != 0 && splitAmount < txAmount
+    }
+    
+    func isTransactionDateValid() -> Bool {
+        (transactionDate ?? Date()) <= Date()
     }
 }
 
