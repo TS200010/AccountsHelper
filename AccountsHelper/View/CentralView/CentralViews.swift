@@ -65,7 +65,7 @@ struct CentralViews: View {
             Text("Reports View")
         case .AMEXCSVImport:
             #if os(macOS)
-            CSVImportView()
+            AMEXCSVImportView()
             #else
             Text("Not implemented on iOS")
             #endif

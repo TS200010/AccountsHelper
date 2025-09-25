@@ -11,144 +11,263 @@ import CoreData
 
 class AMEXCSVImporter {
     
-    static func importCSVToCoreData(fileURL: URL, context: NSManagedObjectContext) {
+    
+    static func parseCSVToTransactionStruct(fileURL: URL) -> [TransactionStruct] {
         
-        let matcher = CategoryMatcher(context: context)
+        var transactions: [TransactionStruct] = []
+        
+        print("Starting CSV parse: \(fileURL.path)")
         
         do {
             let csvData = try String(contentsOf: fileURL, encoding: .utf8)
             let rows = parseCSV(csvData: csvData)
-            
-            guard let headers = rows.first else { return }
-            
+            guard let headers = rows.first else { return [] }
+
+            let matcher = CategoryMatcher(context: PersistenceController.shared.container.viewContext)
+
             for row in rows.dropFirst() {
+                guard row.count == headers.count else { continue }
                 
-                // Temps to build an address
+                var tx = TransactionStruct()
+                
+                // Temp storage
+                var txAmountTemp: Decimal = 0
+                var extendedDetailsTemp: String?
                 var addressTemp: String = ""
-                var postcodeTemp: String = ""
-                var townCityTemp: String = ""
-                var countryTemp: String = ""
-                
-                // Temps to process amount and extendedDetails correctly one all have been read
-                var txAmountTemp: Decimal = Decimal(0)
-//                var extendedDetailsTemp: String = ""
-                var txAmountParsedTemp: Decimal = Decimal(0)
-                var exchangeRateParsedTemp: Decimal = Decimal(0)
-                var commissionAmountParsedTemp: Decimal = Decimal(0)
+                var txAmountParsedTemp: Decimal = 0
+                var commissionAmountParsedTemp: Decimal = 0
+                var exchangeRateParsedTemp: Decimal = 0
                 var currencyParsedTemp: Currency = .unknown
                 
-                guard row.count == headers.count else {
-                    print("Malformed row \(row)\n")
-                    continue
-                } // skip malformed rows
-                
-                let transaction = Transaction(context: context)
-                
-                // We need to save txAmount and extendedDetails for processing after
-                // ... all the fields have been processed
                 for (index, header) in headers.enumerated() {
                     let value = row[index].trimmingCharacters(in: .whitespacesAndNewlines)
-                    
-                    transaction.paymentMethod = .AMEX
                     
                     switch header.lowercased() {
                     case "date":
                         let formatter = DateFormatter()
                         formatter.dateFormat = "dd/MM/yyyy"
-                        transaction.transactionDate = formatter.date(from: value)
-                        
-//                    case "description":
-//                        transaction.payee = value
-                        
+                        tx.transactionDate = formatter.date(from: value)
                     case "description":
-                        transaction.payee = value
-                        
-                        // Automatically match a category
-                        let matchedCategory = matcher.matchCategory(for: value)
-                        if matchedCategory != .unknown {
-                            transaction.category = matchedCategory
-                        } else {
-                            transaction.category = .unknown
-                        }
-                        
-                    case "card member":
-                        transaction.payer = Payer( value )
-                        
-                    case "account #":
-                        transaction.accountNumber = value
-                        
+                        tx.payee = value
+                        tx.category = matcher.matchCategory(for: value)
                     case "amount":
-                        txAmountTemp  = Decimal(string: value.replacingOccurrences(of: ",", with: "")) ?? Decimal(999)
-                        
+                        txAmountTemp = Decimal(string: value.replacingOccurrences(of: ",", with: "")) ?? 0
                     case "extended details":
-                        transaction.extendedDetails = value
+                        extendedDetailsTemp = value
                         let parsed = parseExtendedDetails(value)
-                        print(parsed)
-                        txAmountParsedTemp = parsed.foreignSpendAmount ?? Decimal(0)
-                        commissionAmountParsedTemp = parsed.commissionAmount ?? Decimal(0)
-                        exchangeRateParsedTemp = parsed.exchangeRate ?? Decimal(0)
+                        txAmountParsedTemp = parsed.foreignSpendAmount ?? 0
+                        commissionAmountParsedTemp = parsed.commissionAmount ?? 0
+                        exchangeRateParsedTemp = parsed.exchangeRate ?? 1
                         currencyParsedTemp = parsed.foreignCurrency ?? .unknown
-                        
-                    case "appears on your statement as":
-                        // Ignore this field
-                        break
-//                        transaction.appearsOnStatementAs = value
-                        
                     case "address":
                         addressTemp = value
-                        
                     case "town/city":
-                        townCityTemp = value
-                        
+                        addressTemp += ", " + value
                     case "postcode":
-                        postcodeTemp = value
-                        
+                        addressTemp += ", " + value
                     case "country":
-                        countryTemp = value
-
+                        addressTemp += ", " + value
+                    case "card member":
+                        tx.payer = Payer(value)
                     case "reference":
-                        transaction.reference = value
-                    case "category":
-                        // Ignore this field
-                        break
-                        //                        transaction.category = value
+                        tx.reference = value
                     default:
                         break
                     }
                 }
-                // Timestamp
-                transaction.timestamp = Date()
                 
-                // Now prcoess fields we have had to wait for
-                // Address
-                transaction.address = addressTemp + ", " + townCityTemp + ", "  + postcodeTemp + ", " + countryTemp
-                
-                // Amount and Exchange Rate fields
-                if currencyParsedTemp == .GBP ||  currencyParsedTemp == .unknown {
-                    transaction.currency = .GBP
-                    transaction.exchangeRate = Decimal(1)
-                    transaction.txAmount = txAmountTemp
+                tx.address = addressTemp
+                tx.extendedDetails = extendedDetailsTemp
+                if currencyParsedTemp == .GBP || currencyParsedTemp == .unknown {
+                    tx.currency = .GBP
+                    tx.exchangeRate = 1
+                    tx.txAmount = txAmountTemp
                 } else {
-                    // This is a foreign currency transaction, we store the amount in foreign
-                    // ... currency so that we can later reconcile it to the receipt.
-                    // ... We add the commision when we retrieve a txAmount in GBP
-                    transaction.txAmount = txAmountParsedTemp
-                    transaction.currency = currencyParsedTemp
-                    transaction.exchangeRate = exchangeRateParsedTemp
-                    transaction.commissionAmount = commissionAmountParsedTemp
+                    tx.currency = currencyParsedTemp
+                    tx.exchangeRate = exchangeRateParsedTemp
+                    tx.txAmount = txAmountParsedTemp
+                    tx.commissionAmount = commissionAmountParsedTemp
                 }
-                transaction.debitCredit = txAmountTemp >= 0 ? .DR : .CR
+                
+                tx.debitCredit = txAmountTemp >= 0 ? .DR : .CR
+                transactions.append(tx)
             }
             
-            matcher.reapplyMappingsToUnknownTransactions()
-            
-            try context.save()
-            print("CSV import successful! Imported \(rows.count - 1) transactions.")
-            
         } catch {
-            print("Failed to read CSV file: \(error)")
+            print("Failed to read CSV: \(error)")
+        }
+        
+        return transactions
+    }
+
+    
+    static func findMergeCandidateInDatabase(newTx: TransactionStruct, context: NSManagedObjectContext) -> Transaction? {
+        guard let newDate = newTx.transactionDate else { return nil }
+        
+        let fetchRequest: NSFetchRequest<Transaction> = Transaction.fetchRequest()
+        
+        let startDate = Calendar.current.date(byAdding: .day, value: -7, to: newDate)!
+        let endDate = Calendar.current.date(byAdding: .day, value: 1, to: newDate)!
+       
+        let txAmountForPredicate = (newTx.txAmount * 100) as NSDecimalNumber
+        fetchRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+            NSPredicate(format: "txAmountCD == %@", txAmountForPredicate)
+//            NSPredicate(format: "payee == %@", newTx.payee ?? ""),
+//            NSPredicate(format: "paymentMethodCD == %d", newTx.paymentMethod.rawValue),
+//            NSPredicate(format: "transactionDate >= %@ AND transactionDate <= %@", startDate as NSDate, endDate as NSDate)
+        ])
+        
+        fetchRequest.fetchLimit = 1
+        
+        do {
+            let results = try context.fetch(fetchRequest)
+            return results.first
+        } catch {
+            print("Failed to fetch merge candidate: \(error)")
+            return nil
         }
     }
+
+    
+    
+//    static func importCSVToCoreData(fileURL: URL, context: NSManagedObjectContext) {
+//        
+//        let matcher = CategoryMatcher(context: context)
+//        
+//        do {
+//            let csvData = try String(contentsOf: fileURL, encoding: .utf8)
+//            let rows = parseCSV(csvData: csvData)
+//            
+//            guard let headers = rows.first else { return }
+//            
+//            for row in rows.dropFirst() {
+//                
+//                // Temps to build an address
+//                var addressTemp: String = ""
+//                var postcodeTemp: String = ""
+//                var townCityTemp: String = ""
+//                var countryTemp: String = ""
+//                
+//                // Temps to process amount and extendedDetails correctly one all have been read
+//                var txAmountTemp: Decimal = Decimal(0)
+////                var extendedDetailsTemp: String = ""
+//                var txAmountParsedTemp: Decimal = Decimal(0)
+//                var exchangeRateParsedTemp: Decimal = Decimal(0)
+//                var commissionAmountParsedTemp: Decimal = Decimal(0)
+//                var currencyParsedTemp: Currency = .unknown
+//                
+//                guard row.count == headers.count else {
+//                    print("Malformed row \(row)\n")
+//                    continue
+//                } // skip malformed rows
+//                
+//                let transaction = Transaction(context: context)
+//                
+//                // We need to save txAmount and extendedDetails for processing after
+//                // ... all the fields have been processed
+//                for (index, header) in headers.enumerated() {
+//                    let value = row[index].trimmingCharacters(in: .whitespacesAndNewlines)
+//                    
+//                    transaction.paymentMethod = .AMEX
+//                    
+//                    switch header.lowercased() {
+//                    case "date":
+//                        let formatter = DateFormatter()
+//                        formatter.dateFormat = "dd/MM/yyyy"
+//                        transaction.transactionDate = formatter.date(from: value)
+//                        
+////                    case "description":
+////                        transaction.payee = value
+//                        
+//                    case "description":
+//                        transaction.payee = value
+//                        
+//                        // Automatically match a category
+//                        let matchedCategory = matcher.matchCategory(for: value)
+//                        if matchedCategory != .unknown {
+//                            transaction.category = matchedCategory
+//                        } else {
+//                            transaction.category = .unknown
+//                        }
+//                        
+//                    case "card member":
+//                        transaction.payer = Payer( value )
+//                        
+//                    case "account #":
+//                        transaction.accountNumber = value
+//                        
+//                    case "amount":
+//                        txAmountTemp  = Decimal(string: value.replacingOccurrences(of: ",", with: "")) ?? Decimal(999)
+//                        
+//                    case "extended details":
+//                        transaction.extendedDetails = value
+//                        let parsed = parseExtendedDetails(value)
+//                        print(parsed)
+//                        txAmountParsedTemp = parsed.foreignSpendAmount ?? Decimal(0)
+//                        commissionAmountParsedTemp = parsed.commissionAmount ?? Decimal(0)
+//                        exchangeRateParsedTemp = parsed.exchangeRate ?? Decimal(0)
+//                        currencyParsedTemp = parsed.foreignCurrency ?? .unknown
+//                        
+//                    case "appears on your statement as":
+//                        // Ignore this field
+//                        break
+////                        transaction.appearsOnStatementAs = value
+//                        
+//                    case "address":
+//                        addressTemp = value
+//                        
+//                    case "town/city":
+//                        townCityTemp = value
+//                        
+//                    case "postcode":
+//                        postcodeTemp = value
+//                        
+//                    case "country":
+//                        countryTemp = value
+//
+//                    case "reference":
+//                        transaction.reference = value
+//                    case "category":
+//                        // Ignore this field
+//                        break
+//                        //                        transaction.category = value
+//                    default:
+//                        break
+//                    }
+//                }
+//                // Timestamp
+//                transaction.timestamp = Date()
+//                
+//                // Now prcoess fields we have had to wait for
+//                // Address
+//                transaction.address = addressTemp + ", " + townCityTemp + ", "  + postcodeTemp + ", " + countryTemp
+//                
+//                // Amount and Exchange Rate fields
+//                if currencyParsedTemp == .GBP ||  currencyParsedTemp == .unknown {
+//                    transaction.currency = .GBP
+//                    transaction.exchangeRate = Decimal(1)
+//                    transaction.txAmount = txAmountTemp
+//                } else {
+//                    // This is a foreign currency transaction, we store the amount in foreign
+//                    // ... currency so that we can later reconcile it to the receipt.
+//                    // ... We add the commision when we retrieve a txAmount in GBP
+//                    transaction.txAmount = txAmountParsedTemp
+//                    transaction.currency = currencyParsedTemp
+//                    transaction.exchangeRate = exchangeRateParsedTemp
+//                    transaction.commissionAmount = commissionAmountParsedTemp
+//                }
+//                transaction.debitCredit = txAmountTemp >= 0 ? .DR : .CR
+//            }
+//            
+//            matcher.reapplyMappingsToUnknownTransactions()
+//            
+//            try context.save()
+//            print("CSV import successful! Imported \(rows.count - 1) transactions.")
+//            
+//        } catch {
+//            print("Failed to read CSV file: \(error)")
+//        }
+//    }
     
     // MARK: - CSV Parser (handles quotes and multi-line fields)
     static func parseCSV(csvData: String) -> [[String]] {

@@ -12,6 +12,9 @@ extension TransactionStruct: TransactionValidatable {}
 
 // MARK: --- TransactionStruct
 struct TransactionStruct {
+    
+    var id = UUID()
+    
     var accountNumber: String?
     var address: String?
     

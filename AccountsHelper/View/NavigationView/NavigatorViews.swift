@@ -27,7 +27,7 @@ struct NavigatorViews: View {
                 NavigatorEditAddView()
                 
             case .txImport:
-                CSVImportView()
+                AMEXCSVImportView()
                 
             case .reconcile:
                 Text("Navigator Reconcile View" )
