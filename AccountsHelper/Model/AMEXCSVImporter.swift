@@ -13,6 +13,8 @@ class AMEXCSVImporter {
     
     static func importCSVToCoreData(fileURL: URL, context: NSManagedObjectContext) {
         
+        let matcher = CategoryMatcher(context: context)
+        
         do {
             let csvData = try String(contentsOf: fileURL, encoding: .utf8)
             let rows = parseCSV(csvData: csvData)
@@ -55,8 +57,19 @@ class AMEXCSVImporter {
                         formatter.dateFormat = "dd/MM/yyyy"
                         transaction.transactionDate = formatter.date(from: value)
                         
+//                    case "description":
+//                        transaction.payee = value
+                        
                     case "description":
                         transaction.payee = value
+                        
+                        // Automatically match a category
+                        let matchedCategory = matcher.matchCategory(for: value)
+                        if matchedCategory != .unknown {
+                            transaction.category = matchedCategory
+                        } else {
+                            transaction.category = .unknown
+                        }
                         
                     case "card member":
                         transaction.payer = Payer( value )
@@ -126,6 +139,8 @@ class AMEXCSVImporter {
                 }
                 transaction.debitCredit = txAmountTemp >= 0 ? .DR : .CR
             }
+            
+            matcher.reapplyMappingsToUnknownTransactions()
             
             try context.save()
             print("CSV import successful! Imported \(rows.count - 1) transactions.")

@@ -41,6 +41,7 @@ import ItMkLibrary
     case CouncilTax         = 25
     case Spare5             = 26
     case ToYokko            = 27
+    // Do not change this either
     case unknown            = 99
     
     

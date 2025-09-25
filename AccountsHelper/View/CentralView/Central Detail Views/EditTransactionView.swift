@@ -18,113 +18,55 @@ enum AmountFieldIdentifier: Hashable {
     case split1
 }
 
-// MARK: --- EditTransactionView
+
 struct EditTransactionView: View {
-    
-//    @State var transaction: Transaction?
-    
     @Environment(\.managedObjectContext) private var viewContext
-    @Environment(\.dismiss) private var dismiss
     @Environment(AppState.self) var appState
-    
+
+    @State private var transactionData: TransactionStruct
+    @State private var splitTransaction: Bool
+
+    var existingTransaction: Transaction? // keep reference if editing
+    var onSave: ((TransactionStruct) -> Void)?
+
     @FocusState private var focusedField: AmountFieldIdentifier?
 
-//    private var existingTransaction: Transaction?
-    // TODO: --- Consider removing the optional
-    @State private var existingTransaction: Transaction?
+    // MARK: - Init
     
-    // MARK: --- State Variables
-    @State private var category: Category = .unknown
-    @State private var splitCategory: Category = .unknown
-    @State private var currency: Currency = .GBP
-    @State private var debitCredit: DebitCredit = .DR
-    @State private var exchangeRate: Decimal = 1.00
-    @State private var explanation: String = ""
-    @State private var payee: String = ""
-    @State private var payer: Payer = .tony
-    @State private var paymentMethod: PaymentMethod = .AMEX
-    @State private var txAmount: Decimal = Decimal(0)
-    @State private var splitAmount: Decimal = Decimal(0)
-    @State private var splitTransaction: Bool = false
-    @State private var transactionDate: Date = Date()
-    @State private var timeStamp: Date = Date()
-    @State private var hasLoaded: Bool = false
-    
-//    init(){
-//        resetForm()
-//    }
-    
-    init(transaction: Transaction? = nil) {
+    init(transaction: Transaction? = nil, onSave: ((TransactionStruct) -> Void)? = nil) {
+        if let transaction {
+            let structData = TransactionStruct(from: transaction)
+            _transactionData = State(initialValue: structData)
+            _splitTransaction = State(initialValue: structData.isSplit)
+        } else {
+            _transactionData = State(initialValue: TransactionStruct())
+            _splitTransaction = State(initialValue: false)
+        }
         self.existingTransaction = transaction
-        _category        = State(initialValue: transaction?.category ?? .unknown)
-        _splitCategory   = State(initialValue: transaction?.splitCategory ?? .unknown)
-        _currency        = State(initialValue: transaction?.currency ?? .GBP)
-        _debitCredit     = State(initialValue: transaction?.debitCredit ?? .DR)
-        _exchangeRate    = State(initialValue: transaction?.exchangeRate ?? Decimal(1))
-        _explanation     = State(initialValue: transaction?.explanation ?? "")
-        _payee           = State(initialValue: transaction?.payee ?? "")
-        _payer           = State(initialValue: transaction?.payer ?? .tony)
-        _paymentMethod   = State(initialValue: transaction?.paymentMethod ?? .AMEX)
-        _txAmount        = State(initialValue: transaction?.txAmount ?? Decimal(0))
-        _splitAmount     = State(initialValue: transaction?.splitAmount ?? Decimal(0))
-        _transactionDate = State(initialValue: transaction?.transactionDate ?? Date.distantPast)
-        _splitTransaction = State(initialValue: transaction?.splitAmount != Decimal(0)) // optional
-        _timeStamp       = State(initialValue: transaction?.timestamp ?? Date.distantPast)
+        self.onSave = onSave
     }
-    
-    // MARK: --- Validation
+
+    // MARK: - Validation
     private var canSave: Bool {
-        isTransactionDateValid() &&
-        isTXAmountValid() &&
-        isExchangeRateValid() &&
-        isPayeeValid() &&
-        isCategoryValid()
+        guard let txDate = transactionData.transactionDate else { return false }
+        return txDate <= Date() &&
+            transactionData.txAmount != 0 &&
+            (transactionData.payee?.isEmpty == false) &&
+            transactionData.category != .unknown &&
+            (transactionData.currency == .GBP ||
+              (transactionData.exchangeRate != 0 && (transactionData.currency == .JPY ? transactionData.exchangeRate < 300 : true)))
     }
-    
-    func isTXAmountValid() -> Bool { txAmount != Decimal(0) }
-    func isCategoryValid() -> Bool { category != .unknown }
-    func isExchangeRateValid() -> Bool { currency == .GBP || (exchangeRate != Decimal(0) && (currency == .JPY ? exchangeRate < 300 : true)) }
-    func isDebitCreditValid() -> Bool { debitCredit != .unknown }
-    func isPayeeValid() -> Bool { !payee.isEmpty }
-    func isSplitAmountValid() -> Bool { splitAmount != 0 && splitAmount < txAmount }
-    func isTransactionDateValid() -> Bool { transactionDate <= Date() }
     
     // MARK: --- Reset
     func resetForm() {
-        category = .unknown
-        splitCategory = .unknown
-        currency = .GBP
-        debitCredit = .DR
-        exchangeRate = Decimal(0)
-        explanation = ""
-        payee = ""
-        payer = .tony
-        paymentMethod = .AMEX
-        txAmount = Decimal(0)
-        splitAmount = Decimal(0)
-        splitTransaction = false
-        transactionDate = Date()
-        timeStamp = Date()
+        transactionData = TransactionStruct()
     }
-    
-    // MARK: --- Save
-    func saveTransaction() {
-        let transaction = existingTransaction ?? Transaction(context: viewContext)
 
-        transaction.category = category
-        transaction.splitCategory = splitCategory
-        transaction.currency = currency
-        transaction.debitCredit = debitCredit
-        transaction.exchangeRate = exchangeRate
-        transaction.explanation = explanation
-        transaction.payee = payee
-        transaction.payer = payer
-        transaction.paymentMethod = paymentMethod
-        transaction.txAmount = txAmount
-        transaction.splitAmount = splitAmount
-        transaction.transactionDate = transactionDate
-        transaction.timestamp = timeStamp
-        
+    // MARK: - Save
+    private func saveTransaction() {
+        let tx = existingTransaction ?? Transaction(context: viewContext)
+        transactionData.apply(to: tx) // update Core Data object
+
         do {
             try viewContext.save()
             print("Transaction saved!")
@@ -132,130 +74,156 @@ struct EditTransactionView: View {
             print("Failed to save transaction: \(error)")
             assert(false)
         }
-        
+
         // Update the CategoryMatcher
         let matcher = CategoryMatcher(context: viewContext)
-        matcher.teachMapping(for: payee, category: category)
-        
+        if let payee = transactionData.payee {
+            matcher.teachMapping(for: payee, category: transactionData.category)
+        }
+
+        onSave?(transactionData)
+        appState.selectedTransactionID = nil
+        appState.popCentralView()
     }
-    
-    // MARK: --- Body
+
+    // MARK: - Body
     var body: some View {
-        ScrollView{
+        ScrollView {
             VStack(spacing: 10) {
-                
-#if os(iOS)
-                Text("Add Transaction")
+
+                Text(existingTransaction == nil ? "Add Transaction" : "Edit Transaction")
                     .font(.title2)
                     .fontWeight(.semibold)
-                    .padding(.horizontal, 14)
                     .padding(.top, 16)
-#endif
+                    .padding(.horizontal, 14)
+          
+                LabeledDatePicker(
+                    label: "TX Date",
+                    date: Binding(get: { transactionData.transactionDate ?? Date() },
+                                  set: { transactionData.transactionDate = $0 }),
+                    displayedComponents: [.date],
+                    isValid: transactionData.isTransactionDateValid()
+                )
                 
-                LabeledDatePicker(label: "TX Date", date: $transactionDate, displayedComponents: [ .date ], isValid: isTransactionDateValid())
-                
-                LabeledPicker(label: "Payer", selection: $payer, isValid: true)
-                
-                LabeledPicker(label: "Currency", selection: $currency, isValid: true)
-                
-                if currency != .GBP {
-                    LabeledDecimalField(label: "Exchange Rate", amount: $exchangeRate, isValid: isExchangeRateValid())
-                }
-                
-                LabeledPicker(label: "Debit/Credit", selection: $debitCredit, isValid: isDebitCreditValid() )
-                
-                LabeledDecimalWithFX(label: "Amount", amount: $TXAmount, currency: $currency, fxRate: $exchangeRate, isValid: isTXAmountValid())
-                    .focused($focusedField, equals: AmountFieldIdentifier.main)
-                
-                LabeledPicker(label: "Payment Method", selection: $paymentMethod, isValid: true)
-                
-//                LabeledTextField(label: "Payee", text: $payee, isValid: isPayeeValid())
-                LabeledTextField(label: "Payee", text: $payee, isValid: isPayeeValid())
-                    .onChange(of: payee) { newValue in
-                        guard !newValue.isEmpty else { return }
-                        let matcher = CategoryMatcher(context: viewContext)
-                        category = matcher.matchCategory(for: newValue)
-                    }
+                LabeledPicker(label: "Payer", selection: $transactionData.payer, isValid: transactionData.isPayerValid())
 
+                LabeledPicker(label: "Currency", selection: $transactionData.currency, isValid: transactionData.isCurrencyValid() )
+
+                if transactionData.currency != .GBP {
+                    LabeledDecimalField(label: "Exchange Rate",
+                                        amount: $transactionData.exchangeRate,
+                                        isValid: transactionData.isExchangeRateValid())
+                }
+
+                LabeledPicker(label: "Debit/Credit", selection: $transactionData.debitCredit, isValid: transactionData.debitCredit != .unknown)
+
+                LabeledDecimalWithFX(label: "Amount",
+                                     amount: $transactionData.txAmount,
+                                     currency: $transactionData.currency,
+                                     fxRate: $transactionData.exchangeRate,
+                                     isValid: transactionData.isTXAmountValid(),
+                                     displayOnly: false)
+                    .focused($focusedField, equals: .main)
+
+                LabeledPicker(label: "Payment Method", selection: $transactionData.paymentMethod, isValid: transactionData.isPaymentMethodValid())
+
+//                LabeledTextField(label: "Payee",
+//                                 text: Binding($transactionData.payee, defaultValue: ""),
+//                                 isValid: transactionData.payee?.isEmpty == false)
+//                    .onChange(of: transactionData.payee) { newValue in
+//                        guard let payee = newValue, !payee.isEmpty else { return }
+//                        let matcher = CategoryMatcher(context: viewContext)
+//                        transactionData.category = matcher.matchCategory(for: payee)
+//                    }
                 
-                LabeledPicker(label: "Category", selection: $category, isValid: isCategoryValid())
-                
-                LabeledTextField(label: "Explanation", text: $explanation, isValid: true)
+                LabeledTextField(
+                    label: "Payee",
+                    text: Binding(
+                        get: { transactionData.payee ?? "" },   // provide default if nil
+                        set: { transactionData.payee = $0 }
+                    ),
+                    isValid: transactionData.isPayeeValid()
+                )
+                .onChange(of: transactionData.payee) { newValue in
+                    guard let payee = newValue, !payee.isEmpty else { return }
+                    let matcher = CategoryMatcher(context: viewContext)
+                    transactionData.category = matcher.matchCategory(for: payee)
+                }
+
+                LabeledPicker(label: "Category", selection: $transactionData.category, isValid: transactionData.isCategoryValid())
+
+//                LabeledTextField(label: "Explanation",
+//                                 text: Binding($transactionData.explanation, defaultValue: ""),
+//                                 isValid: true)
+
+                LabeledTextField(
+                    label: "Explanation",
+                    text: Binding(
+                        get: { transactionData.explanation ?? "" },   // provide default if nil
+                        set: { transactionData.explanation = $0 }
+                    ),
+                    isValid: true
+                )
                 
                 // MARK: --- Split Transaction
                 if !splitTransaction {
                     Button("Split Transaction") {
                         splitTransaction = true
-                        let half = (TXAmount / 2).rounded(scale: 2, roundingMode: .up)
-                        splitAmount = half
-                        splitCategory = .unknown
+                        let half = (transactionData.txAmount / 2).rounded(scale: 2, roundingMode: .up)
+                        transactionData.splitAmount = half
+                        transactionData.splitCategory = .unknown
                     }
                     .buttonStyle(.borderedProminent)
                 } else {
                     Button("Unsplit Transaction") {
-                        splitTransaction.toggle()
-                        splitAmount = Decimal(0)
-                        splitCategory = .unknown
+                        splitTransaction = false
+                        transactionData.splitAmount = 0
+                        transactionData.splitCategory = .unknown
                     }
                     .buttonStyle(.borderedProminent)
-                    
+
                     VStack(spacing: 0) {
                         // --- Split 1 (editable)
-                        LabeledDecimalWithFX(
-                            label: "Split 1",
-                            amount: $splitAmount,
-                            currency: $currency,
-                            fxRate: $exchangeRate,
-                            isValid: isSplitAmountValid()
-                        )
-                        .focused($focusedField, equals: .split1)
-                        
-                        LabeledPicker(label: "Split 1 Category", selection: $splitCategory, isValid: true)
-                        
-                        // --- Split 2 (display-only, always TXAmount - splitAmount)
-                        LabeledDecimalWithFX(
-                            label: "Split 2",
-                            amount: Binding(
-                                get: { TXAmount - splitAmount },
-                                set: { _ in } // read-only
-                            ),
-                            currency: $currency,
-                            fxRate: $exchangeRate,
-                            isValid: true,
-                            displayOnly: true
-                        )
-                        
-                        LabeledPicker(label: "Split 2 Category", selection: $category, isValid: true)
+                        LabeledDecimalWithFX(label: "Split",
+                                             amount: $transactionData.splitAmount,
+                                             currency: $transactionData.currency,
+                                             fxRate: $transactionData.exchangeRate,
+                                             isValid: transactionData.isSplitAmountValid())
+                            .focused($focusedField, equals: .split1)
+
+                        LabeledPicker(label: "Split Category", selection: $transactionData.splitCategory, isValid: transactionData.isSplitCategoryValid())
+
+                        // --- Split 2 (display-only)
+                        LabeledDecimalWithFX(label: "Remainder",
+                                             amount: Binding(get: { transactionData.splitRemainderAmount },
+                                                             set: { _ in }),
+                                             currency: $transactionData.currency,
+                                             fxRate: $transactionData.exchangeRate,
+                                             isValid: true,
+                                             displayOnly: true)
+
+                        LabeledPicker(label: "Remainder Category", selection: $transactionData.category, isValid: transactionData.isSplitRemainderCategoryValid())
                     }
                 }
-                
+
                 Spacer()
-                
+
                 HStack {
                     Spacer()
-                    
                     Button("Don't Save", role: .cancel) {
-                        appState.selectedTransactionID = nil   // Clear selection
-                        appState.popCentralView( )
-//                        appState.selectedCentralView = .emptyView
-//                        dismiss()
+                        appState.popCentralView()
+                        resetForm()
                     }
                     .padding()
-                    
+
                     Button("Save") {
                         saveTransaction()
-                        appState.selectedTransactionID = nil   // Clear selection
-                        if existingTransaction == nil {
-                            resetForm() // only reset when adding a new one
-                        }
-                        appState.popCentralView( )
-//                        appState.selectedCentralView = .emptyView
-//                        dismiss()
+                        appState.popCentralView()
+                        resetForm()
                     }
-                    .disabled(!canSave)
+                    .disabled(!transactionData.isValid())
                     .buttonStyle(.borderedProminent)
                     .padding()
-                    
                     Spacer()
                 }
             }
@@ -266,46 +234,300 @@ struct EditTransactionView: View {
                 focusedField = nil
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity) // fills parent
-//        .background(Color(Color.platformTextBackgroundColor))
-        .onAppear {
-            guard !hasLoaded else { return }
-            hasLoaded = true
-            
-            if let selectedID = appState.selectedTransactionID {
-                // Existing transaction: fetch and populate
-                if let tx = try? viewContext.existingObject(with: selectedID) as? Transaction {
-                    existingTransaction = tx
-                    category = tx.category
-                    splitCategory = tx.splitCategory
-                    currency = tx.currency
-                    debitCredit = tx.debitCredit
-                    exchangeRate = tx.exchangeRate
-                    explanation = tx.explanation ?? ""
-                    payee = tx.payee ?? ""
-                    payer = tx.payer
-                    paymentMethod = tx.paymentMethod
-                    TXAmount = tx.txAmount
-                    splitAmount = tx.splitAmount
-                    transactionDate = tx.transactionDate ?? Date.distantPast
-                    splitTransaction = tx.splitAmount != Decimal(0)
-                    timeStamp = tx.timestamp ?? Date.distantPast
-                }
-            } else {
-                // New transaction: keep defaults (already set in @State)
-                resetForm()
-            }
-        }
-        .onDisappear {
-            appState.selectedTransactionID = nil
-        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
+
+
+
+// MARK: --- EditTransactionView
+// struct EditTransactionView: View {
+//
+////    @State var transaction: Transaction?
+//    
+//    @Environment(\.managedObjectContext) private var viewContext
+//    @Environment(\.dismiss) private var dismiss
+//    @Environment(AppState.self) var appState
+//    
+//    @FocusState private var focusedField: AmountFieldIdentifier?
+//
+////    private var existingTransaction: Transaction?
+//    // TODO: --- Consider removing the optional
+//    @State private var existingTransaction: Transaction?
+//    
+//    // MARK: --- State Variables
+//    @State private var category: Category = .unknown
+//    @State private var splitCategory: Category = .unknown
+//    @State private var currency: Currency = .GBP
+//    @State private var debitCredit: DebitCredit = .DR
+//    @State private var exchangeRate: Decimal = 1.00
+//    @State private var explanation: String = ""
+//    @State private var payee: String = ""
+//    @State private var payer: Payer = .tony
+//    @State private var paymentMethod: PaymentMethod = .AMEX
+//    @State private var txAmount: Decimal = Decimal(0)
+//    @State private var splitAmount: Decimal = Decimal(0)
+//    @State private var splitTransaction: Bool = false
+//    @State private var transactionDate: Date = Date()
+//    @State private var timeStamp: Date = Date()
+//    @State private var hasLoaded: Bool = false
+//    
+////    init(){
+////        resetForm()
+////    }
+//    
+//    init(transaction: Transaction? = nil) {
+//        self.existingTransaction = transaction
+//        _category        = State(initialValue: transaction?.category ?? .unknown)
+//        _splitCategory   = State(initialValue: transaction?.splitCategory ?? .unknown)
+//        _currency        = State(initialValue: transaction?.currency ?? .GBP)
+//        _debitCredit     = State(initialValue: transaction?.debitCredit ?? .DR)
+//        _exchangeRate    = State(initialValue: transaction?.exchangeRate ?? Decimal(1))
+//        _explanation     = State(initialValue: transaction?.explanation ?? "")
+//        _payee           = State(initialValue: transaction?.payee ?? "")
+//        _payer           = State(initialValue: transaction?.payer ?? .tony)
+//        _paymentMethod   = State(initialValue: transaction?.paymentMethod ?? .AMEX)
+//        _txAmount        = State(initialValue: transaction?.txAmount ?? Decimal(0))
+//        _splitAmount     = State(initialValue: transaction?.splitAmount ?? Decimal(0))
+//        _transactionDate = State(initialValue: transaction?.transactionDate ?? Date.distantPast)
+//        _splitTransaction = State(initialValue: transaction?.splitAmount != Decimal(0)) // optional
+//        _timeStamp       = State(initialValue: transaction?.timestamp ?? Date.distantPast)
+//    }
+//    
+//    // MARK: --- Validation
+//    private var canSave: Bool {
+//        isTransactionDateValid() &&
+//        isTXAmountValid() &&
+//        isExchangeRateValid() &&
+//        isPayeeValid() &&
+//        isCategoryValid()
+//    }
+//    
+//    func isTXAmountValid() -> Bool { txAmount != Decimal(0) }
+//    func isCategoryValid() -> Bool { category != .unknown }
+//    func isExchangeRateValid() -> Bool { currency == .GBP || (exchangeRate != Decimal(0) && (currency == .JPY ? exchangeRate < 300 : true)) }
+//    func isDebitCreditValid() -> Bool { debitCredit != .unknown }
+//    func isPayeeValid() -> Bool { !payee.isEmpty }
+//    func isSplitAmountValid() -> Bool { splitAmount != 0 && splitAmount < txAmount }
+//    func isTransactionDateValid() -> Bool { transactionDate <= Date() }
+//    
+//    // MARK: --- Reset
+//    func resetForm() {
+//        category = .unknown
+//        splitCategory = .unknown
+//        currency = .GBP
+//        debitCredit = .DR
+//        exchangeRate = Decimal(0)
+//        explanation = ""
+//        payee = ""
+//        payer = .tony
+//        paymentMethod = .AMEX
+//        txAmount = Decimal(0)
+//        splitAmount = Decimal(0)
+//        splitTransaction = false
+//        transactionDate = Date()
+//        timeStamp = Date()
+//    }
+//    
+//    // MARK: --- Save
+//    func saveTransaction() {
+//        let transaction = existingTransaction ?? Transaction(context: viewContext)
+//
+//        transaction.category = category
+//        transaction.splitCategory = splitCategory
+//        transaction.currency = currency
+//        transaction.debitCredit = debitCredit
+//        transaction.exchangeRate = exchangeRate
+//        transaction.explanation = explanation
+//        transaction.payee = payee
+//        transaction.payer = payer
+//        transaction.paymentMethod = paymentMethod
+//        transaction.txAmount = txAmount
+//        transaction.splitAmount = splitAmount
+//        transaction.transactionDate = transactionDate
+//        transaction.timestamp = timeStamp
+//        
+//        do {
+//            try viewContext.save()
+//            print("Transaction saved!")
+//        } catch {
+//            print("Failed to save transaction: \(error)")
+//            assert(false)
+//        }
+//        
+//        // Update the CategoryMatcher
+//        let matcher = CategoryMatcher(context: viewContext)
+//        matcher.teachMapping(for: payee, category: category)
+//        
+//    }
+//    
+//    // MARK: --- Body
+//    var body: some View {
+//        ScrollView{
+//            VStack(spacing: 10) {
+//                
+//#if os(iOS)
+//                Text("Add Transaction")
+//                    .font(.title2)
+//                    .fontWeight(.semibold)
+//                    .padding(.horizontal, 14)
+//                    .padding(.top, 16)
+//#endif
+//                
+//                LabeledDatePicker(label: "TX Date", date: $transactionDate, displayedComponents: [ .date ], isValid: isTransactionDateValid())
+//                
+//                LabeledPicker(label: "Payer", selection: $payer, isValid: true)
+//                
+//                LabeledPicker(label: "Currency", selection: $currency, isValid: true)
+//                
+//                if currency != .GBP {
+//                    LabeledDecimalField(label: "Exchange Rate", amount: $exchangeRate, isValid: isExchangeRateValid())
+//                }
+//                
+//                LabeledPicker(label: "Debit/Credit", selection: $debitCredit, isValid: isDebitCreditValid() )
+//                
+//                LabeledDecimalWithFX(label: "Amount", amount: $TXAmount, currency: $currency, fxRate: $exchangeRate, isValid: isTXAmountValid())
+//                    .focused($focusedField, equals: AmountFieldIdentifier.main)
+//                
+//                LabeledPicker(label: "Payment Method", selection: $paymentMethod, isValid: true)
+//                
+////                LabeledTextField(label: "Payee", text: $payee, isValid: isPayeeValid())
+//                LabeledTextField(label: "Payee", text: $payee, isValid: isPayeeValid())
+//                    .onChange(of: payee) { newValue in
+//                        guard !newValue.isEmpty else { return }
+//                        let matcher = CategoryMatcher(context: viewContext)
+//                        category = matcher.matchCategory(for: newValue)
+//                    }
+//
+//                
+//                LabeledPicker(label: "Category", selection: $category, isValid: isCategoryValid())
+//                
+//                LabeledTextField(label: "Explanation", text: $explanation, isValid: true)
+//                
+//                // MARK: --- Split Transaction
+//                if !splitTransaction {
+//                    Button("Split Transaction") {
+//                        splitTransaction = true
+//                        let half = (txAmount / 2).rounded(scale: 2, roundingMode: .up)
+//                        splitAmount = half
+//                        splitCategory = .unknown
+//                    }
+//                    .buttonStyle(.borderedProminent)
+//                } else {
+//                    Button("Unsplit Transaction") {
+//                        splitTransaction.toggle()
+//                        splitAmount = Decimal(0)
+//                        splitCategory = .unknown
+//                    }
+//                    .buttonStyle(.borderedProminent)
+//                    
+//                    VStack(spacing: 0) {
+//                        // --- Split 1 (editable)
+//                        LabeledDecimalWithFX(
+//                            label: "Split 1",
+//                            amount: $splitAmount,
+//                            currency: $currency,
+//                            fxRate: $exchangeRate,
+//                            isValid: isSplitAmountValid()
+//                        )
+//                        .focused($focusedField, equals: .split1)
+//                        
+//                        LabeledPicker(label: "Split 1 Category", selection: $splitCategory, isValid: true)
+//                        
+//                        // --- Split 2 (display-only, always TXAmount - splitAmount)
+//                        LabeledDecimalWithFX(
+//                            label: "Split 2",
+//                            amount: Binding(
+//                                get: { txAmount - splitAmount },
+//                                set: { _ in } // read-only
+//                            ),
+//                            currency: $currency,
+//                            fxRate: $exchangeRate,
+//                            isValid: true,
+//                            displayOnly: true
+//                        )
+//                        
+//                        LabeledPicker(label: "Split 2 Category", selection: $category, isValid: true)
+//                    }
+//                }
+//                
+//                Spacer()
+//                
+//                HStack {
+//                    Spacer()
+//                    
+//                    Button("Don't Save", role: .cancel) {
+//                        appState.selectedTransactionID = nil   // Clear selection
+//                        appState.popCentralView( )
+////                        appState.selectedCentralView = .emptyView
+////                        dismiss()
+//                    }
+//                    .padding()
+//                    
+//                    Button("Save") {
+//                        saveTransaction()
+//                        appState.selectedTransactionID = nil   // Clear selection
+//                        if existingTransaction == nil {
+//                            resetForm() // only reset when adding a new one
+//                        }
+//                        appState.popCentralView( )
+////                        appState.selectedCentralView = .emptyView
+////                        dismiss()
+//                    }
+//                    .disabled(!canSave)
+//                    .buttonStyle(.borderedProminent)
+//                    .padding()
+//                    
+//                    Spacer()
+//                }
+//            }
+//            .frame(maxWidth: 700)
+//            .font(.system(size: 11))
+//            .padding()
+//            .onTapGesture {
+//                focusedField = nil
+//            }
+//        }
+//        .frame(maxWidth: .infinity, maxHeight: .infinity) // fills parent
+////        .background(Color(Color.platformTextBackgroundColor))
+//        .onAppear {
+//            guard !hasLoaded else { return }
+//            hasLoaded = true
+//            
+//            if let selectedID = appState.selectedTransactionID {
+//                // Existing transaction: fetch and populate
+//                if let tx = try? viewContext.existingObject(with: selectedID) as? Transaction {
+//                    existingTransaction = tx
+//                    category = tx.category
+//                    splitCategory = tx.splitCategory
+//                    currency = tx.currency
+//                    debitCredit = tx.debitCredit
+//                    exchangeRate = tx.exchangeRate
+//                    explanation = tx.explanation ?? ""
+//                    payee = tx.payee ?? ""
+//                    payer = tx.payer
+//                    paymentMethod = tx.paymentMethod
+//                    txAmount = tx.txAmount
+//                    splitAmount = tx.splitAmount
+//                    transactionDate = tx.transactionDate ?? Date.distantPast
+//                    splitTransaction = tx.splitAmount != Decimal(0)
+//                    timeStamp = tx.timestamp ?? Date.distantPast
+//                }
+//            } else {
+//                // New transaction: keep defaults (already set in @State)
+//                resetForm()
+//            }
+//        }
+//        .onDisappear {
+//            appState.selectedTransactionID = nil
+//        }
+//    }
+//}
 
 #if os(iOS)
 struct LabeledDatePicker: View {
     let label: String
-    @Binding var date: Date
+    @Binding var date: Date?
     let displayedComponents: DatePickerComponents
     let isValid: Bool   // added back
 

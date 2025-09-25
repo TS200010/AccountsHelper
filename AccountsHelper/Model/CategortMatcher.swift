@@ -146,10 +146,11 @@ class CategoryMatcher {
             }
             
             let txRequest: NSFetchRequest<Transaction> = Transaction.fetchRequest()
-            txRequest.predicate = NSPredicate(format: "categoryCD == %d OR categoryCD == 0", Category.unknown.rawValue)
+//            txRequest.predicate = NSPredicate(format: "categoryCD == %d OR categoryCD == 0", Category.unknown.rawValue)
+            txRequest.predicate = NSPredicate(format: "categoryCD == %d OR categoryCD == %d OR categoryCD == nil", Category.unknown.rawValue, 0)
             print (Category.unknown.rawValue)
             guard let transactions = try? context.fetch(txRequest), !transactions.isEmpty else {
-                NSLog("Failed to fetch transactions during reapply.")
+                NSLog("No unknown transactions to reapply.")
                 return
             }
 

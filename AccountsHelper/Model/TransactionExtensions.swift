@@ -59,6 +59,8 @@ import CoreData
 // MARK: --- CentsConvertible conformance
 extension Transaction: CentsConvertible {}
 
+// MARK: --- TransactionValidatable conformance
+extension Transaction: TransactionValidatable {}
 
 // MARK: --- Computed properties for Transaction
 extension Transaction {
@@ -85,16 +87,6 @@ extension Transaction {
         set { debitCreditCD = newValue.rawValue }
     }
 
-//    var exchangeRate: Decimal {
-//        get { Decimal(exchangeRateCD)/100 }
-//        set {
-//            // Multiply by 100 to store cents
-//            var scaled = newValue * Decimal(100)
-//            var rounded = Decimal()
-//            NSDecimalRound(&rounded, &scaled, 0, .plain)
-//            exchangeRateCD = Int32(truncating: NSDecimalNumber(decimal: rounded))
-//        }
-//    }
     var exchangeRate: Decimal {
         get { Decimal(exchangeRateCD) / 100 }
         set { exchangeRateCD = decimalToCents(newValue) }
@@ -110,23 +102,12 @@ extension Transaction {
         set { paymentMethodCD = newValue.rawValue }
     }
 
-//    var splitAmount: Decimal {
-//        get { Decimal(splitAmountCD)/100 }
-//        set {
-//            // Multiply by 100 to store cents
-//            var scaled = newValue * Decimal(100)
-//            var rounded = Decimal()
-//            NSDecimalRound(&rounded, &scaled, 0, .plain)
-//            splitAmountCD = Int32(truncating: NSDecimalNumber(decimal: rounded))
-//            // Ensure the two split amounts always sum to the transaction amount
-////            splitAmount2CD = txAmountCD - splitAmount1CD
-//        }
-//    }
     var splitAmount: Decimal {
         get { Decimal(splitAmountCD) / 100 }
         set { splitAmountCD = decimalToCents(newValue) }
     }
 
+    // Split Category is a new category entered
     var splitCategory: Category {
         get { Category(rawValue: splitCategoryCD) ?? .unknown }
         set { splitCategoryCD = newValue.rawValue }
@@ -137,22 +118,11 @@ extension Transaction {
         get { Decimal(txAmountCD - splitAmountCD)/100 }
     }
 
-    
-    // Remainder Category is a new category entered for the calculated remainder
+    // Remainder Category is the original category of txAmount
     var splitRemainderCategory: Category {
         get { Category(rawValue: categoryCD) ?? .unknown }
     }
 
-//    var txAmount: Decimal {
-//        get { Decimal(txAmountCD)/100 }
-//        set {
-//            // Multiply by 100 to store cents
-//            var scaled = newValue * Decimal(100)
-//            var rounded = Decimal()
-//            NSDecimalRound(&rounded, &scaled, 0, .plain)
-//            txAmountCD = Int32(truncating: NSDecimalNumber(decimal: rounded))
-//        }
-//    }
     var txAmount: Decimal {
         get { Decimal(txAmountCD) / 100 }
         set { txAmountCD = decimalToCents(newValue) }
@@ -162,7 +132,6 @@ extension Transaction {
         get { Decimal(commissionAmountCD) / 100.0 }
         set { commissionAmountCD = decimalToCents(newValue) }
     }
-
 
     var totalInGBP: Decimal {
         let converted = txAmount / exchangeRate
@@ -174,52 +143,6 @@ extension Transaction {
     }
 }
 
-// MARK: --- Extensions for validitiy chexking
-extension Transaction {
-    
-    /// Returns true if all key transaction fields are valid
-    func isValid() -> Bool {
-        return isTXAmountValid()
-        && isCategoryValid()
-        && isExchangeRateValid()
-        && isDebitCreditValid()
-        && isPayeeValid()
-        && isSplitAmountValid()
-        && isTransactionDateValid()
-    }
-    
-    // MARK: - Individual checks
-    
-    func isTXAmountValid() -> Bool {
-        txAmount != Decimal(0)
-    }
-    
-    func isCategoryValid() -> Bool {
-        category != .unknown
-    }
-    
-    func isExchangeRateValid() -> Bool {
-        currency == .GBP
-        || (exchangeRate != Decimal(0)
-            && (currency == .JPY ? exchangeRate < 300 : true))
-    }
-    
-    func isDebitCreditValid() -> Bool {
-        debitCredit != .unknown
-    }
-    
-    func isPayeeValid() -> Bool {
-        !(payee?.isEmpty ?? true)
-    }
-    
-    func isSplitAmountValid() -> Bool {
-        splitAmount != 0 && splitAmount < txAmount
-    }
-    
-    func isTransactionDateValid() -> Bool {
-        (transactionDate ?? Date()) <= Date()
-    }
-}
 
 // MARK: --- Estensions to make Table Viewing much simpler
 extension Transaction {
