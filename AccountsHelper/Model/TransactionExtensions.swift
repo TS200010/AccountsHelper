@@ -9,12 +9,6 @@ import Foundation
 import CoreData
 
 /*
-extension Transaction {
-
-    @nonobjc public class func fetchRequest() -> NSFetchRequest<Transaction> {
-        return NSFetchRequest<Transaction>(entityName: "Transaction")
-    }
-
     @NSManaged public var accountNumber: String?
     @NSManaged public var address: String?
     @NSManaged public var categoryCD: Int32
@@ -33,9 +27,8 @@ extension Transaction {
     @NSManaged public var timestamp: Date?
     @NSManaged public var transactionDate: Date?
     @NSManaged public var txAmountCD: Int32
-
-}
  */
+
 /*
  | --------------------------- | --------------- | -------------------------------------------------------- |
  | Property / Method           | Type            | Description                                              |
@@ -63,34 +56,19 @@ extension Transaction {
  | --------------------------- | --------------- | -------------------------------------------------------- |
 */
 
-extension Transaction {
-    
-//    public var commissionAmount: Decimal {
-//        get { Decimal(commissionAmountCD) / 100.0 }
-//        set {
-//            // Multiply by 100 to store cents
-//            var scaled = newValue * Decimal(100)
-//            var rounded = Decimal()
-//            NSDecimalRound(&rounded, &scaled, 0, .plain)
-//            commissionAmountCD = Int32(truncating: NSDecimalNumber(decimal: rounded))
-//        }
-//    }
-//    
-    public var commissionAmount: Decimal {
-        get { Decimal(commissionAmountCD) / 100.0 }
-        set { commissionAmountCD = decimalToCents(newValue) }
-    }
-}
+// MARK: --- CentsConvertible conformance
+extension Transaction: CentsConvertible {}
+
 
 // MARK: --- Computed properties for Transaction
 extension Transaction {
     
-    private func decimalToCents(_ value: Decimal) -> Int32 {
-        var scaled = value * 100
-        var rounded = Decimal()
-        NSDecimalRound(&rounded, &scaled, 0, .plain)
-        return Int32(truncating: NSDecimalNumber(decimal: rounded))
-    }
+//    private func decimalToCents(_ value: Decimal) -> Int32 {
+//        var scaled = value * 100
+//        var rounded = Decimal()
+//        NSDecimalRound(&rounded, &scaled, 0, .plain)
+//        return Int32(truncating: NSDecimalNumber(decimal: rounded))
+//    }
     
     var category: Category {
         get { Category(rawValue: categoryCD) ?? .unknown }
@@ -180,6 +158,12 @@ extension Transaction {
         set { txAmountCD = decimalToCents(newValue) }
     }
     
+    var commissionAmount: Decimal {
+        get { Decimal(commissionAmountCD) / 100.0 }
+        set { commissionAmountCD = decimalToCents(newValue) }
+    }
+
+
     var totalInGBP: Decimal {
         let converted = txAmount / exchangeRate
         let total = converted + commissionAmount
@@ -361,8 +345,6 @@ extension Transaction {
         return transaction
     }
 }
-
-import CoreData
 
 extension Transaction {
     /// Returns the number of matches for a TransactionStruct in the database, including paymentMethod
