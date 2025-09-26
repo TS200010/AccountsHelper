@@ -85,29 +85,29 @@ final class PersistenceController {
 //            print("🔄 Remote change received: \(notification)")
 //        }
         
-        let newTransaction = Transaction(context: container.viewContext)
-        newTransaction.timestamp = Date()
-//        try? container.viewContext.save()
-        
-        container.viewContext.performAndWait {
-            do {
-                try container.viewContext.save()
-                print("💾 Mac record saved locally, should be pushed")
-            } catch {
-                print("❌ Failed to save: \(error)")
-            }
-        }
-        
-        container.viewContext.refreshAllObjects() // optional
+//        let newTransaction = Transaction(context: container.viewContext)
+//        newTransaction.timestamp = Date()
+////        try? container.viewContext.save()
+//        
+//        container.viewContext.performAndWait {
+//            do {
+//                try container.viewContext.save()
+//                print("💾 Mac record saved locally, should be pushed")
+//            } catch {
+//                print("❌ Failed to save: \(error)")
+//            }
+//        }
+//        
+//        container.viewContext.refreshAllObjects() // optional
 
-        container.persistentStoreCoordinator
-            .persistentStores
-            .forEach { store in
-                if let ckStore = store as? NSPersistentCloudKitContainerOptions {
-                    // No direct access needed; just touching the context triggers push
-                    container.viewContext.refreshAllObjects()
-                }
-            }
+//        container.persistentStoreCoordinator
+//            .persistentStores
+//            .forEach { store in
+//                if let ckStore = store as? NSPersistentCloudKitContainerOptions {
+//                    // No direct access needed; just touching the context triggers push
+//                    container.viewContext.refreshAllObjects()
+//                }
+//            }
         
         
 #if DEBUG
