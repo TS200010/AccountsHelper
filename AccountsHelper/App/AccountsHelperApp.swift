@@ -18,14 +18,23 @@ struct AccountsHelperApp: App {
     
     // MARK: --- State: Tracks Global UI states between NavigatorView, CentralView and InspectorView
     @State private var appState = AppState()
-
+    
+    init() {
+        // Enable Core Data + CloudKit debug logging
+        UserDefaults.standard.set(true, forKey: "com.apple.CoreData.CloudKitDebug")
+        
+        // Any other setup
+    }
+    
     var body: some Scene {
+        
         WindowGroup {
             ContentView()
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
                 .environmentObject( gGlobalAlert )
                 .environment( appState )
         }
+
     }
 }
 

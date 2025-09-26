@@ -27,7 +27,11 @@ struct NavigatorViews: View {
                 NavigatorEditAddView()
                 
             case .txImport:
+                #if os(macOS)
                 AMEXCSVImportView()
+                #else
+                Text("Not oniOS")
+                #endif
                 
             case .reconcile:
                 Text("Navigator Reconcile View" )

@@ -169,6 +169,8 @@ class CategoryMatcher {
             if changed {
                 do {
                     try context.save()
+                    let context = PersistenceController.shared.container.viewContext
+                    context.debugCloudKitSync(for: "CategoryMapping")
                 } catch {
                     NSLog("Failed to save transactions during reapply: \(error)")
                 }

@@ -58,7 +58,11 @@ fileprivate struct TransactionRow: Identifiable, Hashable {
         if transaction.currency == .GBP {
             return resultWIP
         } else {
+            #if os(macOS)
             return resultWIP + "\nGBP \(formattedAmountGBP)"
+            #else
+            return resultWIP + " GBP \(formattedAmountGBP)"
+            #endif
         }
     }
     
@@ -97,6 +101,24 @@ fileprivate struct TransactionRow: Identifiable, Hashable {
 
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
+    }
+    
+    // MARK: --- iOS Formatting
+    // iOS shows only one table column so we just construct what we want to see here
+
+    var iOSRowForDisplay: String {
+        var parts: [String] = []
+        if !transactionDate.isEmpty {
+            parts.append(transactionDate)
+        }
+        if !displayAmount.isEmpty {
+            parts.append(displayAmount)
+        }
+        if !payee.isEmpty && !category.isEmpty {
+            parts.append("\(payee): \(category)")
+        }
+        return parts.joined(separator: "\n")
+        
     }
 }
 
@@ -242,8 +264,8 @@ struct BrowseTransactionsView: View {
                 .width(min: 50, ideal: 100, max: 300)
 
 #else
-            TableColumn("Date") { row in tableCell(row.transactionDate, for: row) }
-            TableColumn("Amount") { row in tableCell(row.displayAmount, for: row) }
+            TableColumn("Transaction") { row in tableCell(row.iOSRowForDisplay, for: row) }
+//            TableColumn("Amount") { row in tableCell(row.displayAmount, for: row) }
 #endif
         }
         .font(.system(.body, design: .monospaced))

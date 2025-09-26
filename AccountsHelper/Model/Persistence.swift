@@ -7,8 +7,23 @@
 
 import CoreData
 
-struct PersistenceController {
+final class PersistenceController {
+    
     static let shared = PersistenceController()
+    
+    private var remoteChangeObserver: NSObjectProtocol?
+    
+    // MARK: - Remote change handler
+    private func handleRemoteChange(_ notification: Notification) {
+        print("🔄 Remote change received — updating UI")
+        let context = container.viewContext
+        context.perform {
+            NotificationCenter.default.post(
+                name: Notification.Name("AccountsHelperRemoteChange"),
+                object: nil
+            )
+        }
+    }
 
     @MainActor
     static let preview: PersistenceController = {
@@ -49,7 +64,6 @@ struct PersistenceController {
             }
         }
         
-
         container.loadPersistentStores { storeDescription, error in
             if let error = error as NSError? {
                 fatalError("Unresolved error \(error), \(error.userInfo)")
@@ -57,12 +71,63 @@ struct PersistenceController {
         }
         
         container.viewContext.automaticallyMergesChangesFromParent = true
+        container.viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        
+        // Add notifications so we sync quickly with iCloud
+        remoteChangeObserver = NotificationCenter.default.addObserver(
+            forName: .NSPersistentStoreRemoteChange,
+            object: container.persistentStoreCoordinator,
+            queue: .main
+        ) { [weak self] notification in
+            self?.handleRemoteChange(notification)
+        }
+//        ) { notification in
+//            print("🔄 Remote change received: \(notification)")
+//        }
+        
+        let newTransaction = Transaction(context: container.viewContext)
+        newTransaction.timestamp = Date()
+//        try? container.viewContext.save()
+        
+        container.viewContext.performAndWait {
+            do {
+                try container.viewContext.save()
+                print("💾 Mac record saved locally, should be pushed")
+            } catch {
+                print("❌ Failed to save: \(error)")
+            }
+        }
+        
+        container.viewContext.refreshAllObjects() // optional
+
+        container.persistentStoreCoordinator
+            .persistentStores
+            .forEach { store in
+                if let ckStore = store as? NSPersistentCloudKitContainerOptions {
+                    // No direct access needed; just touching the context triggers push
+                    container.viewContext.refreshAllObjects()
+                }
+            }
+        
+        
+#if DEBUG
+        if gUploadSchema {
+            do {
+                try container.initializeCloudKitSchema(options: [])
+                print("✅ CloudKit schema initialized")
+            } catch {
+                print("❌ Failed to initialize CloudKit schema: \(error)")
+            }
+        }
+#endif
         
 #if DEBUG
         if let storeURL = container.persistentStoreDescriptions.first?.url {
             print("CoreData SQLite file is at: \(storeURL.path)")
         }
 #endif
+        
+        
 
         /*
         // Loads xcdatatamodeld file
@@ -99,5 +164,11 @@ struct PersistenceController {
         
         container.viewContext.automaticallyMergesChangesFromParent = true
          */
+    }
+    
+    deinit {
+        if let observer = remoteChangeObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
     }
 }

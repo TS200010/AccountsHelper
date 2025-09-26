@@ -15,8 +15,9 @@ struct NavigatorEditAddView: View {
     @Environment(\.managedObjectContext) private var viewContext
     
     // MARK: --- Properties
-//    @State private var showingAddTransactionSheet = false
-//    @State private var showingBrowseTransactionsView = false
+    // Used for simplified iOS navigation
+    @State private var showingEditAddTransactionSheet = false
+    @State private var showingBrowseTransactionsView = false
     
     // MARK: --- Body
     var body: some View {
@@ -28,19 +29,9 @@ struct NavigatorEditAddView: View {
 //                appState.selectedCentralView = .addTransaction
                 #else
                 appState.selectedCentralView = .addTransaction
-//                showingEditAddTransactionSheet = true
+                showingEditAddTransactionSheet = true
                 #endif
                 
-            }
-            
-            Button("Add Random Transactions") {
-                let _ = Transaction.generateRandomTransactions(in: viewContext)
-            }
-            .disabled( gUseLiveStore )
-            
-            Button("Import AMEX CSV Transactions") {
-                appState.replaceCentralView(with: .AMEXCSVImport)
-//                appState.selectedCentralView = .AMEXCSVImport
             }
             
             Button("Browse Transactions") {
@@ -54,6 +45,17 @@ struct NavigatorEditAddView: View {
                 
             }
             
+            #if os(macOS)
+            Button("Add Random Transactions") {
+                let _ = Transaction.generateRandomTransactions(in: viewContext)
+            }
+            .disabled( gUseLiveStore )
+
+            Button("Import AMEX CSV Transactions") {
+                appState.replaceCentralView(with: .AMEXCSVImport)
+//                appState.selectedCentralView = .AMEXCSVImport
+            }
+
             
             Button("Browse Categories") {
                 #if os(macOS)
@@ -61,7 +63,7 @@ struct NavigatorEditAddView: View {
 //                appState.selectedCentralView = .browseCategories
                 #else
                 appState.selectedCentralView = .browseTransactions
-                showingBrowseTransactionsView = true
+//                showingBrowseTransactionsView = true
                 #endif
                 
             }
@@ -80,13 +82,19 @@ struct NavigatorEditAddView: View {
                 appState.replaceCentralView(with: .editPayee)
 //                appState.selectedCentralView = .editPayee
             }
+#endif
+
+
+
         }
         .buttonStyle( ItMkButton() )
-//        .sheet(isPresented: $showingAddTransactionSheet) {
-//                EditTransactionView()
-//        }
-//        .sheet(isPresented: $showingBrowseTransactionsView) {
-//                BrowseTransactionsView()
-//        }
+#if os(iOS)
+        .sheet(isPresented: $showingEditAddTransactionSheet) {
+            EditTransactionView()
+        }
+        .sheet(isPresented: $showingBrowseTransactionsView) {
+            BrowseTransactionsView()
+        }
+#endif
     }
 }

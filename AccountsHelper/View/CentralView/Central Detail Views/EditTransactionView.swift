@@ -22,6 +22,7 @@ enum AmountFieldIdentifier: Hashable {
 struct EditTransactionView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(AppState.self) var appState
+    @Environment(\.dismiss) private var dismiss
 
     @State private var transactionData: TransactionStruct
     @State private var splitTransaction: Bool
@@ -69,6 +70,9 @@ struct EditTransactionView: View {
 
         do {
             try viewContext.save()
+            let context = PersistenceController.shared.container.viewContext
+            context.debugCloudKitSync(for: "Transaction")
+            context.debugCloudKitSync(for: "CategoryMapping")
             print("Transaction saved!")
         } catch {
             print("Failed to save transaction: \(error)")
@@ -213,13 +217,19 @@ struct EditTransactionView: View {
                     Button("Don't Save", role: .cancel) {
                         appState.popCentralView()
                         resetForm()
+#if os(iOS)
+                        dismiss()
+#endif
                     }
                     .padding()
-
+                    
                     Button("Save") {
                         saveTransaction()
                         appState.popCentralView()
                         resetForm()
+#if os(iOS)
+                        dismiss()
+#endif
                     }
                     .disabled(!transactionData.isValid())
                     .buttonStyle(.borderedProminent)
@@ -527,7 +537,7 @@ struct EditTransactionView: View {
 #if os(iOS)
 struct LabeledDatePicker: View {
     let label: String
-    @Binding var date: Date?
+    @Binding var date: Date
     let displayedComponents: DatePickerComponents
     let isValid: Bool   // added back
 

@@ -199,6 +199,7 @@ struct AMEXCSVImportView: View {
 
 // MARK: - AMEXCSVImporter helper
 
+#if os(macOS)
 extension AMEXCSVImporter {
     
     static func findMergeCandidateInSnapshot(
@@ -230,6 +231,7 @@ extension AMEXCSVImporter {
         })
     }
 }
+#endif
 
 //
 //#if os(macOS)

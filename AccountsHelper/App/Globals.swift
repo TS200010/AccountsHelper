@@ -12,11 +12,17 @@ import SwiftUI
 
 
 // MARK: --- Global variables used throughout the App
+
+// MARK: --- Which Coredata DEVELOPMENT Store to use. This is not apples Production yet
 #if os(iOS)
-let gUseLiveStore = true
+let gUseLiveStore = false
 #else
 let gUseLiveStore = false
 #endif
+
+// MARK: --- To force upload the Schema (do this on iOS - seems to be more reliable there)
+// ... run on both .dev and .live
+let gUploadSchema = false
 
 
 // MARK: --- For debugging Views. The compiler will optimise out unused variables.
