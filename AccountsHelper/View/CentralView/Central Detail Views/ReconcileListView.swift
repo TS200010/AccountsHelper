@@ -5,46 +5,48 @@
 //  Created by Anthony Stanners on 26/09/2025.
 //
 
-import Foundation
 import SwiftUI
 import CoreData
 
-
 // MARK: - Row Helper
-struct ReconciliationRow {
+struct ReconciliationRow: Identifiable, Hashable {
     let rec: Reconciliation
     let gap: Decimal
+    var id: NSManagedObjectID { rec.objectID }
 }
 
 // MARK: - Reconcile List View
 struct ReconcileListView: View {
-    
+
     @Environment(\.managedObjectContext) var context
     @Environment(\.undoManager) private var undoManager
-    
+
     @State private var showingDeleteConfirmation = false
     @State private var reconciliationToDelete: NSManagedObjectID? = nil
-    
+    @State private var showingNewReconciliation = false
+
+    @State private var selectedReconciliationID: NSManagedObjectID? = nil
+    @State private var showDetail = false
+
     @FetchRequest(
         entity: Reconciliation.entity(),
         sortDescriptors: [NSSortDescriptor(keyPath: \Reconciliation.statementDate, ascending: false)]
     ) var reconciliations: FetchedResults<Reconciliation>
-    
-    @State private var showingNewReconciliation = false
-    
+
+    // MARK: - Delete Function
     private func deleteReconciliation(_ objectID: NSManagedObjectID) {
         context.perform {
             do {
                 guard let rec = try context.existingObject(with: objectID) as? Reconciliation else { return }
-                
+
                 // Save data for undo
                 let keys = Array(rec.entity.attributesByName.keys)
                 let savedData = rec.dictionaryWithValues(forKeys: keys)
-                
+
                 // Delete object
                 context.delete(rec)
                 try context.save()
-                
+
                 // Register undo
                 undoManager?.registerUndo(withTarget: context) { ctx in
                     let restored = Reconciliation(context: ctx)
@@ -54,17 +56,15 @@ struct ReconcileListView: View {
                     try? ctx.save()
                 }
                 undoManager?.setActionName("Delete Reconciliation")
-                
+
             } catch {
                 print("Failed to delete reconciliation: \(error)")
                 context.rollback()
             }
         }
     }
-    
-    
-    
-    // Group by accounting period and precompute gap
+
+    // MARK: - Grouped Rows
     private var groupedReconciliationRows: [(period: AccountingPeriod, rows: [ReconciliationRow])] {
         let dict = Dictionary(grouping: reconciliations) { $0.accountingPeriod }
         return dict.map { (period: $0.key, rows: $0.value.map { rec in
@@ -76,7 +76,8 @@ struct ReconcileListView: View {
             (lhs.period.year == rhs.period.year && lhs.period.month > rhs.period.month)
         }
     }
-    
+
+    // MARK: - Body
     var body: some View {
         NavigationStack {
             if reconciliations.isEmpty {
@@ -91,43 +92,55 @@ struct ReconcileListView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                List {
+                VStack(alignment: .leading) {
                     ForEach(groupedReconciliationRows, id: \.period) { period, rows in
-                        Section(header: Text(period.displayStringWithOpening).font(.headline)) {
-                            //                        Section(header: Text(period.displayString).font(.headline)) {
-                            ForEach(rows, id: \.rec) { row in
-                                NavigationLink(destination: ReconcileDetailView(reconciliation: row.rec)) {
-                                    HStack {
-                                        Text(row.rec.paymentMethod.description).bold()
-                                        Spacer()
-                                        Text("\(row.rec.endingBalance.formatted(.number.precision(.fractionLength(2)))) \(row.rec.currency.description)")
-                                        if let date = row.rec.statementDate {
-                                            Text(date, style: .date)
-                                                .foregroundColor(.gray)
-                                        }
-                                        if row.gap != 0 {
-                                            Text("Gap: \(row.gap.formatted(.number.precision(.fractionLength(2))))")
-                                                .foregroundColor(.red)
-                                        }
-                                    }
-                                }
-                                .contextMenu {
-                                    Button(role: .destructive) {
-                                        reconciliationToDelete = row.rec.objectID
-                                        showingDeleteConfirmation = true
-                                    } label: {
-                                        Label("Delete", systemImage: "trash")
-                                    }
+                        Text(period.displayStringWithOpening)
+                            .font(.headline)
+                            .padding(.top, 4)
+
+                        Table(rows, selection: Binding(get: {
+                            selectedReconciliationID.map { Set([$0]) } ?? Set()
+                        }, set: { newSelection in
+                            selectedReconciliationID = newSelection.first
+                        })) {
+                            TableColumn("Payment Method") { row in
+                                Text(row.rec.paymentMethod.description)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .contentShape(Rectangle())
+                                    .contextMenu { rowContextMenu(row) }
+                            }
+                            TableColumn("Ending Balance") { row in
+                                Text("\(row.rec.endingBalance.formatted(.number.precision(.fractionLength(2)))) \(row.rec.currency.description)")
+                                    .frame(maxWidth: .infinity, alignment: .trailing)
+                                    .contentShape(Rectangle())
+                                    .contextMenu { rowContextMenu(row) }
+                            }
+                            TableColumn("Statement Date") { row in
+                                if let date = row.rec.statementDate {
+                                    Text(date, style: .date)
+                                        .foregroundColor(.gray)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .contentShape(Rectangle())
+                                        .contextMenu { rowContextMenu(row) }
                                 }
                             }
-                            
+                            TableColumn("Gap") { row in
+                                if row.gap != 0 {
+                                    Text("\(row.gap.formatted(.number.precision(.fractionLength(2))))")
+                                        .foregroundColor(.red)
+                                        .frame(maxWidth: .infinity, alignment: .trailing)
+                                        .contentShape(Rectangle())
+                                        .contextMenu { rowContextMenu(row) }
+                                }
+                            }
                         }
+                        .tableStyle(.inset)
+                        .frame(minHeight: CGFloat(rows.count) * 28)
                     }
                 }
-                .listStyle(.plain)
+                .padding(.horizontal)
             }
         }
-        //        .navigationTitle("Reconciliations")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button("New") {
@@ -141,9 +154,8 @@ struct ReconcileListView: View {
                 NewReconciliationView()
                     .environment(\.managedObjectContext, context)
             }
-            .frame(minWidth: 400, minHeight: 300) // ✅ larger, resizable sheet
+            .frame(minWidth: 400, minHeight: 300)
         }
-        
         .confirmationDialog(
             "Are you sure?",
             isPresented: $showingDeleteConfirmation,
@@ -158,6 +170,27 @@ struct ReconcileListView: View {
         } message: {
             Text("This action can be undone using Undo.")
         }
+        .sheet(isPresented: $showDetail) {
+            if let selectedID = selectedReconciliationID,
+               let rec = try? context.existingObject(with: selectedID) as? Reconciliation {
+                ReconcileDetailView(reconciliation: rec)
+                    .frame(minWidth: 600, minHeight: 400)
+            }
+        }
+    }
+
+    // MARK: - Row Context Menu
+    @ViewBuilder
+    private func rowContextMenu(_ row: ReconciliationRow) -> some View {
+        Button("View") {
+            selectedReconciliationID = row.id
+            showDetail = true
+        }
+        Button(role: .destructive) {
+            reconciliationToDelete = row.id
+            showingDeleteConfirmation = true
+        } label: {
+            Label("Delete", systemImage: "trash")
+        }
     }
 }
-
