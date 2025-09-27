@@ -41,6 +41,7 @@ import ItMkLibrary
     case CouncilTax         = 25
     case Spare5             = 26
     case ToYokko            = 27
+    case OpeningBalance     = 28
     // Do not change this either
     case unknown            = 99
     
@@ -78,6 +79,7 @@ func rawValueAsString() -> String {
         case .CouncilTax:       return String( localized: "CouncilTax" )
         case .Spare5:           return String( localized: "Spare5" )
         case .ToYokko:          return String( localized: "ToYokko" )
+        case .OpeningBalance:   return String( localized: "OpeningBalance" )
         case .unknown:          return String( localized: "Unknown" )
         }
     }

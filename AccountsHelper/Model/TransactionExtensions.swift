@@ -231,56 +231,112 @@ extension Transaction {
 // MARK: --- GenerateRandomTransactions
 // Generates 10 random Transaction instances in the given context
 extension Transaction {
-    static func generateRandomTransactions(in context: NSManagedObjectContext) -> [Transaction] {
-        var transactions: [Transaction] = []
+    
+    static func generateRandomTransactions(
+        for paymentMethod: PaymentMethod,
+        currency: Currency,
+        startDate: Date,
+        endDate: Date,
+        count: Int = 20,
+        in context: NSManagedObjectContext
+    ) -> [Transaction] {
         
-        for _ in 0..<10 {
+        var transactions: [Transaction] = []
+        let categories = Array(1...27)
+        let payers = Array(1...5)
+        let payees = ["Tesco", "SPAR", "Lawson", "Komedia", "Ayhadio"]
+        let explanations = ["Business trip", "Client payment", "Old transaction repeated", "Ref 0002", "", ""]
+        
+        for _ in 0..<count {
             let transaction = Transaction(context: context)
             
-            transaction.timestamp = Date()
+            // Random transaction date within the range
+            let randomInterval = TimeInterval.random(in: 0...(endDate.timeIntervalSince(startDate)))
+            transaction.transactionDate = startDate.addingTimeInterval(randomInterval)
             
-            // Random Int32 values within some reasonable ranges
-            transaction.categoryCD = Int32.random(in: 1...27)
-            transaction.currencyCD = Int32.random(in: 1...4)
-            transaction.debitCreditCD = Int32.random(in: 1...2)
-
-            switch transaction.currency {
-            case .GBP:
-                transaction.exchangeRateCD = 100
-            case .USD:
-                transaction.exchangeRateCD = Int32.random(in: 120...150)
-            case .JPY:
-                transaction.exchangeRateCD = Int32.random(in: 15000...21000)
-            case .EUR:
-                transaction.exchangeRateCD = Int32.random(in: 120...150)
-            case .unknown:
-                transaction.exchangeRateCD = Int32(0)
+            transaction.categoryCD = Int32(categories.randomElement()!)
+            transaction.payerCD = Int32(payers.randomElement()!)
+            transaction.payee = payees.randomElement()
+            transaction.explanation = explanations.randomElement()
+            
+            // Assign payment method and currency
+            transaction.paymentMethodCD = paymentMethod.rawValue
+            transaction.currencyCD = currency.rawValue
+            
+            // Assign a debit or credit
+            let isCredit = Bool.random()
+            transaction.debitCreditCD = isCredit ? 2 : 1
+            
+            // Random amount between 10 and 1000 units
+            let amount = Int32.random(in: 10_00...100_00) // in cents
+            transaction.txAmountCD = isCredit ? amount : -amount
+            
+            // Set exchange rate (simple realistic values)
+            switch currency {
+            case .GBP: transaction.exchangeRateCD = 100
+            case .USD: transaction.exchangeRateCD = Int32.random(in: 120...150)
+            case .JPY: transaction.exchangeRateCD = Int32.random(in: 15_000...21_000)
+            case .EUR: transaction.exchangeRateCD = Int32.random(in: 120...150)
+            case .unknown: transaction.exchangeRateCD = 0
             }
-            
-            transaction.payerCD = Int32.random(in: 1...2)
-            transaction.paymentMethodCD = Int32.random(in: 1...4)
-            transaction.splitAmountCD = Int32.random(in: 0...1000)
-            transaction.splitCategoryCD = Int32.random(in: 1...27)
-            transaction.txAmountCD = Int32.random(in: 0...10000)
-            
-            // Random explanation and payee strings
-            transaction.explanation = ["For busiiness trip", "Kuroki paid", "Old transaction repeated", "Ref 0002", "", ""].randomElement()
-            transaction.payee = ["Tesco", "SPAR", "Lawson", "Komedia", "Ayhadio"].randomElement()
-            
-            // Random dates within the last year
-            let now = Date()
-            let randomInterval = TimeInterval.random(in: -365*24*60*60...0)
-//            transaction.timestamp = now.addingTimeInterval(randomInterval)
-            transaction.transactionDate = now.addingTimeInterval(randomInterval)
             
             transactions.append(transaction)
         }
         
-        // Save context if needed
         try? context.save()
-        
         return transactions
     }
+    
+//    static func generateRandomTransactions(in context: NSManagedObjectContext) -> [Transaction] {
+//        var transactions: [Transaction] = []
+//        
+//        for _ in 0..<10 {
+//            let transaction = Transaction(context: context)
+//            
+//            transaction.timestamp = Date()
+//            
+//            // Random Int32 values within some reasonable ranges
+//            transaction.categoryCD = Int32.random(in: 1...27)
+//            transaction.currencyCD = Int32.random(in: 1...4)
+//            transaction.debitCreditCD = Int32.random(in: 1...2)
+//
+//            switch transaction.currency {
+//            case .GBP:
+//                transaction.exchangeRateCD = 100
+//            case .USD:
+//                transaction.exchangeRateCD = Int32.random(in: 120...150)
+//            case .JPY:
+//                transaction.exchangeRateCD = Int32.random(in: 15000...21000)
+//            case .EUR:
+//                transaction.exchangeRateCD = Int32.random(in: 120...150)
+//            case .unknown:
+//                transaction.exchangeRateCD = Int32(0)
+//            }
+//            
+//            transaction.payerCD = Int32.random(in: 1...2)
+//            transaction.paymentMethodCD = Int32.random(in: 1...4)
+//            transaction.splitAmountCD = Int32.random(in: 0...1000)
+//            transaction.splitCategoryCD = Int32.random(in: 1...27)
+//            transaction.txAmountCD = Int32.random(in: 0...10000)
+//            
+//            // Random explanation and payee strings
+//            transaction.explanation = ["For busiiness trip", "Kuroki paid", "Old transaction repeated", "Ref 0002", "", ""].randomElement()
+//            transaction.payee = ["Tesco", "SPAR", "Lawson", "Komedia", "Ayhadio"].randomElement()
+//            
+//            // Random dates within the last year
+//            let now = Date()
+//            let randomInterval = TimeInterval.random(in: -365*24*60*60...0)
+////            transaction.timestamp = now.addingTimeInterval(randomInterval)
+//            transaction.transactionDate = now.addingTimeInterval(randomInterval)
+//            
+//            transactions.append(transaction)
+//        }
+//        
+//        // Save context if needed
+//        try? context.save()
+//        
+//        return transactions
+//    }
 }
 
 extension Transaction {

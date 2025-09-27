@@ -15,6 +15,7 @@
         <attribute name="statementDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
     </entity>
     <entity name="Transaction" representedClassName="Transaction" syncable="YES" codeGenerationType="class">
+        <attribute name="accountingPeriod" optional="YES" attributeType="String"/>
         <attribute name="accountNumber" optional="YES" attributeType="String"/>
         <attribute name="address" optional="YES" attributeType="String"/>
         <attribute name="categoryCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>

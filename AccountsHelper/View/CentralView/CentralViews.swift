@@ -76,7 +76,7 @@ struct CentralViews: View {
         case .editPayer:
             Text("Edit Payer View")
         case .reconcileTransactions:
-            Text("Reconcile Transactions View")
+            ReconcileListView()
         case .browseCurrencies:
             Text("Browse Currencies View")
         case .browsePayees:

@@ -47,7 +47,23 @@ struct NavigatorEditAddView: View {
             
             #if os(macOS)
             Button("Add Random Transactions") {
-                let _ = Transaction.generateRandomTransactions(in: viewContext)
+                // Define payment method and currency
+                let paymentMethod: PaymentMethod = .CashGBP
+                let currency: Currency = .GBP
+
+                // Define the date range for transactions
+                let startDate = Calendar.current.date(byAdding: .month, value: -1, to: Date())! // 1 month ago
+                let endDate = Date() // Today
+
+                // Generate 30 random transactions
+                let transactions = Transaction.generateRandomTransactions(
+                    for: paymentMethod,
+                    currency: currency,
+                    startDate: startDate,
+                    endDate: endDate,
+                    count: 30,
+                    in: viewContext
+                )
             }
             .disabled( gUseLiveStore )
 
@@ -66,6 +82,10 @@ struct NavigatorEditAddView: View {
 //                showingBrowseTransactionsView = true
                 #endif
                 
+            }
+            
+            Button("Test Reconciliation") {
+                appState.replaceCentralView(with: .reconcileTransactions )
             }
 
             Button("Edit Currency") {

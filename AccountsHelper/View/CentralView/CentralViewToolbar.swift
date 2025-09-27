@@ -26,11 +26,11 @@ struct CentralViewToolbar: View {
             HStack( /*alignment: .center*/ ) {
                 
                 // MARK: --- Add Transaction Button
-                ItMkToolBarButton(
-                    action: { appState.selectedCentralView = .addTransaction  },
-                    name: "plus.app",
-                    isSelected: appState.selectedCentralView == .addTransaction )
-                
+//                ItMkToolBarButton(
+//                    action: { appState.selectedCentralView = .addTransaction  },
+//                    name: "plus.app",
+//                    isSelected: appState.selectedCentralView == .addTransaction )
+//                
                 Divider()
                     .frame( width: 1)
                 
