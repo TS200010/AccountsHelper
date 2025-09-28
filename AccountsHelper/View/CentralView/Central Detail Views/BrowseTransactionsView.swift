@@ -203,10 +203,6 @@ struct BrowseTransactionsView: View {
             predicate: predicate
         )
     }
-    
-//    @FetchRequest(
-//        sortDescriptors: [NSSortDescriptor(keyPath: \Transaction.timestamp, ascending: true)]
-//    ) private var transactions: FetchedResults<Transaction>
 
     @State private var selectedTransactionIDs = Set<NSManagedObjectID>()
     @State private var selectedTransaction: Transaction?
@@ -217,6 +213,11 @@ struct BrowseTransactionsView: View {
     // Sorting state
     @State private var sortColumn: SortColumn = .transactionDate
     @State private var ascending: Bool = true
+    
+    // Merging State
+    @State private var showMergeSheet = false
+    @State private var mergeCandidates: [Transaction] = []
+
 
     // MARK: - Derived Rows
     private var transactionRows: [TransactionRow] {
@@ -397,12 +398,24 @@ struct BrowseTransactionsView: View {
     @ViewBuilder
     private func contextMenu(for row: TransactionRow) -> some View {
         if selectedTransactionIDs.contains(row.id) {
+            // Edit Transaction
             if selectedTransactionIDs.count == 1 {
                 Button("Edit Transaction") {
                     appState.selectedTransactionID = row.id
                     appState.pushCentralView(.editTransaction)
                 }
             }
+
+            // Merge Transactions - when exactly two rows are selected
+            if selectedTransactionIDs.count == 2 {
+                Button("Merge Transactions") {
+                    mergeCandidates = transactions.filter { selectedTransactionIDs.contains($0.objectID) }
+                    appState.pushCentralView( .transactionMergeView( mergeCandidates ) )
+                }
+                Divider()
+            }
+                    
+            // Delete Transaction(s)
             Button(role: .destructive) {
                 transactionsToDelete = selectedTransactionIDs
                 showingDeleteConfirmation = true

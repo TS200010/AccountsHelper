@@ -21,6 +21,7 @@ fileprivate struct MergeCandidate: Identifiable {
 struct AMEXCSVImportView: View {
     
     @Environment(\.managedObjectContext) private var viewContext
+    @Environment(AppState.self) var appState
     
     @State private var transactions: [TransactionStruct] = []
     @State private var mergeCandidate: MergeCandidate? = nil
@@ -68,6 +69,29 @@ struct AMEXCSVImportView: View {
                     processNextTransaction()
                 })
             )
+            
+            // TODO: WIP not working because of TransactionStruct 
+//            Alert(
+//                title: Text("Merge Transactions?"),
+//                message: Text("Existing: \(candidate.existing.payee ?? "")\nNew: \(candidate.new.payee ?? "")"),
+//                primaryButton: .default(Text("Merge"), action: {
+//                    appState.pushCentralView(
+//                        .transactionMergeView(
+//                            [candidate.existing, candidate.new],
+//                            onComplete: {
+//                                // Continue import after merge view finishes
+//                                currentIndex += 1
+//                                processNextTransaction()
+//                            }
+//                        )
+//                    )
+//                }),
+//                secondaryButton: .default(Text("Keep Both"), action: {
+//                    saveTransaction(candidate.new, merged: false)
+//                    currentIndex += 1
+//                    processNextTransaction()
+//                })
+//            )
         }
     }
     

@@ -24,6 +24,7 @@ struct AccountsHelperApp: App {
         UserDefaults.standard.set(true, forKey: "com.apple.CoreData.CloudKitDebug")
         
         // Any other setup
+        assert(MergeField.allCases.count == 19, "🚨 MergeField count mismatch! Did you add a new field?")
     }
     
     var body: some Scene {

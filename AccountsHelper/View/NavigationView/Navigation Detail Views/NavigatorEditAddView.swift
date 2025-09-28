@@ -39,7 +39,7 @@ struct NavigatorEditAddView: View {
                 appState.replaceCentralView(with: .browseTransactions( nil ))
 //                appState.selectedCentralView = .browseTransactions
                 #else
-                appState.selectedCentralView = .browseTransactions
+                appState.selectedCentralView = .browseTransactions( nil )
                 showingBrowseTransactionsView = true
                 #endif
                 

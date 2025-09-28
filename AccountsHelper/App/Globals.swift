@@ -15,7 +15,7 @@ import SwiftUI
 
 // MARK: --- Which Coredata DEVELOPMENT Store to use. This is not apples Production yet
 #if os(iOS)
-let gUseLiveStore = false
+let gUseLiveStore = true
 #else
 let gUseLiveStore = false
 #endif

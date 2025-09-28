@@ -9,24 +9,25 @@ import Foundation
 import CoreData
 
 /*
-    @NSManaged public var accountNumber: String?
-    @NSManaged public var address: String?
-    @NSManaged public var categoryCD: Int32
-    @NSManaged public var commissionAmountCD: Int32
-    @NSManaged public var currencyCD: Int32
-    @NSManaged public var debitCreditCD: Int32
-    @NSManaged public var exchangeRateCD: Int32
-    @NSManaged public var explanation: String?
-    @NSManaged public var extendedDetails: String?
-    @NSManaged public var payee: String?
-    @NSManaged public var payerCD: Int32
-    @NSManaged public var paymentMethodCD: Int32
-    @NSManaged public var reference: String?
-    @NSManaged public var splitAmountCD: Int32
-    @NSManaged public var splitCategoryCD: Int32
-    @NSManaged public var timestamp: Date?
-    @NSManaged public var transactionDate: Date?
-    @NSManaged public var txAmountCD: Int32
+ @NSManaged public var accountingPeriod: String?
+ @NSManaged public var accountNumber: String?
+ @NSManaged public var address: String?
+ @NSManaged public var categoryCD: Int32
+ @NSManaged public var commissionAmountCD: Int32
+ @NSManaged public var currencyCD: Int32
+ @NSManaged public var debitCreditCD: Int32
+ @NSManaged public var exchangeRateCD: Int32
+ @NSManaged public var explanation: String?
+ @NSManaged public var extendedDetails: String?
+ @NSManaged public var payee: String?
+ @NSManaged public var payerCD: Int32
+ @NSManaged public var paymentMethodCD: Int32
+ @NSManaged public var reference: String?
+ @NSManaged public var splitAmountCD: Int32
+ @NSManaged public var splitCategoryCD: Int32
+ @NSManaged public var timestamp: Date?
+ @NSManaged public var transactionDate: Date?
+ @NSManaged public var txAmountCD: Int32
  */
 
 /*
@@ -147,16 +148,13 @@ extension Transaction {
 // MARK: --- Estensions to make Table Viewing much simpler
 extension Transaction {
     
-//    func transactionDateAsString() -> String? {
-//        guard let date = transactionDate else { return nil }
-//        let formatter = DateFormatter()
-//        formatter.dateStyle = .short   // or .medium / .long
-//        formatter.timeStyle = .none
-//        return formatter.string(from: date)
-//    }
-    
     func transactionDateAsString() -> String? {
         guard let date = transactionDate else { return nil }
+        return Transaction.dateFormatter.string(from: date)
+    }
+    
+    func timestampAsString() -> String? {
+        guard let date = timestamp else { return nil }
         return Transaction.dateFormatter.string(from: date)
     }
 
@@ -168,10 +166,13 @@ extension Transaction {
         return formatter
     }()
     
-    func txAmountAsStringOld() -> String? {
-//        guard let amount = txAmount as? NSDecimalNumber else { return nil }
+//    func txAmountAsStringOld() -> String? {
+//        let amount = NSDecimalNumber(decimal: txAmount)
 //        return String(format: "%.2f", amount.doubleValue)
-        let amount = NSDecimalNumber(decimal: txAmount)
+//    }
+    
+    func commissionAmountAsString() -> String? {
+        let amount = NSDecimalNumber(decimal: commissionAmount)
         return String(format: "%.2f", amount.doubleValue)
     }
     
@@ -286,57 +287,6 @@ extension Transaction {
         try? context.save()
         return transactions
     }
-    
-//    static func generateRandomTransactions(in context: NSManagedObjectContext) -> [Transaction] {
-//        var transactions: [Transaction] = []
-//        
-//        for _ in 0..<10 {
-//            let transaction = Transaction(context: context)
-//            
-//            transaction.timestamp = Date()
-//            
-//            // Random Int32 values within some reasonable ranges
-//            transaction.categoryCD = Int32.random(in: 1...27)
-//            transaction.currencyCD = Int32.random(in: 1...4)
-//            transaction.debitCreditCD = Int32.random(in: 1...2)
-//
-//            switch transaction.currency {
-//            case .GBP:
-//                transaction.exchangeRateCD = 100
-//            case .USD:
-//                transaction.exchangeRateCD = Int32.random(in: 120...150)
-//            case .JPY:
-//                transaction.exchangeRateCD = Int32.random(in: 15000...21000)
-//            case .EUR:
-//                transaction.exchangeRateCD = Int32.random(in: 120...150)
-//            case .unknown:
-//                transaction.exchangeRateCD = Int32(0)
-//            }
-//            
-//            transaction.payerCD = Int32.random(in: 1...2)
-//            transaction.paymentMethodCD = Int32.random(in: 1...4)
-//            transaction.splitAmountCD = Int32.random(in: 0...1000)
-//            transaction.splitCategoryCD = Int32.random(in: 1...27)
-//            transaction.txAmountCD = Int32.random(in: 0...10000)
-//            
-//            // Random explanation and payee strings
-//            transaction.explanation = ["For busiiness trip", "Kuroki paid", "Old transaction repeated", "Ref 0002", "", ""].randomElement()
-//            transaction.payee = ["Tesco", "SPAR", "Lawson", "Komedia", "Ayhadio"].randomElement()
-//            
-//            // Random dates within the last year
-//            let now = Date()
-//            let randomInterval = TimeInterval.random(in: -365*24*60*60...0)
-////            transaction.timestamp = now.addingTimeInterval(randomInterval)
-//            transaction.transactionDate = now.addingTimeInterval(randomInterval)
-//            
-//            transactions.append(transaction)
-//        }
-//        
-//        // Save context if needed
-//        try? context.save()
-//        
-//        return transactions
-//    }
 }
 
 extension Transaction {
