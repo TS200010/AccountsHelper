@@ -13,10 +13,11 @@ import ItMkLibrary
 
 struct CentralViews: View {
     
-//    @EnvironmentObject var appState: AppState
     @Environment(AppState.self) var appState
     
     var body: some View {
+        
+        // We are doing this ZStack to avoid endlessly adding more and more views.
         ZStack {
             // Base view (saved or current)
             getView(for: appState.savedCentralView ?? appState.selectedCentralView)
@@ -49,38 +50,57 @@ struct CentralViews: View {
         switch viewEnum {
         case .emptyView, .none:
             Text("Select an action from the toolbar")
+            
         case .addTransaction:
             EditTransactionView()
+            
         case .editTransaction:
             EditTransactionView()
-        case .browseTransactions:
-            BrowseTransactionsView()
+                  
+        case .browseTransactions(let predicate):
+            BrowseTransactionsView(predicate: predicate)
+            
         case .browseCategories:
             #if os(macOS)
             BrowseCategoriesView()
             #else
             Text("Not implemented on iOS")
             #endif
+            
         case .reports:
             Text("Reports View")
+            
         case .AMEXCSVImport:
             #if os(macOS)
             AMEXCSVImportView()
             #else
             Text("Not implemented on iOS")
             #endif
+            
         case .editCurrency:
             Text("Edit Currency View")
+            
         case .editPayee:
             Text("Edit Payee View")
+            
         case .editPayer:
             Text("Edit Payer View")
-        case .reconcileTransactions:
-            ReconcileListView()
+            
+        case .reconcilliationListView:
+            ReconcilliationListView()
+            
+//        case .reconciliationTransactionDetail:
+//            Text("ReconcilliationDetailView(reconciliation: xxxx)")
+////            ReconcilliationDetailView(reconciliation: <#Reconciliation#>)
+        case .reconciliationTransactionDetail(let predicate):
+            BrowseTransactionsView(predicate: predicate)
+            
         case .browseCurrencies:
             Text("Browse Currencies View")
+            
         case .browsePayees:
             Text("Browse Payees View")
+            
         case .browsePayers:
             Text("Browse Payers View")
         }
@@ -149,7 +169,7 @@ struct CentralViews: View {
 //                    .id(UUID())
 //                    .transition(.opacity)
 //                
-//            case .reconcileTransactions:
+//            case .reconcilliationListView:
 //                Text("Reconcile Transactions View")
 //                    .id(UUID())
 //                    .transition(.opacity)
@@ -242,7 +262,7 @@ struct CentralViews: View {
 //            case .editPayer:
 //                Text("Edit Payer View")
 //                
-//            case .reconcileTransactions:
+//            case .reconcilliationListView:
 //                Text("Reconcile Transactions View")
 //                
 //            case .browseTransactions:

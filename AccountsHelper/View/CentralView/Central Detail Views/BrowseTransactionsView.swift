@@ -183,13 +183,30 @@ enum SortColumn: CaseIterable, Identifiable {
 
 // MARK: - BrowseTransactionsView
 struct BrowseTransactionsView: View {
+    
+    @FetchRequest private var transactions: FetchedResults<Transaction>
+
+    init(predicate: NSPredicate? = nil) {
+        _transactions = FetchRequest(
+            sortDescriptors: [NSSortDescriptor(keyPath: \Transaction.timestamp, ascending: true)],
+            predicate: predicate
+        )
+    }
+    
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.undoManager) private var undoManager
     @Environment(AppState.self) var appState
 
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \Transaction.timestamp, ascending: true)]
-    ) private var transactions: FetchedResults<Transaction>
+    init(predicate: NSPredicate) {
+        _transactions = FetchRequest(
+            sortDescriptors: [NSSortDescriptor(keyPath: \Transaction.timestamp, ascending: true)],
+            predicate: predicate
+        )
+    }
+    
+//    @FetchRequest(
+//        sortDescriptors: [NSSortDescriptor(keyPath: \Transaction.timestamp, ascending: true)]
+//    ) private var transactions: FetchedResults<Transaction>
 
     @State private var selectedTransactionIDs = Set<NSManagedObjectID>()
     @State private var selectedTransaction: Transaction?
@@ -320,6 +337,12 @@ struct BrowseTransactionsView: View {
     // MARK: - Toolbar
     private var toolbarItems: some ToolbarContent {
         Group {
+            ToolbarItem(placement: .navigation) { 
+                Button { appState.popCentralView()
+                } label: {
+                    Label("Back", systemImage: "chevron.left")
+                }
+            }
             ToolbarItem {
                 Button(role: .destructive) {
                     transactionsToDelete = selectedTransactionIDs

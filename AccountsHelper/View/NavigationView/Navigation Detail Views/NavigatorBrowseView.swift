@@ -16,7 +16,7 @@ struct NavigatorBrowseView: View {
         
         VStack {
             Button("Browse Transactions") {
-                appState.selectedCentralView = .browseTransactions
+                appState.selectedCentralView = .browseTransactions( nil )
             }
 
             Button("Browse Currencies") {

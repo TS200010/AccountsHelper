@@ -17,7 +17,7 @@ struct CentralViewToolbar: View {
 
         HStack {
             
-            Text(appState.selectedCentralView.rawValue )
+            Text(appState.selectedCentralView.asString )
                 .frame( width: gCentralViewHeadingSize, alignment: .leading )
                 .padding( [.leading], 10 )
             

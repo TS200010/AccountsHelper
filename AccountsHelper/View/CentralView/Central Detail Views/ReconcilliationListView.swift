@@ -1,5 +1,5 @@
 //
-//  ReconcileListView.swift
+//  ReconcilliationListView.swift
 //  AccountsHelper
 //
 //  Created by Anthony Stanners on 26/09/2025.
@@ -16,14 +16,16 @@ struct ReconciliationRow: Identifiable, Hashable {
 }
 
 // MARK: - Reconcile List View
-struct ReconcileListView: View {
+struct ReconcilliationListView: View {
 
     @Environment(\.managedObjectContext) var context
     @Environment(\.undoManager) private var undoManager
-
+    @Environment(AppState.self) var appState
+    
     @State private var showingDeleteConfirmation = false
     @State private var reconciliationToDelete: NSManagedObjectID? = nil
     @State private var showingNewReconciliation = false
+    @State private var reconciliationRows: [ReconciliationRow] = []
 
     @State private var selectedReconciliationID: NSManagedObjectID? = nil
     @State private var showDetail = false
@@ -32,6 +34,25 @@ struct ReconcileListView: View {
         entity: Reconciliation.entity(),
         sortDescriptors: [NSSortDescriptor(keyPath: \Reconciliation.statementDate, ascending: false)]
     ) var reconciliations: FetchedResults<Reconciliation>
+    
+//    private func addBalancingTransaction(for tx: Transaction) {
+//        let newTx = Transaction(context: context)
+//        newTx.payee = "Balancing Transaction"
+//        newTx.explanation = "Automatically added to balance"
+//        newTx.currency = tx.currency
+//        newTx.txAmount = -gap  // This will make the gap zero
+//        newTx.transactionDate = Date()
+//        newTx.category = .ToBalance // your custom transaction type
+//
+//        do {
+//            try context.save()
+////            loadTransactions() // reload to refresh list and gap
+//        } catch {
+//            print("Failed to save balancing transaction: \(error)")
+//        }
+//    }
+
+    
 
     // MARK: - Delete Function
     private func deleteReconciliation(_ objectID: NSManagedObjectID) {
@@ -46,6 +67,7 @@ struct ReconcileListView: View {
                 // Delete object
                 context.delete(rec)
                 try context.save()
+                refreshRows()
 
                 // Register undo
                 undoManager?.registerUndo(withTarget: context) { ctx in
@@ -65,18 +87,43 @@ struct ReconcileListView: View {
     }
 
     // MARK: - Grouped Rows
+//    private var groupedReconciliationRows: [(period: AccountingPeriod, rows: [ReconciliationRow])] {
+//        let dict = Dictionary(grouping: reconciliations) { $0.accountingPeriod }
+//        return dict.map { (period: $0.key, rows: $0.value.map { rec in
+//            let gap = (try? rec.reconciliationGap(in: context)) ?? 0
+//            return ReconciliationRow(rec: rec, gap: gap)
+//        }) }
+//        .sorted { lhs, rhs in
+//            lhs.period.year > rhs.period.year ||
+//            (lhs.period.year == rhs.period.year && lhs.period.month > rhs.period.month)
+//        }
+//    }
+    
     private var groupedReconciliationRows: [(period: AccountingPeriod, rows: [ReconciliationRow])] {
-        let dict = Dictionary(grouping: reconciliations) { $0.accountingPeriod }
-        return dict.map { (period: $0.key, rows: $0.value.map { rec in
-            let gap = (try? rec.reconciliationGap(in: context)) ?? 0
-            return ReconciliationRow(rec: rec, gap: gap)
-        }) }
-        .sorted { lhs, rhs in
-            lhs.period.year > rhs.period.year ||
-            (lhs.period.year == rhs.period.year && lhs.period.month > rhs.period.month)
-        }
+        let dict = Dictionary(grouping: reconciliationRows) { $0.rec.accountingPeriod }
+        return dict.map { (period: $0.key, rows: $0.value) }
+            .sorted { lhs, rhs in
+                lhs.period.year > rhs.period.year ||
+                (lhs.period.year == rhs.period.year && lhs.period.month > rhs.period.month)
+            }
     }
 
+    private func refreshRows() {
+        do {
+            let request: NSFetchRequest<Reconciliation> = Reconciliation.fetchRequest()
+            request.sortDescriptors = [NSSortDescriptor(keyPath: \Reconciliation.statementDate, ascending: false)]
+            let recs = try context.fetch(request)
+
+            reconciliationRows = recs.map { rec in
+                let gap = (try? rec.reconciliationGap(in: context)) ?? Decimal(0)
+                return ReconciliationRow(rec: rec, gap: gap)
+            }
+
+        } catch {
+            print("Failed to refresh rows: \(error)")
+        }
+    }
+    
     // MARK: - Body
     var body: some View {
         NavigationStack {
@@ -141,6 +188,9 @@ struct ReconcileListView: View {
                 .padding(.horizontal)
             }
         }
+        .onAppear {
+            refreshRows()
+        }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button("New") {
@@ -170,13 +220,13 @@ struct ReconcileListView: View {
         } message: {
             Text("This action can be undone using Undo.")
         }
-        .sheet(isPresented: $showDetail) {
-            if let selectedID = selectedReconciliationID,
-               let rec = try? context.existingObject(with: selectedID) as? Reconciliation {
-                ReconcileDetailView(reconciliation: rec)
-                    .frame(minWidth: 600, minHeight: 400)
-            }
-        }
+//        .sheet(isPresented: $showDetail) {
+//            if let selectedID = selectedReconciliationID,
+//               let rec = try? context.existingObject(with: selectedID) as? Reconciliation {
+//                ReconcilliationDetailView(reconciliation: rec)
+//                    .frame(minWidth: 600, minHeight: 400)
+//            }
+//        }
     }
 
     // MARK: - Row Context Menu
@@ -184,8 +234,43 @@ struct ReconcileListView: View {
     private func rowContextMenu(_ row: ReconciliationRow) -> some View {
         Button("View") {
             selectedReconciliationID = row.id
-            showDetail = true
+            let predicate = NSPredicate(
+                format: "paymentMethodCD == %d AND transactionDate >= %@ AND transactionDate <= %@",
+                row.rec.paymentMethod.rawValue,
+                row.rec.transactionStartDate as NSDate,
+                row.rec.transactionEndDate as NSDate
+            )
+            appState.pushCentralView(.browseTransactions(predicate))
+//            showDetail = true
         }
+        
+        // Calculate gap on demand
+        Button("Add Balancing Transaction") {
+            do {
+                let gap = try row.rec.reconciliationGap(in: context)
+                guard gap != 0 else { return }
+
+                let newTx = Transaction(context: context)
+                newTx.paymentMethod = row.rec.paymentMethod
+                newTx.payee = "Balancing Transaction"
+                newTx.explanation = "Automatically added to force balance"
+                newTx.currency = row.rec.currency
+                newTx.txAmount = -gap
+                newTx.transactionDate = row.rec.statementDate ?? Date()
+                newTx.timestamp = Date()
+                newTx.category = .ToBalance
+
+                try context.save()
+                refreshRows()
+                
+//                // Force recalculation / refresh
+//                objectWillChange.send() // triggers SwiftUI update
+            } catch {
+                print("Failed to add balancing transaction: \(error)")
+            }
+        }
+        .disabled((try? row.rec.reconciliationGap(in: context)) == 0)
+        
         Button(role: .destructive) {
             reconciliationToDelete = row.id
             showingDeleteConfirmation = true

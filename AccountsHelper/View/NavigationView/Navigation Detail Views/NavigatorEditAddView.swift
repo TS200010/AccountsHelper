@@ -36,7 +36,7 @@ struct NavigatorEditAddView: View {
             
             Button("Browse Transactions") {
                 #if os(macOS)
-                appState.replaceCentralView(with: .browseTransactions)
+                appState.replaceCentralView(with: .browseTransactions( nil ))
 //                appState.selectedCentralView = .browseTransactions
                 #else
                 appState.selectedCentralView = .browseTransactions
@@ -85,7 +85,7 @@ struct NavigatorEditAddView: View {
             }
             
             Button("Test Reconciliation") {
-                appState.replaceCentralView(with: .reconcileTransactions )
+                appState.replaceCentralView(with: .reconcilliationListView )
             }
 
             Button("Edit Currency") {

@@ -1,5 +1,5 @@
 //
-//  ReconcileDetailView.swift
+//  ReconcilliationDetailView.swift
 //  AccountsHelper
 //
 //  Created by Anthony Stanners on 26/09/2025.
@@ -10,7 +10,7 @@ import Foundation
 import SwiftUI
 import CoreData
 
-struct ReconcileDetailView: View {
+struct ReconcilliationDetailView: View {
     @Environment(\.managedObjectContext) private var context
     @ObservedObject var reconciliation: Reconciliation
     
@@ -49,11 +49,12 @@ struct ReconcileDetailView: View {
                     Spacer()
                     Text("\(tx.txAmount.formatted(.number.precision(.fractionLength(2)))) \(tx.currency.description)")
                         .bold()
+                    
+                    
                 }
                 .padding(.vertical, 2)
             }
-            .listStyle(.plain)
-            
+                .listStyle(.plain)
             Spacer()
         }
         .navigationTitle("Reconciliation Detail")

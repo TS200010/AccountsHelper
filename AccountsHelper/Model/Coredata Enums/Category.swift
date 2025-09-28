@@ -42,7 +42,7 @@ import ItMkLibrary
     case Spare5             = 26
     case ToYokko            = 27
     case OpeningBalance     = 28
-    // Do not change this either
+    // Do not change unknown either
     case unknown            = 99
     
     

@@ -59,22 +59,12 @@ class AppState {
     
     // MARK: --- Central View Management
     // TODO: Make this a bit more general purpose - for the other views too.
-//    private var savedCentralView: CentralViewsEnum = .emptyView
-//    func pushCentralView( _ view: CentralViewsEnum ) -> Void {
-//        savedCentralView = selectedCentralView
-//        selectedCentralView = view
-//    }
+
     func pushCentralView(_ view: CentralViewsEnum) {
         savedCentralViewInternal = selectedCentralView
         selectedCentralView = view
     }
-//    func replaceCentralView(with view: CentralViewsEnum) {
-//        if view == .addTransaction {
-//            selectedTransactionID = nil
-//        }
-//        savedCentralView = .emptyView
-//        selectedCentralView = view
-//    }
+
     func replaceCentralView(with view: CentralViewsEnum) {
         if view == .addTransaction {
             selectedTransactionID = nil
@@ -82,10 +72,7 @@ class AppState {
         savedCentralViewInternal = nil
         selectedCentralView = view
     }
-//    func popCentralView() -> Void {
-//        selectedCentralView = savedCentralView
-//        savedCentralView = .emptyView
-//    }
+
     func popCentralView() {
         if let saved = savedCentralViewInternal {
             selectedCentralView = saved
@@ -97,8 +84,4 @@ class AppState {
     func replaceInspectorView(with view: InspectorViewsEnum) {
         selectedInspectorView = view
     }
-    
-//    func reset() -> Void {
-//        selectedTransactio = nil
-//    }
 }
