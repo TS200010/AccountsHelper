@@ -1,36 +1,29 @@
-//
-//  TransactionsSummaryView.swift
-//  AccountsHelper
-//
-//  Created by Anthony Stanners on 28/09/2025.
-//
-
 import SwiftUI
 import CoreData
 
 // MARK: - Extension to sum transactions including splits
 extension Array where Element == Transaction {
-    
     func sumByCategoryIncludingSplits() -> [String: Decimal] {
         var result: [String: Decimal] = [:]
         
-        // Initialize all categories with zero
-        let categoriesByRawValue = Category.allCases.sorted { $0.rawValue < $1.rawValue }
-        for category in categoriesByRawValue {
+        for category in Category.allCases.sorted(by: { $0.rawValue < $1.rawValue }) {
             result[category.description] = 0
         }
         
-        // Sum split amounts and remainder amounts
         for tx in self {
-            let splitCategory = tx.splitCategory.description
-            result[splitCategory, default: 0] += tx.splitAmount
-            
-            let remainderCategory = tx.splitRemainderCategory.description
-            result[remainderCategory, default: 0] += tx.splitRemainderAmount
+            result[tx.splitCategory.description, default: 0] += tx.splitAmount
+            result[tx.splitRemainderCategory.description, default: 0] += tx.splitRemainderAmount
         }
         
         return result
     }
+}
+
+// MARK: - Identifiable wrapper for table rows
+struct CategoryTotal: Identifiable {
+    let id = UUID()
+    let category: String
+    let total: String
 }
 
 // MARK: - Transaction Summary View
@@ -40,7 +33,6 @@ struct TransactionsSummaryView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(AppState.self) var appState
     
-    // MARK: - Initializers
     init(predicate: NSPredicate? = nil) {
         _transactions = FetchRequest(
             sortDescriptors: [NSSortDescriptor(keyPath: \Transaction.timestamp, ascending: true)],
@@ -48,50 +40,26 @@ struct TransactionsSummaryView: View {
         )
     }
     
-    init(predicate: NSPredicate) {
-        _transactions = FetchRequest(
-            sortDescriptors: [NSSortDescriptor(keyPath: \Transaction.timestamp, ascending: true)],
-            predicate: predicate
-        )
-    }
-    
-    // MARK: - Totals formatted as strings in rawValue order
-    private var totalsArray: [(category: Category, total: String)] {
+    private var totalsArray: [CategoryTotal] {
         let byCategory = Array(transactions).sumByCategoryIncludingSplits()
-        
         return Category.allCases
             .sorted { $0.rawValue < $1.rawValue }
             .map { category in
                 let value = byCategory[category.description] ?? 0
                 let formatted = String(format: "%.2f", NSDecimalNumber(decimal: value).doubleValue)
-                return (category, formatted)
+                return CategoryTotal(category: category.description, total: formatted)
             }
     }
     
-    // MARK: - Body
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
-                ForEach(totalsArray, id: \.category) { item in
-                    HStack {
-                        Text(item.category.description)
-                            .font(.body)
-                        Spacer()
-                        Text(item.total)
-                            .font(.body)
-                    }
-                    .padding(.horizontal)
-                }
-            }
-            .padding(.vertical)
+        Table(totalsArray) {
+            TableColumn("Category", value: \.category)
+            TableColumn("Total", value: \.total)
         }
-        .toolbar { toolbarItems }
-        .navigationTitle("Transactions Summary")
-    }
-    
-    // MARK: - Toolbar
-    private var toolbarItems: some ToolbarContent {
-        Group {
+        .tableStyle(.inset(alternatesRowBackgrounds: true))
+        .frame(minWidth: 300, maxWidth: .infinity, minHeight: 200)
+        .padding()
+        .toolbar {
             ToolbarItem(placement: .navigation) {
                 Button {
                     appState.popCentralView()
@@ -100,5 +68,6 @@ struct TransactionsSummaryView: View {
                 }
             }
         }
+        .navigationTitle("Transactions Summary")
     }
 }
