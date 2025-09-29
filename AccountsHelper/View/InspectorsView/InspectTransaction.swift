@@ -7,6 +7,7 @@
 
 import SwiftUI
 import CoreData
+import Observation
 
 struct InspectTransaction: View {
     @Environment(\.managedObjectContext) private var viewContext

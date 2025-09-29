@@ -46,41 +46,35 @@ var gGlobalAlert: GlobalAlert = GlobalAlert()
 // MARK: --- Global UI State
 @Observable
 class AppState {
-    
+
     var selectedTransactionID: NSManagedObjectID? = nil
-    
     var selectedNavigatorView: NavigatorViewsEnum = .edit
     
-    var selectedCentralView: CentralViewsEnum = .emptyView
-    private var savedCentralViewInternal: CentralViewsEnum? = nil
-    var savedCentralView: CentralViewsEnum? { savedCentralViewInternal }
+    // Central view stack
+    public private(set) var centralViewStack: [CentralViewsEnum] = []
+    
+    var selectedCentralView: CentralViewsEnum {
+        centralViewStack.last ?? .emptyView
+    }
     
     var selectedInspectorView: InspectorViewsEnum = .emptyView
-    
-    // MARK: --- Central View Management
-    // TODO: Make this a bit more general purpose - for the other views too.
 
+    // MARK: - Central View Management
     func pushCentralView(_ view: CentralViewsEnum) {
-        savedCentralViewInternal = selectedCentralView
-        selectedCentralView = view
-    }
-
-    func replaceCentralView(with view: CentralViewsEnum) {
-        if view == .addTransaction {
-            selectedTransactionID = nil
-        }
-        savedCentralViewInternal = nil
-        selectedCentralView = view
+        centralViewStack.append(view)
     }
 
     func popCentralView() {
-        if let saved = savedCentralViewInternal {
-            selectedCentralView = saved
-            savedCentralViewInternal = nil
+        if !centralViewStack.isEmpty {
+            centralViewStack.removeLast()
         }
     }
-    
-    // MARK: --- Inspector View Management
+
+    func replaceCentralView(with view: CentralViewsEnum) {
+        centralViewStack = [view]
+    }
+
+    // MARK: - Inspector View Management
     func replaceInspectorView(with view: InspectorViewsEnum) {
         selectedInspectorView = view
     }

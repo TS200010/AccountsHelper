@@ -86,8 +86,8 @@ struct EditTransactionView: View {
         }
 
         onSave?(transactionData)
-        appState.selectedTransactionID = nil
-        appState.popCentralView()
+//        appState.selectedTransactionID = nil
+//        appState.popCentralView()
     }
 
     // MARK: - Body

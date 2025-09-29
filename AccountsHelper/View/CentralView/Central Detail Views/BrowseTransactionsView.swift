@@ -193,16 +193,17 @@ struct BrowseTransactionsView: View {
         )
     }
     
-    @Environment(\.managedObjectContext) private var viewContext
-    @Environment(\.undoManager) private var undoManager
-    @Environment(AppState.self) var appState
-
     init(predicate: NSPredicate) {
         _transactions = FetchRequest(
             sortDescriptors: [NSSortDescriptor(keyPath: \Transaction.timestamp, ascending: true)],
             predicate: predicate
         )
     }
+    
+    @Environment(\.managedObjectContext) private var viewContext
+    @Environment(\.undoManager) private var undoManager
+    @Environment(AppState.self) var appState
+
 
     @State private var selectedTransactionIDs = Set<NSManagedObjectID>()
     @State private var selectedTransaction: Transaction?
@@ -239,9 +240,9 @@ struct BrowseTransactionsView: View {
             statusBar
         }
         .toolbar { toolbarItems }
-        .sheet(isPresented: $showingEditTransactionView) {
-            EditTransactionView(transaction: selectedTransaction)
-        }
+//        .sheet(isPresented: $showingEditTransactionView) {
+//            EditTransactionView(transaction: selectedTransaction)
+//        }
         .confirmationDialog(
             "Are you sure?",
             isPresented: $showingDeleteConfirmation,
@@ -402,7 +403,7 @@ struct BrowseTransactionsView: View {
             if selectedTransactionIDs.count == 1 {
                 Button("Edit Transaction") {
                     appState.selectedTransactionID = row.id
-                    appState.pushCentralView(.editTransaction)
+                    appState.pushCentralView(.editTransaction( existingTransaction: row.transaction ) )
                 }
             }
 

@@ -225,7 +225,7 @@ struct ReconcilliationListView: View {
     // MARK: - Row Context Menu
     @ViewBuilder
     private func rowContextMenu(_ row: ReconciliationRow) -> some View {
-        Button("View") {
+        Button("Transactions") {
             selectedReconciliationID = row.id
             let predicate = NSPredicate(
                 format: "paymentMethodCD == %d AND transactionDate >= %@ AND transactionDate <= %@",
@@ -237,11 +237,18 @@ struct ReconcilliationListView: View {
 //            showDetail = true
         }
         
-//        Button {
-//            appState.pushCentralView( .transactionSummary( ) )
-//        } label: {
-//            Label("Transactions", systemImage: "doc.text.magnifyingglass")
-//        }
+        Button {
+            let predicate = NSPredicate(
+                format: "paymentMethodCD == %d AND transactionDate >= %@ AND transactionDate <= %@",
+                row.rec.paymentMethod.rawValue,
+                row.rec.transactionStartDate as NSDate,
+                row.rec.transactionEndDate as NSDate
+            )
+            appState.pushCentralView(.transactionSummary( predicate ))
+ //           appState.pushCentralView( .transactionSummary( ) )
+        } label: {
+            Label("Summary", systemImage: "doc.text.magnifyingglass")
+        }
         
         // Calculate gap on demand
         Button("Add Balancing Tx") {
