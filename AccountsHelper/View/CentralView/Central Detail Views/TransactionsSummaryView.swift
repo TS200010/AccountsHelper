@@ -19,19 +19,26 @@ extension Array where Element == Transaction {
     }
 }
 
-// MARK: - Identifiable wrapper for table rows
-struct CategoryTotal: Identifiable {
-    let id = UUID()
-    let category: String
-    let total: String
+// MARK: - CategoryRow Wrapper
+fileprivate struct CategoryRow: Identifiable, Hashable {
+    let category: Category
+    let total: Decimal
+    
+    var id: String { category.description }   // stable ID
+    var totalString: String {
+        String(format: "%.2f", NSDecimalNumber(decimal: total).doubleValue)
+    }
 }
 
-// MARK: - Transaction Summary View
+// MARK: - TransactionsSummaryView
 struct TransactionsSummaryView: View {
     
     @FetchRequest private var transactions: FetchedResults<Transaction>
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(AppState.self) var appState
+    
+    // Selection state (single selection)
+    @State private var selectedCategoryID: CategoryRow.ID?
     
     init(predicate: NSPredicate? = nil) {
         _transactions = FetchRequest(
@@ -40,26 +47,65 @@ struct TransactionsSummaryView: View {
         )
     }
     
-    private var totalsArray: [CategoryTotal] {
+    // Derived rows
+    private var categoryRows: [CategoryRow] {
         let byCategory = Array(transactions).sumByCategoryIncludingSplits()
         return Category.allCases
             .sorted { $0.rawValue < $1.rawValue }
             .map { category in
-                let value = byCategory[category.description] ?? 0
-                let formatted = String(format: "%.2f", NSDecimalNumber(decimal: value).doubleValue)
-                return CategoryTotal(category: category.description, total: formatted)
+                let total = byCategory[category.description] ?? 0
+                return CategoryRow(category: category, total: total)
             }
     }
     
+    // MARK: - Body
     var body: some View {
-        Table(totalsArray) {
-            TableColumn("Category", value: \.category)
-            TableColumn("Total", value: \.total)
+        VStack(spacing: 0) {
+            Table(categoryRows, selection: $selectedCategoryID) {
+                TableColumn("Category") { row in
+                    HStack {
+                        Text(row.category.description)
+                        Spacer()
+                    }
+                    .contentShape(Rectangle())
+                    .contextMenu {
+                        Button("Print Category") {
+                            print("Selected category: \(row.category.description)")
+                        }
+                    }
+                }
+                TableColumn("Total") { row in
+                    Text(row.totalString)
+                }
+            }
+            .tableStyle(.inset(alternatesRowBackgrounds: true))
+            .frame(minWidth: 300, maxWidth: .infinity, minHeight: 200)
+            .padding()
+            
+            statusBar
         }
-        .tableStyle(.inset(alternatesRowBackgrounds: true))
-        .frame(minWidth: 300, maxWidth: .infinity, minHeight: 200)
-        .padding()
-        .toolbar {
+        .toolbar { toolbarItems }
+        .navigationTitle("Transactions Summary")
+    }
+    
+    // MARK: - Status bar
+    private var statusBar: some View {
+        HStack {
+            Spacer()
+            if let selectedID = selectedCategoryID,
+               let row = categoryRows.first(where: { $0.id == selectedID }) {
+                Text("Selected: \(row.category.description) – \(row.totalString)")
+            } else {
+                Text("Total Categories: \(categoryRows.count)")
+            }
+        }
+        .padding(8)
+        .background(Color.platformWindowBackgroundColor)
+    }
+    
+    // MARK: - Toolbar
+    private var toolbarItems: some ToolbarContent {
+        Group {
             ToolbarItem(placement: .navigation) {
                 Button {
                     appState.popCentralView()
@@ -68,6 +114,5 @@ struct TransactionsSummaryView: View {
                 }
             }
         }
-        .navigationTitle("Transactions Summary")
     }
 }
