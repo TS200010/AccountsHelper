@@ -106,6 +106,9 @@ struct CentralViews: View {
             
         case .transactionMergeView(let txs, let onComplete):
             MergeTransactionsView(transactions: txs, onComplete: onComplete)
+            
+        case .transactionSummary( let txs, let pmt ):
+            TransactionSummaryView( transactions: txs, paymentMethod: pmt )
     
         }
         

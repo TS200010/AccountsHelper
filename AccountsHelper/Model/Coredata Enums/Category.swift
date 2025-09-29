@@ -11,7 +11,9 @@ import Foundation
 import Foundation
 import ItMkLibrary
 
-@objc enum Category: Int32, CaseIterable, Codable, HasStringRepresentation, CustomStringConvertible {
+@objc enum Category: Int32, CaseIterable, Codable, HasStringRepresentation, CustomStringConvertible, Identifiable{
+
+    var id: Int32 { return self.rawValue }
     
     // Do not use zero as it is also effectively unknown
     case Spare1             = 1

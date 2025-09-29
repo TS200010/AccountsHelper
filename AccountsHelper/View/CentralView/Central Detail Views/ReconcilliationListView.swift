@@ -220,13 +220,6 @@ struct ReconcilliationListView: View {
         } message: {
             Text("This action can be undone using Undo.")
         }
-//        .sheet(isPresented: $showDetail) {
-//            if let selectedID = selectedReconciliationID,
-//               let rec = try? context.existingObject(with: selectedID) as? Reconciliation {
-//                ReconcilliationDetailView(reconciliation: rec)
-//                    .frame(minWidth: 600, minHeight: 400)
-//            }
-//        }
     }
 
     // MARK: - Row Context Menu
@@ -244,8 +237,14 @@ struct ReconcilliationListView: View {
 //            showDetail = true
         }
         
+//        Button {
+//            appState.pushCentralView( .transactionSummary( ) )
+//        } label: {
+//            Label("Transactions", systemImage: "doc.text.magnifyingglass")
+//        }
+        
         // Calculate gap on demand
-        Button("Add Balancing Transaction") {
+        Button("Add Balancing Tx") {
             do {
                 let gap = try row.rec.reconciliationGap(in: context)
                 guard gap != 0 else { return }
@@ -270,6 +269,8 @@ struct ReconcilliationListView: View {
             }
         }
         .disabled((try? row.rec.reconciliationGap(in: context)) == 0)
+        
+        Divider()
         
         Button(role: .destructive) {
             reconciliationToDelete = row.id
