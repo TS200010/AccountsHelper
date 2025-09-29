@@ -199,7 +199,16 @@ struct ReconcilliationListView: View {
                 .keyboardShortcut("N", modifiers: [.command])
             }
         }
-        .sheet(isPresented: $showingNewReconciliation) {
+//        .sheet(isPresented: $showingNewReconciliation) {
+//            NavigationStack {
+//                NewReconciliationView()
+//                    .environment(\.managedObjectContext, context)
+//            }
+//            .frame(minWidth: 400, minHeight: 300)
+//        }
+        .sheet(isPresented: $showingNewReconciliation, onDismiss: {
+            refreshRows()
+        }) {
             NavigationStack {
                 NewReconciliationView()
                     .environment(\.managedObjectContext, context)
@@ -220,6 +229,9 @@ struct ReconcilliationListView: View {
         } message: {
             Text("This action can be undone using Undo.")
         }
+        .onReceive(NotificationCenter.default.publisher(for: .NSManagedObjectContextDidSave, object: context)) { _ in
+            refreshRows()
+        } // Belt and braces to ensure the view stays updated
     }
 
     // MARK: - Row Context Menu

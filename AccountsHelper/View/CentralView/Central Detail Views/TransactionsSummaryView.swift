@@ -3,18 +3,15 @@ import CoreData
 
 // MARK: - Extension to sum transactions including splits
 extension Array where Element == Transaction {
-    func sumByCategoryIncludingSplits() -> [String: Decimal] {
-        var result: [String: Decimal] = [:]
-        
+    func sumByCategoryIncludingSplits() -> [Category: Decimal] {
+        var result: [Category: Decimal] = [:]
         for category in Category.allCases.sorted(by: { $0.rawValue < $1.rawValue }) {
-            result[category.description] = 0
+            result[category] = 0
         }
-        
         for tx in self {
-            result[tx.splitCategory.description, default: 0] += tx.splitAmount
-            result[tx.splitRemainderCategory.description, default: 0] += tx.splitRemainderAmount
+            result[tx.splitCategory, default: 0] += tx.splitAmount
+            result[tx.splitRemainderCategory, default: 0] += tx.splitRemainderAmount
         }
-        
         return result
     }
 }
@@ -24,7 +21,8 @@ fileprivate struct CategoryRow: Identifiable, Hashable {
     let category: Category
     let total: Decimal
     
-    var id: String { category.description }   // stable ID
+    var id: Int32 { category.id } // stable ID for selection
+    
     var totalString: String {
         String(format: "%.2f", NSDecimalNumber(decimal: total).doubleValue)
     }
@@ -37,8 +35,8 @@ struct TransactionsSummaryView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(AppState.self) var appState
     
-    // Selection state (single selection)
-    @State private var selectedCategoryID: CategoryRow.ID?
+    // Single selection
+    @State private var selectedCategoryID: Int32?
     
     init(predicate: NSPredicate? = nil) {
         _transactions = FetchRequest(
@@ -48,59 +46,60 @@ struct TransactionsSummaryView: View {
     }
     
     // Derived rows
-    private var categoryRows: [CategoryRow] {
+    fileprivate var categoryRows: [CategoryRow] {
         let byCategory = Array(transactions).sumByCategoryIncludingSplits()
-        return Category.allCases
+        let rows = Category.allCases
             .sorted { $0.rawValue < $1.rawValue }
-            .map { category in
-                let total = byCategory[category.description] ?? 0
-                return CategoryRow(category: category, total: total)
+            .map { category -> CategoryRow in
+                let total = byCategory[category] ?? 0
+                let row = CategoryRow(category: category, total: total)
+                print("CategoryRow created: \(row.category.description), id: \(row.id)")
+                return row
             }
+        return rows
+    }
+    
+    // MARK: - Table
+    private var categoriesTable: some View {
+        Table(categoryRows, selection: $selectedCategoryID) {
+            TableColumn("Category") { row in
+                categoryCell(for: row)
+            }
+            TableColumn("Total") { row in
+                Text(row.totalString)
+            }
+        }
+        .tableStyle(.inset(alternatesRowBackgrounds: true))
+        .frame(minWidth: 300, maxWidth: .infinity, minHeight: 200)
+        .padding()
+    }
+    
+    // MARK: - Category Cell with Context Menu
+    @ViewBuilder
+    private func categoryCell(for row: CategoryRow) -> some View {
+        HStack {
+            Text(row.category.description)
+            Spacer()
+        }
+        .contentShape(Rectangle())
+        .contextMenu {
+            Button("Print Category") {
+                print("Selected category: \(row.category.description)")
+            }
+            Button("Transactions") {
+                let predicate = NSPredicate(format: "categoryCD == %d", row.id)
+//                DispatchQueue.main.async {
+                    appState.pushCentralView(.browseTransactions( predicate) )
+//                }
+            }
+        }
     }
     
     // MARK: - Body
     var body: some View {
-        VStack(spacing: 0) {
-            Table(categoryRows, selection: $selectedCategoryID) {
-                TableColumn("Category") { row in
-                    HStack {
-                        Text(row.category.description)
-                        Spacer()
-                    }
-                    .contentShape(Rectangle())
-                    .contextMenu {
-                        Button("Print Category") {
-                            print("Selected category: \(row.category.description)")
-                        }
-                    }
-                }
-                TableColumn("Total") { row in
-                    Text(row.totalString)
-                }
-            }
-            .tableStyle(.inset(alternatesRowBackgrounds: true))
-            .frame(minWidth: 300, maxWidth: .infinity, minHeight: 200)
-            .padding()
-            
-            statusBar
-        }
-        .toolbar { toolbarItems }
-        .navigationTitle("Transactions Summary")
-    }
-    
-    // MARK: - Status bar
-    private var statusBar: some View {
-        HStack {
-            Spacer()
-            if let selectedID = selectedCategoryID,
-               let row = categoryRows.first(where: { $0.id == selectedID }) {
-                Text("Selected: \(row.category.description) – \(row.totalString)")
-            } else {
-                Text("Total Categories: \(categoryRows.count)")
-            }
-        }
-        .padding(8)
-        .background(Color.platformWindowBackgroundColor)
+        categoriesTable
+            .toolbar { toolbarItems }
+            .navigationTitle("Transactions Summary")
     }
     
     // MARK: - Toolbar

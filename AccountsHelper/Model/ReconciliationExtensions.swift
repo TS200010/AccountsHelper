@@ -228,24 +228,44 @@ extension Reconciliation {
     
     // Compute the start date for transactions (day after previous reconciliation)
     var transactionStartDate: Date {
+        
+        guard let currentStatement = self.statementDate else {
+            return Date.distantPast
+        }
+        
         if let context = self.managedObjectContext,
            let previous = try? Reconciliation.fetchPrevious(for: self.paymentMethod, before: self.statementDate!, context: context) {
             return Calendar.current.date(byAdding: .day, value: 1, to: previous.statementDate!)!
         }
-        return self.statementDate! // fallback: first reconciliation
+        return currentStatement // fallback
     }
     
     var transactionEndDate: Date {
-        return self.statementDate!
+        return self.statementDate ?? Date.distantPast
     }
+    
+//    func fetchTransactions(in context: NSManagedObjectContext) throws -> [Transaction] {
+//        let request: NSFetchRequest<Transaction> = Transaction.fetchRequest()
+//        request.predicate = NSPredicate(
+//            format: "paymentMethodCD == %d AND transactionDate >= %@ AND transactionDate <= %@",
+//            self.paymentMethod.rawValue,
+//            self.transactionStartDate as NSDate,
+//            self.transactionEndDate as NSDate
+//        )
+//        request.sortDescriptors = [NSSortDescriptor(key: "transactionDate", ascending: true)]
+//        return try context.fetch(request)
+//    }
     
     func fetchTransactions(in context: NSManagedObjectContext) throws -> [Transaction] {
         let request: NSFetchRequest<Transaction> = Transaction.fetchRequest()
+        let start = self.transactionStartDate as NSDate
+        let end = self.transactionEndDate as NSDate
+
         request.predicate = NSPredicate(
             format: "paymentMethodCD == %d AND transactionDate >= %@ AND transactionDate <= %@",
             self.paymentMethod.rawValue,
-            self.transactionStartDate as NSDate,
-            self.transactionEndDate as NSDate
+            start,
+            end
         )
         request.sortDescriptors = [NSSortDescriptor(key: "transactionDate", ascending: true)]
         return try context.fetch(request)
@@ -255,25 +275,42 @@ extension Reconciliation {
     /// Returns the difference between the expected ending balance
     /// (previous reconciliation balance + sum of transactions)
     /// and the actual reconciliation ending balance.
+//    func reconciliationGap(in context: NSManagedObjectContext) throws -> Decimal {
+//        let txs = try fetchTransactions(in: context)
+//        let sum = txs.reduce(Decimal(0)) { total, tx in
+//            total + tx.txAmount
+//        }
+//        
+//        let previousBalance: Decimal
+//        if let previous = try Reconciliation.fetchPrevious(
+//            for: self.paymentMethod,
+//            before: self.statementDate!,
+//            context: context
+//        ) {
+//            previousBalance = previous.endingBalance
+//        } else {
+//            previousBalance = 0
+//        }
+//        
+//        let expectedBalance = previousBalance + sum
+//        return expectedBalance - self.endingBalance
+//    }
+    
     func reconciliationGap(in context: NSManagedObjectContext) throws -> Decimal {
         let txs = try fetchTransactions(in: context)
         let sum = txs.reduce(Decimal(0)) { total, tx in
             total + tx.txAmount
         }
-        
+
         let previousBalance: Decimal
-        if let previous = try Reconciliation.fetchPrevious(
-            for: self.paymentMethod,
-            before: self.statementDate!,
-            context: context
-        ) {
-            previousBalance = previous.endingBalance
+        if let prev = try Reconciliation.fetchPrevious(for: self.paymentMethod, before: self.transactionEndDate, context: context) {
+            previousBalance = prev.endingBalance
         } else {
             previousBalance = 0
         }
-        
+
         let expectedBalance = previousBalance + sum
-        return expectedBalance - self.endingBalance
+        return expectedBalance - (self.endingBalance)
     }
     
     /// Convenience: check if out of balance is exactly zero
