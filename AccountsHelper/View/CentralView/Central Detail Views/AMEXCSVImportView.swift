@@ -6,7 +6,6 @@
 //
 //
 
-
 #if os(macOS)
 import SwiftUI
 import CoreData
@@ -26,7 +25,6 @@ struct AMEXCSVImportView: View {
     @State private var transactions: [TransactionStruct] = []
     @State private var mergeCandidate: MergeCandidate? = nil
     @State private var currentIndex = 0
-    
     @State private var importedCount = 0
     @State private var mergedCount = 0
     @State private var statusMessage = "Select a CSV file to start import."
@@ -133,7 +131,7 @@ struct AMEXCSVImportView: View {
         DispatchQueue.main.async {
             while self.currentIndex < self.transactions.count {
                 let tx = self.transactions[self.currentIndex]
-                print("Processing CSV row \(self.currentIndex): payee='\(tx.payee ?? "")' amount=\(tx.txAmount) date=\(String(describing: tx.transactionDate))")
+//                print("Processing CSV row \(self.currentIndex): payee='\(tx.payee ?? "")' amount=\(tx.txAmount) date=\(String(describing: tx.transactionDate))")
 
                 // Find candidate in snapshot
                 if let existing = AMEXCSVImporter.findMergeCandidateInSnapshot(
@@ -155,19 +153,6 @@ struct AMEXCSVImportView: View {
         }
     }
 
-    
-//    private func merge(existing: Transaction, into new: TransactionStruct) {
-//        var newTx = new
-//        if newTx.address?.isEmpty ?? true { newTx.address = existing.address }
-//        if newTx.category == .unknown { newTx.category = existing.category }
-//        if newTx.payer == .unknown { newTx.payer = existing.payer }
-//        if newTx.reference?.isEmpty ?? true { newTx.reference = existing.reference }
-//        if newTx.extendedDetails?.isEmpty ?? true { newTx.extendedDetails = existing.extendedDetails }
-//        
-//        if let index = transactions.firstIndex(where: { $0.transactionDate == new.transactionDate && $0.txAmount == new.txAmount }) {
-//            transactions[index] = newTx
-//        }
-//    }
     private func merge(existing: Transaction, into new: TransactionStruct) {
         var newTx = new
         
@@ -184,15 +169,6 @@ struct AMEXCSVImportView: View {
     }
 
     
-//    private func saveTransaction(_ txStruct: TransactionStruct, merged: Bool) {
-//        let tx = Transaction(context: viewContext)
-//        txStruct.apply(to: tx)
-//        try? viewContext.save()
-//        
-//        importedCount += 1
-//        if merged { mergedCount += 1 }
-//        statusMessage = "Imported: \(importedCount), Merged: \(mergedCount)"
-//    }
     private func saveTransaction(_ txStruct: TransactionStruct, merged: Bool, existingTx: Transaction? = nil) {
         let tx: Transaction
         
@@ -231,11 +207,7 @@ extension AMEXCSVImporter {
         snapshot: [Transaction]
     ) -> Transaction? {
         let calendar = Calendar.current
-//        print(snapshot.first)
-//        return snapshot.first
         return snapshot.first(where: { existing in
-//            let amountMatches = existing.txAmountCD == Int32((newTx.txAmount * 100).rounded())
-//            let amountMatches = existing.txAmountCD == Int32((newTx.txAmount * Decimal(100)).rounded())
             let scaled = (newTx.txAmount * Decimal(100)) as NSDecimalNumber
             let amountMatches = existing.txAmountCD == Int32(truncating: scaled)
             
@@ -256,58 +228,3 @@ extension AMEXCSVImporter {
     }
 }
 #endif
-
-//
-//#if os(macOS)
-//import SwiftUI
-//import CoreData
-//import AppKit
-//
-//
-//struct CSVImportView: View {
-//    @Environment(\.managedObjectContext) private var viewContext
-//    @State private var showingAlert = false
-//    @State private var alertMessage = ""
-//
-//    var body: some View {
-//        VStack(spacing: 20) {
-//            Text("AMEX CSV Importer")
-//                .font(.title)
-//                .padding()
-//
-//            Button("Select CSV File") {
-//                selectCSVFile()
-//            }
-//            .padding()
-//        }
-//        .frame(width: 400, height: 200)
-//        .alert(isPresented: $showingAlert) {
-//            Alert(title: Text("CSV Import"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
-//        }
-//    }
-//
-//    private func selectCSVFile() {
-//        let panel = NSOpenPanel()
-//        panel.allowedFileTypes = ["csv"]
-//        panel.allowsMultipleSelection = false
-//        panel.canChooseDirectories = false
-//        panel.title = "Select an AMEX CSV file to import"
-//
-//        if panel.runModal() == .OK, let url = panel.url {
-//            importCSV(at: url)
-//        }
-//    }
-//
-//    private func importCSV(at url: URL) {
-//        do {
-//            AMEXCSVImporter.importCSVToCoreData(fileURL: url, context: viewContext)
-//            alertMessage = "CSV import completed successfully!"
-//        } catch {
-//            alertMessage = "Failed to import CSV: \(error.localizedDescription)"
-//        }
-//        showingAlert = true
-//    }
-//}
-//
-//#endif
-//

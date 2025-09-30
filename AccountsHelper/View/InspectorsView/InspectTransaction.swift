@@ -62,7 +62,7 @@ struct InspectTransaction: View {
                             Divider()
                             transactionRow("Comm Amt:", String(format: "%.2f", (transaction.commissionAmount as NSDecimalNumber?)?.doubleValue ?? 0))
                             Divider()
-                            transactionRow("Total in GBP:", String(format: "%.2f", (transaction.totalInGBP as NSDecimalNumber?)?.doubleValue ?? 0))
+                            transactionRow("Total in GBP:", String(format: "%.2f", (transaction.totalAmountInGBP as NSDecimalNumber?)?.doubleValue ?? 0))
                         }
                         
                         // MARK: - Parties Section

@@ -3,18 +3,43 @@ import CoreData
 
 // MARK: - Extension to sum transactions including splits
 extension Array where Element == Transaction {
-    func sumByCategoryIncludingSplits() -> [Category: Decimal] {
+    func sumByCategoryIncludingSplitsInGBP() -> [Category: Decimal] {
         var result: [Category: Decimal] = [:]
-        for category in Category.allCases.sorted(by: { $0.rawValue < $1.rawValue }) {
+        
+        for category in Category.allCases {
             result[category] = 0
         }
+        
         for tx in self {
-            result[tx.splitCategory, default: 0] += tx.splitAmount
-            result[tx.splitRemainderCategory, default: 0] += tx.splitRemainderAmount
+            result[tx.splitCategory, default: 0] += tx.splitAmountInGBP
+            result[tx.splitRemainderCategory, default: 0] += tx.splitRemainderAmountInGBP
         }
+        
         return result
     }
 }
+
+extension Decimal {
+    var string2f: String {
+        String(format: "%.2f", NSDecimalNumber(decimal: self).doubleValue)
+    }
+}
+
+//extension Array where Element == Transaction {
+//    var totalInGBP: Decimal {
+//        self.reduce(0) { $0 + $1.totalAmountInGBP }
+//    }
+//
+//    var totalCreditsInGBP: Decimal {
+//        self.filter { $0.totalAmountInGBP > 0 }
+//            .reduce(0) { $0 + $1.totalAmountInGBP }
+//    }
+//
+//    var totalDebitsInGBP: Decimal {
+//        self.filter { $0.totalAmountInGBP < 0 }
+//            .reduce(0) { $0 + $1.totalAmountInGBP }
+//    }
+//}
 
 // MARK: - CategoryRow Wrapper
 fileprivate struct CategoryRow: Identifiable, Hashable {
@@ -47,7 +72,7 @@ struct TransactionsSummaryView: View {
     
     // Derived rows
     fileprivate var categoryRows: [CategoryRow] {
-        let byCategory = Array(transactions).sumByCategoryIncludingSplits()
+        let byCategory = Array(transactions).sumByCategoryIncludingSplitsInGBP()
         let rows = Category.allCases
             .sorted { $0.rawValue < $1.rawValue }
             .map { category -> CategoryRow in
@@ -95,11 +120,48 @@ struct TransactionsSummaryView: View {
         }
     }
     
+    // Precompute totals as formatted strings
+    private var totals: (total: String, totalCR: String, totalDR: String) {
+        var total: Decimal = 0
+        var totalCR: Decimal = 0
+        var totalDR: Decimal = 0
+
+        for tx in transactions {
+            let amount = tx.totalAmountInGBP
+            total += amount
+            if amount > 0 {
+                totalCR += amount
+            } else if amount < 0 {
+                totalDR += amount
+            }
+        }
+
+        return (
+            total: total.string2f,
+            totalCR: totalCR.string2f,
+            totalDR: totalDR.string2f,
+        )
+    }
+    
     // MARK: - Body
     var body: some View {
-        categoriesTable
-            .toolbar { toolbarItems }
-            .navigationTitle("Transactions Summary")
+
+        VStack(alignment: .leading ) {
+            HStack ( spacing: 40) {
+                    Text("Total: \(totals.total) GBP")
+                    Text("Total CRs: \(totals.totalCR) GBP")
+                    Text("Total DRs: \(totals.totalDR) GBP")
+                    //                Text("Previous Balance: \(String(format: "%.2f", NSDecimalNumber(decimal: previousBalance).doubleValue)) GBP")
+                    //                Text("New Balance: \(String(format: "%.2f", NSDecimalNumber(decimal: newBalance).doubleValue)) GBP")
+                    
+                }
+                .padding(0)
+            
+
+            categoriesTable
+                .toolbar { toolbarItems }
+                .navigationTitle("Transactions Summary")
+        }
     }
     
     // MARK: - Toolbar

@@ -78,6 +78,17 @@ extension Transaction {
         set { categoryCD = newValue.rawValue }
     }
 
+    // Split Category is a new category entered
+    var splitCategory: Category {
+        get { Category(rawValue: splitCategoryCD) ?? .unknown }
+        set { splitCategoryCD = newValue.rawValue }
+    }
+    
+    // Remainder Category is the original category of txAmount
+    var splitRemainderCategory: Category {
+        get { Category(rawValue: categoryCD) ?? .unknown }
+    }
+    
     var currency: Currency {
         get { Currency(rawValue: currencyCD) ?? .unknown }
         set { currencyCD = newValue.rawValue }
@@ -103,45 +114,51 @@ extension Transaction {
         set { paymentMethodCD = newValue.rawValue }
     }
 
+    // Split Amount
     var splitAmount: Decimal {
         get { Decimal(splitAmountCD) / 100 }
         set { splitAmountCD = decimalToCents(newValue) }
     }
-
-    // Split Category is a new category entered
-    var splitCategory: Category {
-        get { Category(rawValue: splitCategoryCD) ?? .unknown }
-        set { splitCategoryCD = newValue.rawValue }
+    
+    // Split amount converted to GBP, with commission included
+    var splitAmountInGBP: Decimal {
+        let converted = splitAmount / exchangeRate   // convert to GBP
+        return converted + commissionAmount          // add commission
     }
 
+    // Split Remainder Amount
     // We only keeps the txAmount and the first split value. The remaining split value is computed.
     var splitRemainderAmount: Decimal {
         get { Decimal(txAmountCD - splitAmountCD)/100 }
     }
 
-    // Remainder Category is the original category of txAmount
-    var splitRemainderCategory: Category {
-        get { Category(rawValue: categoryCD) ?? .unknown }
+    // Remainder split amount converted to GBP, commission is NOT included in the remainder, as it is in the splitAmount
+    var splitRemainderAmountInGBP: Decimal {
+        return splitRemainderAmount / exchangeRate
     }
-
+    
     var txAmount: Decimal {
         get { Decimal(txAmountCD) / 100 }
         set { txAmountCD = decimalToCents(newValue) }
     }
+    
+    // We do NOT have txAmountInGBP as this does not have the commission.
+    // ... when using the GBP "Total" use totalAmountInGBP
     
     var commissionAmount: Decimal {
         get { Decimal(commissionAmountCD) / 100.0 }
         set { commissionAmountCD = decimalToCents(newValue) }
     }
 
-    var totalInGBP: Decimal {
-        let converted = txAmount / exchangeRate
-        let total = converted + commissionAmount
+    // Total in GBP (includes commission)
+    var totalAmountInGBP: Decimal {
+        let total = splitAmountInGBP + splitRemainderAmountInGBP
         var roundedTotal = Decimal()
         var totalCopy = total
         NSDecimalRound(&roundedTotal, &totalCopy, 2, .plain)
         return roundedTotal
     }
+    
 }
 
 

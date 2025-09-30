@@ -105,6 +105,28 @@ extension Reconciliation {
         set { endingBalanceCD = decimalToCents(newValue) }
     }
     
+    var endingBalanceInGBP: Decimal {
+        // All reconciliations must be in GBP
+        return endingBalance
+    }
+    
+    var totalTransactionsInGBP: Decimal {
+        guard let context = self.managedObjectContext else { return 0 }
+        return (try? fetchTransactions(in: context).reduce(Decimal(0)) { $0 + $1.totalAmountInGBP }) ?? 0
+    }
+    
+    var previousBalanceInGBP: Decimal {
+        if let context = self.managedObjectContext,
+           let previous = try? Reconciliation.fetchPrevious(for: self.paymentMethod, before: self.statementDate ?? Date.distantPast, context: context) {
+            return previous.endingBalance
+        }
+        return 0
+    }
+    
+    var newBalanceInGBP: Decimal {
+        return endingBalance
+    }
+    
     var accountingPeriod: AccountingPeriod {
         AccountingPeriod(year: Int(periodYear), month: Int(periodMonth))
     }
@@ -297,21 +319,65 @@ extension Reconciliation {
 //    }
     
     func reconciliationGap(in context: NSManagedObjectContext) throws -> Decimal {
-        let txs = try fetchTransactions(in: context)
-        let sum = txs.reduce(Decimal(0)) { total, tx in
-            total + tx.txAmount
+        let txs = try fetchTransactions(in: context) 
+
+        // Sum all transactions in GBP
+        let sumInGBP = txs.reduce( Decimal(0) ) { total, tx in
+            total + tx.totalAmountInGBP
         }
 
+        // previous balance is already stored in GBP
         let previousBalance: Decimal
-        if let prev = try Reconciliation.fetchPrevious(for: self.paymentMethod, before: self.transactionEndDate, context: context) {
+        if let prev = try Reconciliation.fetchPrevious(
+            for: self.paymentMethod,
+            before: self.transactionEndDate,
+            context: context
+        ) {
             previousBalance = prev.endingBalance
         } else {
             previousBalance = 0
         }
 
-        let expectedBalance = previousBalance + sum
-        return expectedBalance - (self.endingBalance)
+        // All GBP: expected vs actual
+        let expectedBalance = previousBalance + sumInGBP
+        return expectedBalance - self.endingBalance
     }
+    
+    // Sum of all transactions in GBP for this reconciliation period
+    func transactionsTotalInGBP(in context: NSManagedObjectContext) throws -> Decimal {
+        let txs = try fetchTransactions(in: context)
+        return txs.reduce(Decimal(0)) { $0 + $1.totalAmountInGBP }
+    }
+
+    // Sum of credits only, in GBP
+    func creditsTotalInGBP(in context: NSManagedObjectContext) throws -> Decimal {
+        let txs = try fetchTransactions(in: context).filter { $0.debitCredit == .CR }
+        return txs.reduce(Decimal(0)) { $0 + $1.totalAmountInGBP }
+    }
+
+    // Sum of debits only, in GBP
+    func debitsTotalInGBP(in context: NSManagedObjectContext) throws -> Decimal {
+        let txs = try fetchTransactions(in: context).filter { $0.debitCredit == .DR }
+        return txs.reduce(Decimal(0)) { $0 + $1.totalAmountInGBP }
+    }
+
+    
+//    func reconciliationGap(in context: NSManagedObjectContext) throws -> Decimal {
+//        let txs = try fetchTransactions(in: context)
+//        let sum = txs.reduce(Decimal(0)) { total, tx in
+//            total + tx.txAmount
+//        }
+//
+//        let previousBalance: Decimal
+//        if let prev = try Reconciliation.fetchPrevious(for: self.paymentMethod, before: self.transactionEndDate, context: context) {
+//            previousBalance = prev.endingBalance
+//        } else {
+//            previousBalance = 0
+//        }
+//
+//        let expectedBalance = previousBalance + sum
+//        return expectedBalance - (self.endingBalance)
+//    }
     
     /// Convenience: check if out of balance is exactly zero
     func isBalanced(in context: NSManagedObjectContext) throws -> Bool {
