@@ -13,6 +13,24 @@ import CoreData
 
 class AMEXCSVImporter: CSVImporter {
     
+    @MainActor
+    static func importTransactions(
+        fileURL: URL,
+        context: NSManagedObjectContext,
+        mergeHandler: nonisolated(nonsending) (Transaction, Transaction) async -> Transaction
+    ) async -> [Transaction] {
+        return []
+    }
+    
+    
+//    @MainActor
+//    static func importTransactions(
+//        fileURL: URL,
+//        context: NSManagedObjectContext,
+//        mergeHandler: @MainActor @Sendable (Transaction, Transaction) async -> Transaction
+//    ) async -> [Transaction] {
+//        return []
+//    }
     static var displayName: String = "AMEXCSVImporter"
     
     static var paymentMethod: PaymentMethod = .AMEX

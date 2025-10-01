@@ -12,6 +12,16 @@ import AppKit   // macOS only (for NSImage)
 
 class VISAPNGImporter: CSVImporter {
     
+    // TODO: Just to make it compile for now
+    @MainActor
+    static func importTransactions(
+        fileURL: URL,
+        context: NSManagedObjectContext,
+        mergeHandler: nonisolated(nonsending) (Transaction, Transaction) async -> Transaction
+    ) async -> [Transaction] {
+        return []
+    }
+    
     static var displayName: String = "VISA PNG Importer"
     
     static var paymentMethod: PaymentMethod = .VISA

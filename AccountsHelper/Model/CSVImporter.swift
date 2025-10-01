@@ -1,58 +1,75 @@
-//
-//  CSVImporter.swift
-//  AccountsHelper
-//
-//  Created by Anthony Stanners on 01/10/2025.
-//
-
 import Foundation
+import CoreData
 
+@MainActor
 protocol CSVImporter {
     static var displayName: String { get }
     static var paymentMethod: PaymentMethod { get }
+
+    /// Import CSV and return Transactions, using the mergeHandler when duplicates are found
+    @MainActor
+    static func importTransactions(
+        fileURL: URL,
+        context: NSManagedObjectContext,
+        mergeHandler: (Transaction, Transaction) async -> Transaction
+    ) async -> [Transaction]
+
+    /// Basic CSV parsing
     static func parseCSV(csvData: String) -> [[String]]
-    static func parseCSVToTransactionStruct(fileURL: URL) -> [TransactionStruct]
-    static func findMergeCandidateInSnapshot(newTx: TransactionStruct, snapshot: [Transaction]) -> Transaction?
+
+    /// Optional snapshot merge detection
+    static func findMergeCandidateInSnapshot(newTx: Transaction, snapshot: [Transaction]) -> Transaction?
 }
 
 extension CSVImporter {
-    
-    // MARK: - CSV Parser (handles quotes and multi-line fields)
-        static func parseCSV(csvData: String) -> [[String]] {
-            var rows: [[String]] = []
-            var currentRow: [String] = []
-            var currentField = ""
-            var insideQuotes = false
-            
-            for char in csvData {
-                if char == "\"" {
-                    insideQuotes.toggle()
-                } else if char == "," && !insideQuotes {
-                    currentRow.append(currentField)
-                    currentField = ""
-                } else if (char == "\n" || char == "\r\n") && !insideQuotes {
-                    currentRow.append(currentField)
-                    rows.append(currentRow)
-                    currentRow = []
-                    currentField = ""
-                } else {
-                    currentField.append(char)
-                }
-            }
-            
-            if !currentField.isEmpty || !currentRow.isEmpty {
+    // MARK: - CSV Parser (handles quotes, multi-line fields, trims trailing empty headers)
+    static func parseCSV(csvData: String) -> [[String]] {
+        var rows: [[String]] = []
+        var currentRow: [String] = []
+        var currentField = ""
+        var insideQuotes = false
+
+        for char in csvData {
+            if char == "\"" {
+                insideQuotes.toggle()
+            } else if char == "," && !insideQuotes {
+                currentRow.append(currentField)
+                currentField = ""
+            } else if (char == "\n" || char == "\r\n") && !insideQuotes {
                 currentRow.append(currentField)
                 rows.append(currentRow)
+                currentRow = []
+                currentField = ""
+            } else {
+                currentField.append(char)
             }
-            
-            // Trim trailing empty fields from header row
-            if var header = rows.first {
-                while let last = header.last, last.trimmingCharacters(in: .whitespaces).isEmpty {
-                    header.removeLast()
-                }
-                rows[0] = header
-            }
-            
-            return rows
         }
+
+        if !currentField.isEmpty || !currentRow.isEmpty {
+            currentRow.append(currentField)
+            rows.append(currentRow)
+        }
+
+        // Trim trailing empty fields from header row
+        if var header = rows.first {
+            while let last = header.last, last.trimmingCharacters(in: .whitespaces).isEmpty {
+                header.removeLast()
+            }
+            rows[0] = header
+        }
+
+        return rows
+    }
+
+    static func findMergeCandidateInSnapshot(newTx: Transaction, snapshot: [Transaction]) -> Transaction? {
+        // Default implementation: find exact date + amount + payee match
+        for existing in snapshot {
+            if existing.txAmount == newTx.txAmount,
+               existing.transactionDate == newTx.transactionDate,
+               existing.payee == newTx.payee {
+                return existing
+            }
+        }
+        return nil
+    }
 }
