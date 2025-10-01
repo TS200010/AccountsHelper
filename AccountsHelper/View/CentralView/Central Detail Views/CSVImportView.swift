@@ -4,11 +4,16 @@ import CoreData
 import AppKit
 
 struct CSVImportView<Importer: CSVImporter>: View {
-
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(AppState.self) var appState
 
-    @State private var transactions: [Transaction] = []
+    // Live fetch, ensures view stays in sync with Core Data
+    @FetchRequest(
+        sortDescriptors: [NSSortDescriptor(keyPath: \Transaction.transactionDate, ascending: true)],
+        animation: .default
+    )
+    private var transactions: FetchedResults<Transaction>
+
     @State private var statusMessage = "Select a CSV file to start import."
     @State private var importedCount = 0
 
@@ -28,6 +33,17 @@ struct CSVImportView<Importer: CSVImporter>: View {
                 selectCSVFile()
             }
             .padding()
+
+            /*
+            // 🚧 Optional: show imported transactions directly
+            List(transactions) { tx in
+                VStack(alignment: .leading) {
+                    Text(tx.payee ?? "Unknown Payee")
+                    Text(tx.transactionDate ?? Date(), style: .date)
+                        .font(.caption)
+                }
+            }
+            */
         }
         .frame(width: 500, height: 250)
     }
@@ -50,11 +66,10 @@ struct CSVImportView<Importer: CSVImporter>: View {
         statusMessage = "Parsing CSV..."
 
         Task { @MainActor in
-            transactions = await Importer.importTransactions(
+            let imported = await Importer.importTransactions(
                 fileURL: url,
                 context: viewContext,
                 mergeHandler: { existing, new in
-                    // Show merge dialog
                     await withCheckedContinuation { continuation in
                         appState.pushCentralView(
                             .transactionMergeView([existing, new]) {
@@ -65,10 +80,10 @@ struct CSVImportView<Importer: CSVImporter>: View {
                 }
             )
 
-            importedCount = transactions.count
+            importedCount = imported.count
             statusMessage = "CSV import complete! Imported \(importedCount)"
         }
     }
 }
-
 #endif
+

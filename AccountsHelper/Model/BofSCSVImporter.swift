@@ -12,6 +12,8 @@ class BofSCSVImporter: CSVImporter {
         context: NSManagedObjectContext,
         mergeHandler: @Sendable (Transaction, Transaction) async -> Transaction
     ) async -> [Transaction] {
+        // Create a child context for safe import
+        let tempContext = makeTemporaryContext(parent: context)
         var createdTransactions: [Transaction] = []
 
         do {
@@ -19,17 +21,17 @@ class BofSCSVImporter: CSVImporter {
             let rows = parseCSV(csvData: csvData)
             guard let headers = rows.first else { return [] }
 
-            let matcher = CategoryMatcher(context: context)
+            let matcher = CategoryMatcher(context: tempContext)
             var accountTemp = ""
 
-            // Fetch existing transactions from context for duplicate checking
+            // Snapshot of existing transactions from parent context
             let fetchRequest: NSFetchRequest<Transaction> = Transaction.fetchRequest()
             let existingSnapshot = (try? context.fetch(fetchRequest)) ?? []
 
             for row in rows.dropFirst() {
                 guard row.count == headers.count else { continue }
 
-                let newTx = Transaction(context: context)
+                let newTx = Transaction(context: tempContext)
 
                 for (index, header) in headers.enumerated() {
                     let value = row[index].trimmingCharacters(in: .whitespacesAndNewlines)
@@ -78,30 +80,42 @@ class BofSCSVImporter: CSVImporter {
                 newTx.currency = .GBP
                 newTx.exchangeRate = 1
 
-                // Check for duplicates in createdTransactions + existing context
-                if let existing = Self.findMergeCandidateInSnapshot(newTx: newTx, snapshot: createdTransactions + existingSnapshot) {
-                    
+                // Check for duplicates across new + existing
+                if let existing = Self.findMergeCandidateInSnapshot(newTx: newTx,
+                                                                   snapshot: createdTransactions + existingSnapshot) {
+
                     if existing.comparableFieldsRepresentation() == newTx.comparableFieldsRepresentation() {
-                        continue // no need to merge, skip this one entirely
+                        // Exactly the same → skip
+                        tempContext.delete(newTx)
+                        continue
                     }
-                    
+
                     let mergedTx = await mergeHandler(existing, newTx)
                     if !createdTransactions.contains(mergedTx) {
                         createdTransactions.append(mergedTx)
                     }
-                    // Delete the newTx since mergeHandler is responsible for updating existing
-                    context.delete(newTx)
+                    tempContext.delete(newTx) // merged into existing
                 } else {
                     createdTransactions.append(newTx)
                 }
             }
 
+            // Save child context → pushes into parent
+            try tempContext.save()
             try context.save()
+
+            // Re-fetch results in parent context
+            let objectIDs = createdTransactions.map { $0.objectID }
+            let parentTransactions: [Transaction] = objectIDs.compactMap { id in
+                context.object(with: id) as? Transaction
+            }
+
+            return parentTransactions
 
         } catch {
             print("Failed to import BofS CSV: \(error)")
+            return []
         }
-
-        return createdTransactions
     }
 }
+

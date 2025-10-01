@@ -6,7 +6,8 @@ protocol CSVImporter {
     static var displayName: String { get }
     static var paymentMethod: PaymentMethod { get }
 
-    /// Import CSV and return Transactions, using the mergeHandler when duplicates are found
+    /// Import CSV and return Transactions, using the mergeHandler when duplicates are found.
+    /// Transactions are created in a temporary child context, then saved into the main context.
     @MainActor
     static func importTransactions(
         fileURL: URL,
@@ -22,6 +23,13 @@ protocol CSVImporter {
 }
 
 extension CSVImporter {
+    // MARK: - Temporary context creation
+    static func makeTemporaryContext(parent: NSManagedObjectContext) -> NSManagedObjectContext {
+        let tempContext = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
+        tempContext.parent = parent
+        return tempContext
+    }
+
     // MARK: - CSV Parser (handles quotes, multi-line fields, trims trailing empty headers)
     static func parseCSV(csvData: String) -> [[String]] {
         var rows: [[String]] = []
@@ -61,8 +69,8 @@ extension CSVImporter {
         return rows
     }
 
+    // MARK: - Default merge candidate matching
     static func findMergeCandidateInSnapshot(newTx: Transaction, snapshot: [Transaction]) -> Transaction? {
-        
         for existing in snapshot {
             guard existing.txAmount == newTx.txAmount,
                   existing.paymentMethod == newTx.paymentMethod,
@@ -70,11 +78,11 @@ extension CSVImporter {
                   let newDate = newTx.transactionDate else {
                 continue
             }
-            
+
             // Allow transactionDate ± range: -7 days to +1 day
             let minDate = Calendar.current.date(byAdding: .day, value: -7, to: newDate)!
             let maxDate = Calendar.current.date(byAdding: .day, value: 1, to: newDate)!
-            
+
             if existingDate >= minDate && existingDate <= maxDate {
                 return existing
             }
@@ -82,3 +90,4 @@ extension CSVImporter {
         return nil
     }
 }
+
