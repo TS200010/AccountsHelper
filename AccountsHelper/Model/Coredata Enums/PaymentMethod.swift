@@ -17,13 +17,14 @@ import ItMkLibrary
     case CashYEN        = 4
     case AMEX           = 5
     case VISA           = 6
-    case bankOfScotland = 7
+    case BofSPV         = 7
+    case BofSCA         = 8
     case unknown        = 99
 
     // Initialize from string
-    init(_ s: String) {
-        self = PaymentMethod.fromString(s)
-    }
+//    init(_ s: String) {
+//        self = PaymentMethod.fromString(s)
+//    }
 
     // Raw value as string
     func rawValueAsString() -> String {
@@ -39,7 +40,8 @@ import ItMkLibrary
         case .CashYEN:        return .JPY
         case .AMEX:           return .GBP
         case .VISA:           return .GBP
-        case .bankOfScotland: return .GBP
+        case .BofSPV:         return .GBP
+        case .BofSCA:         return .GBP
         case .unknown:        return .unknown
         }
     }
@@ -53,7 +55,8 @@ import ItMkLibrary
         case .CashYEN:        return String(localized: "Cash YEN")
         case .AMEX:           return String(localized: "AMEX")
         case .VISA:           return String(localized: "VISA")
-        case .bankOfScotland: return String(localized: "BankOfS")
+        case .BofSPV:         return String(localized: "BofS PV")
+        case .BofSCA:         return String(localized: "BofS CA")
         case .unknown:        return String(localized: "Unknown")
         }
     }
@@ -66,26 +69,27 @@ import ItMkLibrary
         case .CashUSD: return "CASH_USD"
         case .CashEUR: return "CASH_EUR"
         case .CashYEN: return "CASH_YEN"
-        case .AMEX: return "AMEX"
-        case .VISA: return "VISA"
-        case .bankOfScotland: return "BANK_SCOT"
+        case .AMEX:    return "AMEX"
+        case .VISA:    return "VISA"
+        case .BofSPV:  return "BOFS_PV"
+        case .BofSCA:  return "BOFS_CA"
         case .unknown: return "UNKNOWN"
         }
     }
 
-    // Convert from string
-    static func fromString(_ s: String) -> PaymentMethod {
-        switch s {
-        case "Cash GBP":       return .CashGBP
-        case "Cash USD":       return .CashUSD
-        case "Cash EUR":       return .CashEUR
-        case "Cash YEN":       return .CashYEN
-        case "AMEX":           return .AMEX
-        case "VISA":           return .VISA
-        case "BankOfS":        return .bankOfScotland
-        default:               return .unknown
-        }
-    }
+//    // Convert from string
+//    static func fromString(_ s: String) -> PaymentMethod {
+//        switch s {
+//        case "Cash GBP":       return .CashGBP
+//        case "Cash USD":       return .CashUSD
+//        case "Cash EUR":       return .CashEUR
+//        case "Cash YEN":       return .CashYEN
+//        case "AMEX":           return .AMEX
+//        case "VISA":           return .VISA
+//        case "BofS PV":        return .BofSPV
+//        default:               return .unknown
+//        }
+//    }
 
     // Convert from Int
     static func fromInt(_ i: Int) -> PaymentMethod {
@@ -96,7 +100,7 @@ import ItMkLibrary
         case 4: return .CashYEN
         case 5: return .AMEX
         case 6: return .VISA
-        case 7: return .bankOfScotland
+        case 7: return .BofSPV
         default: return .unknown
         }
     }

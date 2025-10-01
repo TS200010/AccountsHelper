@@ -132,7 +132,7 @@ struct TransactionStruct {
         exchangeRate = 1.0
         payee = ""
         payer = .tony
-        paymentMethod = .AMEX
+        paymentMethod = .unknown
         splitAmount = 0
         transactionDate = Date()
         timestamp = Date()

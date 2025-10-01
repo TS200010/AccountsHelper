@@ -15,6 +15,8 @@ enum CentralViewsEnum: Hashable {
     case editPayer
     case addTransaction
     case AMEXCSVImport
+    case BofSCSVImport
+    case VISAPNGImport
     case reconcilliationListView
     case reconciliationTransactionDetail( NSPredicate? )
     case browseTransactions(NSPredicate?)   // optional predicate
@@ -57,6 +59,8 @@ enum CentralViewsEnum: Hashable {
         case .editPayer: return "Edit Payer"
         case .addTransaction: return "Add Transaction"
         case .AMEXCSVImport: return "AMEX CSV Import"
+        case .BofSCSVImport: return "BofS CSV Import"
+        case .VISAPNGImport: return "VISA PNG Import"
         case .reconcilliationListView: return "Reconcile Transactions"
         case .reconciliationTransactionDetail: return "Reconciliation Transaction Detail"
         case .browseTransactions: return "Browse Transactions"
@@ -70,33 +74,3 @@ enum CentralViewsEnum: Hashable {
         }
     }
 }
-
-
-//enum CentralViewsEnum: String {
-//    
-//    typealias RawValue = String
-//    
-//    case emptyView                  = " "
-//    
-//    case editTransaction            = "Edit Transaction"
-//    case editCurrency               = "Edit Currency"
-//    case editPayee                  = "Edit Payee"
-//    case editPayer                  = "Edit Payer"
-//    
-//    case addTransaction             = "Add Transaction"
-//    
-//    case AMEXCSVImport              = "AMEX CSV Import"
-//    
-//    case reconcileTransactions      = "Reconcile Transactions"
-//    case reconcilliationTransactionDetail
-//                                    = "Reconciliation Transaction Detail"
-//    
-//    case browseTransactions( NSPredicate )
-//                                    = "Browse Transactions"
-//    case browseCategories           = "Browse Categories"
-//    case browseCurrencies           = "Browse Currencies"
-//    case browsePayees               = "Browse Payees"
-//    case browsePayers               = "Browse Payers"
-//
-//    case reports                    = "Reports"
-//}

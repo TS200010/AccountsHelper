@@ -69,14 +69,19 @@ struct NavigatorEditAddView: View {
 
             Button("Import AMEX CSV Transactions") {
                 appState.replaceCentralView(with: .AMEXCSVImport)
-//                appState.selectedCentralView = .AMEXCSVImport
+            }
+            
+            Button("Import BofS CSV Transactions") {
+                appState.replaceCentralView(with: .BofSCSVImport)
             }
 
+            Button("Import VISA PNG Transactions") {
+                appState.replaceCentralView(with: .VISAPNGImport)
+            }
             
             Button("Browse Categories") {
                 #if os(macOS)
                 appState.replaceCentralView(with: .browseCategories)
-//                appState.selectedCentralView = .browseCategories
                 #else
                 appState.selectedCentralView = .browseTransactions
 //                showingBrowseTransactionsView = true

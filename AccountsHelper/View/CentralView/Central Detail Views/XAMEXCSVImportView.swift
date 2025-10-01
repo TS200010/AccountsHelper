@@ -17,7 +17,7 @@ fileprivate struct MergeCandidate: Identifiable {
     let new: TransactionStruct
 }
 
-struct AMEXCSVImportView: View {
+struct XAMEXCSVImportView: View {
     
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(AppState.self) var appState
@@ -200,7 +200,7 @@ struct AMEXCSVImportView: View {
 // MARK: - AMEXCSVImporter helper
 
 #if os(macOS)
-extension AMEXCSVImporter {
+extension CSVImporter {
     
     static func findMergeCandidateInSnapshot(
         newTx: TransactionStruct,

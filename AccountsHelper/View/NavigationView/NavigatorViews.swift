@@ -28,7 +28,7 @@ struct NavigatorViews: View {
                 
             case .txImport:
                 #if os(macOS)
-                AMEXCSVImportView()
+                Text("Investigate why this came up.")
                 #else
                 Text("Not oniOS")
                 #endif

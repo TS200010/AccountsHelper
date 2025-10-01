@@ -92,7 +92,7 @@ extension Reconciliation {
         get { Currency(rawValue: currencyCD) ?? .unknown }
         set {
             switch paymentMethod {
-            case .AMEX, .VISA, .bankOfScotland:
+            case .AMEX, .VISA, .BofSPV:
                 currencyCD = Currency.GBP.rawValue
             default:
                 currencyCD = newValue.rawValue
