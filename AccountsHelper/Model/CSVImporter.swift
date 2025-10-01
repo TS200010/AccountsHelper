@@ -62,11 +62,20 @@ extension CSVImporter {
     }
 
     static func findMergeCandidateInSnapshot(newTx: Transaction, snapshot: [Transaction]) -> Transaction? {
-        // Default implementation: find exact date + amount + payee match
+        
         for existing in snapshot {
-            if existing.txAmount == newTx.txAmount,
-               existing.transactionDate == newTx.transactionDate,
-               existing.payee == newTx.payee {
+            guard existing.txAmount == newTx.txAmount,
+                  existing.paymentMethod == newTx.paymentMethod,
+                  let existingDate = existing.transactionDate,
+                  let newDate = newTx.transactionDate else {
+                continue
+            }
+            
+            // Allow transactionDate ± range: -7 days to +1 day
+            let minDate = Calendar.current.date(byAdding: .day, value: -7, to: newDate)!
+            let maxDate = Calendar.current.date(byAdding: .day, value: 1, to: newDate)!
+            
+            if existingDate >= minDate && existingDate <= maxDate {
                 return existing
             }
         }

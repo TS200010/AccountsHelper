@@ -5,6 +5,21 @@
 //  Created by Anthony Stanners on 13/09/2025.
 //
 
+protocol OptionalProtocol {
+    func wrappedOrNilString() -> String
+}
+
+extension Optional: OptionalProtocol {
+    func wrappedOrNilString() -> String {
+        switch self {
+        case .some(let value):
+            return "\(value)"
+        case .none:
+            return "nil"
+        }
+    }
+}
+
 import Foundation
 import CoreData
 
@@ -343,14 +358,14 @@ extension Transaction {
     /// Returns the number of matches for a TransactionStruct in the database, including paymentMethod
     static func matchCount(for temp: TransactionStruct, in context: NSManagedObjectContext) -> Int {
         guard let date = temp.transactionDate else { return 0 }
-
+        
         // Date range: 7 days before → 1 day after
         let startDate = Calendar.current.date(byAdding: .day, value: -7, to: date)!
         let endDate   = Calendar.current.date(byAdding: .day, value: 1, to: date)!
-
+        
         // Convert Decimal txAmount to Int32 for predicate
         let txAmountCDValue = Int32(truncating: NSDecimalNumber(decimal: temp.txAmount * 100))
-
+        
         // Build fetch request
         let request: NSFetchRequest<Transaction> = Transaction.fetchRequest()
         request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
@@ -359,7 +374,7 @@ extension Transaction {
             NSPredicate(format: "paymentMethodCD == %d", temp.paymentMethod.rawValue),
             NSPredicate(format: "transactionDate >= %@ AND transactionDate <= %@", startDate as NSDate, endDate as NSDate)
         ])
-
+        
         do {
             return try context.count(for: request)
         } catch {
@@ -367,10 +382,34 @@ extension Transaction {
             return 0
         }
     }
-
+    
     /// Convenience: checks if there is more than one match
     static func hasMultipleMatches(for temp: TransactionStruct, in context: NSManagedObjectContext) -> Bool {
         return matchCount(for: temp, in: context) > 1
+    }
+    
+    
+    // Returns a string representing all comparable fields for equality checks, excluding id and timestamp
+    func comparableFieldsRepresentation() -> String {
+        var components: [String] = []
+        
+        let mirror = Mirror(reflecting: self)
+        for child in mirror.children {
+            guard let label = child.label else { continue }
+            
+            if label == "id" || label == "timestamp" { continue }
+            
+            let value: Any
+            if let v = child.value as? OptionalProtocol {
+                value = v.wrappedOrNilString()
+            } else {
+                value = child.value
+            }
+            
+            components.append("\(label)=\(value)")
+        }
+        
+        return components.joined(separator: "|")
     }
 }
 

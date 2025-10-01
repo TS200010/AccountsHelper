@@ -246,6 +246,11 @@ struct MergeTransactionsView: View {
             return Color.green.opacity(0.3)
         }
         
+        // If both values are empty, also color green
+        if leftValue.isEmpty && rightValue.isEmpty {
+            return Color.green.opacity(0.3)
+        }
+        
         // Otherwise use selection/auto-picked coloring
         let isSelected = (isLeft && pickedLeft) || (!isLeft && !pickedLeft)
         if isSelected {
@@ -253,7 +258,7 @@ struct MergeTransactionsView: View {
         }
         return .clear
     }
-
+    
     private func preloadSelections() {
         for field in MergeField.allCases {
             guard let info = MergeField.all[field] else { continue }
@@ -266,12 +271,17 @@ struct MergeTransactionsView: View {
             } else if !leftHas && rightHas {
                 selectedSide[field] = false
                 autoPicked[field] = true
+            } else if !leftHas && !rightHas {
+                // Both empty → pick left by default
+                selectedSide[field] = true
+                autoPicked[field] = true
             } else {
                 selectedSide[field] = true // default to left
                 autoPicked[field] = false
             }
         }
     }
+
 
     // MARK: - Merge Logic
     private func mergeTransactions() {

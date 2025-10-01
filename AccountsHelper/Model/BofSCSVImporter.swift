@@ -80,6 +80,11 @@ class BofSCSVImporter: CSVImporter {
 
                 // Check for duplicates in createdTransactions + existing context
                 if let existing = Self.findMergeCandidateInSnapshot(newTx: newTx, snapshot: createdTransactions + existingSnapshot) {
+                    
+                    if existing.comparableFieldsRepresentation() == newTx.comparableFieldsRepresentation() {
+                        continue // no need to merge, skip this one entirely
+                    }
+                    
                     let mergedTx = await mergeHandler(existing, newTx)
                     if !createdTransactions.contains(mergedTx) {
                         createdTransactions.append(mergedTx)
