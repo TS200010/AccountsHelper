@@ -111,7 +111,7 @@ struct XAMEXCSVImportView: View {
     
     private func startImport(url: URL) {
         statusMessage = "Parsing CSV..."
-        transactions = AMEXCSVImporter.parseCSVToTransactionStruct(fileURL: url)
+//        transactions = AMEXCSVImporter.parseCSVToTransactionStruct(fileURL: url)
         currentIndex = 0
         importedCount = 0
         mergedCount = 0

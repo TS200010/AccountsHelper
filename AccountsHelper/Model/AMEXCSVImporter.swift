@@ -5,58 +5,42 @@
 //  Created by Anthony Stanners on 21/09/2025.
 //
 
-
 import Foundation
 import CoreData
 
-
-
 class AMEXCSVImporter: CSVImporter {
     
+    static var displayName: String = "AMEX CSV Importer"
+    static var paymentMethod: PaymentMethod = .AMEX
+
     @MainActor
     static func importTransactions(
         fileURL: URL,
         context: NSManagedObjectContext,
-        mergeHandler: nonisolated(nonsending) (Transaction, Transaction) async -> Transaction
+        mergeHandler: @Sendable (Transaction, Transaction) async -> Transaction
     ) async -> [Transaction] {
-        return []
-    }
-    
-    
-//    @MainActor
-//    static func importTransactions(
-//        fileURL: URL,
-//        context: NSManagedObjectContext,
-//        mergeHandler: @MainActor @Sendable (Transaction, Transaction) async -> Transaction
-//    ) async -> [Transaction] {
-//        return []
-//    }
-    static var displayName: String = "AMEXCSVImporter"
-    
-    static var paymentMethod: PaymentMethod = .AMEX
-    
-    static func parseCSVToTransactionStruct(fileURL: URL) -> [TransactionStruct] {
-        
-        var transactions: [TransactionStruct] = []
-        
-        print("Starting CSV parse: \(fileURL.path)")
+        var createdTransactions: [Transaction] = []
         
         do {
             let csvData = try String(contentsOf: fileURL, encoding: .utf8)
             let rows = parseCSV(csvData: csvData)
             guard let headers = rows.first else { return [] }
 
-            let matcher = CategoryMatcher(context: PersistenceController.shared.container.viewContext)
+            let matcher = CategoryMatcher(context: context)
+
+            // Fetch existing transactions from context for duplicate checking
+            let fetchRequest: NSFetchRequest<Transaction> = Transaction.fetchRequest()
+            let existingSnapshot = (try? context.fetch(fetchRequest)) ?? []
 
             for row in rows.dropFirst() {
                 guard row.count == headers.count else { continue }
                 
-                var tx = TransactionStruct()
+                let newTx = Transaction(context: context)
                 
-                // Temp storage
+                // Temp variables
+                var addressTemp = ""
                 var txAmountTemp: Decimal = 0
                 var extendedDetailsTemp: String?
-                var addressTemp: String = ""
                 var txAmountParsedTemp: Decimal = 0
                 var commissionAmountParsedTemp: Decimal = 0
                 var exchangeRateParsedTemp: Decimal = 0
@@ -69,12 +53,15 @@ class AMEXCSVImporter: CSVImporter {
                     case "date":
                         let formatter = DateFormatter()
                         formatter.dateFormat = "dd/MM/yyyy"
-                        tx.transactionDate = formatter.date(from: value)
+                        newTx.transactionDate = formatter.date(from: value)
+                        
                     case "description":
-                        tx.payee = value
-                        tx.category = matcher.matchCategory(for: value)
+                        newTx.payee = value
+                        newTx.category = matcher.matchCategory(for: value)
+                        
                     case "amount":
                         txAmountTemp = Decimal(string: value.replacingOccurrences(of: ",", with: "")) ?? 0
+                        
                     case "extended details":
                         extendedDetailsTemp = value
                         let parsed = parseExtendedDetails(value)
@@ -82,78 +69,73 @@ class AMEXCSVImporter: CSVImporter {
                         commissionAmountParsedTemp = parsed.commissionAmount ?? 0
                         exchangeRateParsedTemp = parsed.exchangeRate ?? 1
                         currencyParsedTemp = parsed.foreignCurrency ?? .unknown
+                        
                     case "address":
                         addressTemp = value
+                        
                     case "town/city":
                         addressTemp += ", " + value
+                        
                     case "postcode":
                         addressTemp += ", " + value
+                        
                     case "country":
                         addressTemp += ", " + value
+                        
                     case "card member":
-                        tx.payer = Payer(value)
+                        newTx.payer = Payer(value)
+                        
                     case "reference":
-                        tx.reference = value
+                        newTx.reference = value
+                        
                     default:
                         break
                     }
                 }
                 
-                tx.paymentMethod = paymentMethod
-                tx.address = addressTemp
-                tx.extendedDetails = extendedDetailsTemp
+                newTx.paymentMethod = paymentMethod
+                newTx.address = addressTemp
+                newTx.extendedDetails = extendedDetailsTemp
+                
                 if currencyParsedTemp == .GBP || currencyParsedTemp == .unknown {
-                    tx.currency = .GBP
-                    tx.exchangeRate = 1
-                    tx.txAmount = txAmountTemp
+                    newTx.currency = .GBP
+                    newTx.exchangeRate = 1
+                    newTx.txAmount = txAmountTemp
                 } else {
-                    tx.currency = currencyParsedTemp
-                    tx.exchangeRate = exchangeRateParsedTemp
-                    tx.txAmount = txAmountParsedTemp
-                    tx.commissionAmount = commissionAmountParsedTemp
+                    newTx.currency = currencyParsedTemp
+                    newTx.exchangeRate = exchangeRateParsedTemp
+                    newTx.txAmount = txAmountParsedTemp
+                    newTx.commissionAmount = commissionAmountParsedTemp
                 }
                 
-                tx.debitCredit = txAmountTemp >= 0 ? .DR : .CR
-                transactions.append(tx)
+                newTx.debitCredit = txAmountTemp >= 0 ? .DR : .CR
+                
+                // Check for duplicates in createdTransactions + existing context
+                if let existing = Self.findMergeCandidateInSnapshot(newTx: newTx, snapshot: createdTransactions + existingSnapshot) {
+                    
+                    if existing.comparableFieldsRepresentation() == newTx.comparableFieldsRepresentation() {
+                        // Already identical, skip
+                        context.delete(newTx)
+                        continue
+                    }
+                    
+                    let mergedTx = await mergeHandler(existing, newTx)
+                    if !createdTransactions.contains(mergedTx) {
+                        createdTransactions.append(mergedTx)
+                    }
+                    context.delete(newTx)
+                } else {
+                    createdTransactions.append(newTx)
+                }
             }
             
+            try context.save()
         } catch {
-            print("Failed to read CSV: \(error)")
+            print("Failed to import AMEX CSV: \(error)")
         }
         
-        return transactions
+        return createdTransactions
     }
-
-    
-    static func findMergeCandidateInDatabase(newTx: TransactionStruct, context: NSManagedObjectContext) -> Transaction? {
-        guard let newDate = newTx.transactionDate else { return nil }
-        
-        let fetchRequest: NSFetchRequest<Transaction> = Transaction.fetchRequest()
-        
-        let startDate = Calendar.current.date(byAdding: .day, value: -7, to: newDate)!
-        let endDate = Calendar.current.date(byAdding: .day, value: 1, to: newDate)!
-       
-        let txAmountForPredicate = (newTx.txAmount * 100) as NSDecimalNumber
-        fetchRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
-            NSPredicate(format: "txAmountCD == %@", txAmountForPredicate)
-//            NSPredicate(format: "payee == %@", newTx.payee ?? ""),
-//            NSPredicate(format: "paymentMethodCD == %d", newTx.paymentMethod.rawValue),
-//            NSPredicate(format: "transactionDate >= %@ AND transactionDate <= %@", startDate as NSDate, endDate as NSDate)
-        ])
-        
-        fetchRequest.fetchLimit = 1
-        
-        do {
-            let results = try context.fetch(fetchRequest)
-            return results.first
-        } catch {
-            print("Failed to fetch merge candidate: \(error)")
-            return nil
-        }
-    }
-
-    
-    
 
     
     // MARK: - CSV Parser (handles quotes and multi-line fields)
@@ -186,15 +168,15 @@ class AMEXCSVImporter: CSVImporter {
         
         return rows
     }
+
     
     static func parseExtendedDetails(_ details: String) -> (foreignSpendAmount: Decimal?, foreignCurrency: Currency?, commissionAmount: Decimal?, exchangeRate: Decimal?) {
         
         var foreignSpendAmount: Decimal?
-        var foreignCurrency: String?
+        var foreignCurrency: Currency?
         var commissionAmount: Decimal?
         var exchangeRate: Decimal?
         
-        // Normalize whitespace and split by spaces
         let tokens = details.replacingOccurrences(of: "\n", with: " ")
             .components(separatedBy: .whitespaces)
             .filter { !$0.isEmpty }
@@ -209,20 +191,16 @@ class AMEXCSVImporter: CSVImporter {
                    tokens[index+1].lowercased() == "spend",
                    tokens[index+2].lowercased() == "amount:" {
                     
-                    // Clean number string (remove commas, trim spaces)
                     let rawAmount = tokens[index+3].replacingOccurrences(of: ",", with: "").trimmingCharacters(in: .whitespaces)
                     foreignSpendAmount = Decimal(string: rawAmount)
 
-                    // Capture currency by consuming tokens until "Commission" keyword
                     var currencyTokens = [String]()
                     var j = index + 4
                     while j < tokens.count && tokens[j].lowercased() != "commission" {
                         currencyTokens.append(tokens[j])
                         j += 1
                     }
-                    foreignCurrency = currencyTokens.joined(separator: " ").trimmingCharacters(in: .whitespaces)
-
-                    // Move index forward so parser doesn’t reprocess tokens
+                    foreignCurrency = Currency.fromString(currencyTokens.joined(separator: " ").trimmingCharacters(in: .whitespaces))
                     index = j - 1
                 }
                 
@@ -243,9 +221,7 @@ class AMEXCSVImporter: CSVImporter {
             }
             index += 1
         }
-        print ("foreignSpendAmount: \(foreignSpendAmount), foreignCurrency: \(foreignCurrency), commissionAmount: \(commissionAmount), exchangeRate: \(exchangeRate)")
-        return (foreignSpendAmount, Currency.fromString( foreignCurrency ?? "" ), commissionAmount, exchangeRate)
+        
+        return (foreignSpendAmount, foreignCurrency, commissionAmount, exchangeRate)
     }
 }
-    
-
