@@ -76,6 +76,8 @@ class BofSCSVImporter: TxImporter {
                     }
                 }
 
+                newTx.timestamp = Date()
+                newTx.payer = .tony
                 newTx.paymentMethod = paymentMethod
                 newTx.accountNumber = accountTemp
                 newTx.currency = .GBP

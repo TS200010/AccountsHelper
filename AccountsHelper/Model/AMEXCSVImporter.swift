@@ -94,6 +94,7 @@ class AMEXCSVImporter: TxImporter {
                     }
                 }
                 
+                newTx.timestamp = Date()
                 newTx.paymentMethod = paymentMethod
                 newTx.address = addressTemp
                 newTx.extendedDetails = extendedDetailsTemp

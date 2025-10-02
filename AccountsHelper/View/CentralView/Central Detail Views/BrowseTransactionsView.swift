@@ -374,6 +374,7 @@ struct BrowseTransactionsView: View {
     private func tableCell(_ content: String, for row: TransactionRow) -> some View {
         HStack {
             Text(content)
+                .foregroundColor(row.transaction.isValid() ? .primary : .red)
             Spacer()
         }
     
