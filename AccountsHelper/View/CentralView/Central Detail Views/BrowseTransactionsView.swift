@@ -339,12 +339,13 @@ struct BrowseTransactionsView: View {
     // MARK: - Toolbar
     private var toolbarItems: some ToolbarContent {
         Group {
-            ToolbarItem(placement: .navigation) { 
-                Button { appState.popCentralView()
-                } label: {
-                    Label("Back", systemImage: "chevron.left")
-                }
-            }
+//            ToolbarItem(placement: .navigation) { 
+//                Button { appState.popCentralView()
+//                } label: {
+//                    Label("Back", systemImage: "chevron.left")
+//                }
+//            }
+            
             ToolbarItem {
                 Button(role: .destructive) {
                     transactionsToDelete = selectedTransactionIDs
@@ -354,12 +355,14 @@ struct BrowseTransactionsView: View {
                 }
                 .disabled(selectedTransactionIDs.isEmpty)
             }
+            
             ToolbarItem {
                 Button { undoManager?.undo() } label: {
                     Label("Undo", systemImage: "arrow.uturn.backward")
                 }
                 .disabled(!(undoManager?.canUndo ?? false))
             }
+            
             ToolbarItem {
                 Button { undoManager?.redo() } label: {
                     Label("Redo", systemImage: "arrow.uturn.forward")

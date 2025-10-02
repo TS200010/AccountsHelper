@@ -8,6 +8,20 @@
 import SwiftUI
 import ItMkLibrary
 
+struct ItMkSidebarButtonStyle: ButtonStyle {
+    var isSelected: Bool
+    
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .foregroundColor(isSelected ? .white : .primary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 6)
+            .padding(.horizontal, 10)
+            .background(isSelected ? Color.accentColor : Color.clear)
+            .cornerRadius(6)
+    }
+}
+
 struct NavigatorEditAddView: View {
     
     // MARK: --- Environment
@@ -23,39 +37,72 @@ struct NavigatorEditAddView: View {
     var body: some View {
         
         VStack {
-            Button("Add Transaction") {
+            Button {
                 #if os(macOS)
                 appState.replaceCentralView(with: .addTransaction)
-//                appState.selectedCentralView = .addTransaction
                 #else
                 appState.selectedCentralView = .addTransaction
                 showingEditAddTransactionSheet = true
                 #endif
-                
+            } label: {
+                HStack {
+                    Image(systemName: "plus.circle")
+                        .foregroundColor(appState.selectedCentralView == .addTransaction ? .white : .blue)
+                    Text("Add Transaction")
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .buttonStyle(ItMkSidebarButtonStyle(isSelected: appState.selectedCentralView == .addTransaction))
             
-            Button("Browse Transactions") {
+            Divider()
+            
+            Button {
                 #if os(macOS)
-                appState.replaceCentralView(with: .browseTransactions( nil ))
-//                appState.selectedCentralView = .browseTransactions
+                appState.replaceCentralView(with: .browseTransactions(nil))
                 #else
-                appState.selectedCentralView = .browseTransactions( nil )
+                appState.selectedCentralView = .browseTransactions(nil)
                 showingBrowseTransactionsView = true
                 #endif
-                
+            } label: {
+                HStack {
+                    Image(systemName: "list.bullet")
+                        .foregroundColor({
+                            if case .browseTransactions = appState.selectedCentralView { return .white }
+                            return .purple
+                        }())
+                    Text("Browse Transactions")
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .buttonStyle(ItMkSidebarButtonStyle(isSelected: {
+                if case .browseTransactions = appState.selectedCentralView { return true }
+                return false
+            }()))
             
-            #if os(macOS)
-            Button("Add Random Transactions") {
-                // Define payment method and currency
+            Button {
+                #if os(macOS)
+                appState.replaceCentralView(with: .browseCategories)
+                #else
+                appState.selectedCentralView = .browseTransactions
+                #endif
+            } label: {
+                HStack {
+                    Image(systemName: "tag")
+                        .foregroundColor(appState.selectedCentralView == .browseCategories ? .white : .orange)
+                    Text("Browse Categories")
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .buttonStyle(ItMkSidebarButtonStyle(isSelected: appState.selectedCentralView == .browseCategories))
+            
+            Divider()
+            
+            Button {
+                #if os(macOS)
                 let paymentMethod: PaymentMethod = .CashGBP
                 let currency: Currency = .GBP
-
-                // Define the date range for transactions
-                let startDate = Calendar.current.date(byAdding: .month, value: -1, to: Date())! // 1 month ago
-                let endDate = Date() // Today
-
-                // Generate 30 random transactions
+                let startDate = Calendar.current.date(byAdding: .month, value: -1, to: Date())!
+                let endDate = Date()
                 let transactions = Transaction.generateRandomTransactions(
                     for: paymentMethod,
                     currency: currency,
@@ -64,55 +111,127 @@ struct NavigatorEditAddView: View {
                     count: 30,
                     in: viewContext
                 )
-            }
-            .disabled( gUseLiveStore )
-
-            Button("Import AMEX CSV Transactions") {
-                appState.replaceCentralView(with: .AMEXCSVImport)
-            }
-            
-            Button("Import BofS CSV Transactions") {
-                appState.replaceCentralView(with: .BofSCSVImport)
-            }
-
-            Button("Import VISA PNG Transactions") {
-                appState.replaceCentralView(with: .VISAPNGImport)
-            }
-            
-            Button("Browse Categories") {
-                #if os(macOS)
-                appState.replaceCentralView(with: .browseCategories)
                 #else
-                appState.selectedCentralView = .browseTransactions
-//                showingBrowseTransactionsView = true
+                // no iOS action
                 #endif
-                
+            } label: {
+                HStack {
+                    Image(systemName: "shuffle")
+                        .foregroundColor(.pink)
+                    Text("Add Random Transactions")
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .disabled(gUseLiveStore)
+            .buttonStyle(ItMkSidebarButtonStyle(isSelected: false))
             
-            Button("Test Reconciliation") {
-                appState.replaceCentralView(with: .reconcilliationListView )
+            Divider()
+            
+            Button {
+                #if os(macOS)
+                appState.replaceCentralView(with: .AMEXCSVImport)
+                #endif
+            } label: {
+                HStack {
+                    Image(systemName: "doc.text")
+                        .foregroundColor(appState.selectedCentralView == .AMEXCSVImport ? .white : .red)
+                    Text("Import AMEX CSV Transactions")
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-
-            Button("Edit Currency") {
+            .buttonStyle(ItMkSidebarButtonStyle(isSelected: appState.selectedCentralView == .AMEXCSVImport))
+            
+            Button {
+                #if os(macOS)
+                appState.replaceCentralView(with: .BofSCSVImport)
+                #endif
+            } label: {
+                HStack {
+                    Image(systemName: "doc.text")
+                        .foregroundColor(appState.selectedCentralView == .BofSCSVImport ? .white : .green)
+                    Text("Import BofS CSV Transactions")
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .buttonStyle(ItMkSidebarButtonStyle(isSelected: appState.selectedCentralView == .BofSCSVImport))
+            
+            Button {
+                #if os(macOS)
+                appState.replaceCentralView(with: .VISAPNGImport)
+                #endif
+            } label: {
+                HStack {
+                    Image(systemName: "photo")
+                        .foregroundColor(appState.selectedCentralView == .VISAPNGImport ? .white : .yellow)
+                    Text("Import VISA PNG Transactions")
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .buttonStyle(ItMkSidebarButtonStyle(isSelected: appState.selectedCentralView == .VISAPNGImport))
+            
+            Divider()
+            
+            Button {
+                #if os(macOS)
+                appState.replaceCentralView(with: .reconcilliationListView)
+                #endif
+            } label: {
+                HStack {
+                    Image(systemName: "checkmark.seal")
+                        .foregroundColor(appState.selectedCentralView == .reconcilliationListView ? .white : .teal)
+                    Text("Test Reconciliation")
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .buttonStyle(ItMkSidebarButtonStyle(isSelected: appState.selectedCentralView == .reconcilliationListView))
+            
+            Divider()
+            
+            Button {
+                #if os(macOS)
                 appState.replaceCentralView(with: .editCurrency)
-//                appState.selectedCentralView = .editCurrency
+                #endif
+            } label: {
+                HStack {
+                    Image(systemName: "dollarsign.circle")
+                        .foregroundColor(appState.selectedCentralView == .editCurrency ? .white : .brown)
+                    Text("Edit Currency")
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-
-            Button("Edit Payer") {
-                appState.replaceCentralView(with: .editPayer)
-//                appState.selectedCentralView = .editPayer
-            }
+            .buttonStyle(ItMkSidebarButtonStyle(isSelected: appState.selectedCentralView == .editCurrency))
             
-            Button("Edit Payee") {
-                appState.replaceCentralView(with: .editPayee)
-//                appState.selectedCentralView = .editPayee
+            Button {
+                #if os(macOS)
+                appState.replaceCentralView(with: .editPayer)
+                #endif
+            } label: {
+                HStack {
+                    Image(systemName: "person.crop.circle")
+                        .foregroundColor(appState.selectedCentralView == .editPayer ? .white : .mint)
+                    Text("Edit Payer")
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-#endif
-
-
-
+            .buttonStyle(ItMkSidebarButtonStyle(isSelected: appState.selectedCentralView == .editPayer))
+            
+            Button {
+                #if os(macOS)
+                appState.replaceCentralView(with: .editPayee)
+                #endif
+            } label: {
+                HStack {
+                    Image(systemName: "person.2")
+                        .foregroundColor(appState.selectedCentralView == .editPayee ? .white : .cyan)
+                    Text("Edit Payee")
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .buttonStyle(ItMkSidebarButtonStyle(isSelected: appState.selectedCentralView == .editPayee))
         }
-        .buttonStyle( ItMkButton() )
+        .padding(.horizontal, 8)
+
+
 #if os(iOS)
         .sheet(isPresented: $showingEditAddTransactionSheet) {
             EditTransactionView()
@@ -121,5 +240,6 @@ struct NavigatorEditAddView: View {
             BrowseTransactionsView()
         }
 #endif
+        Spacer()
     }
 }

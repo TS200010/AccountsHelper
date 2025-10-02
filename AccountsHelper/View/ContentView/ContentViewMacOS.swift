@@ -11,6 +11,7 @@ import ItMkLibrary
 struct ContentViewMacOS: View {
     
     @EnvironmentObject var gGlobalAlert: GlobalAlert
+    @Environment(AppState.self) var appState
     
     // A Placeholder for a Finite State Machine for the model
     //    @Environment(ModelFSM.self) var modelFSM
@@ -42,13 +43,21 @@ struct ContentViewMacOS: View {
                     )
                 }
                 
-                
                 ToolbarItem( placement: .confirmationAction) {
                     Button( action: { withAnimation { showingSettings.toggle() } },
                             label: { Image(systemName: "gearshape") }
                     )
                 }
-                
+            
+                ToolbarItem(placement: .navigation) {
+                    Button {
+                        appState.popCentralView()
+                    } label: {
+                        Label("Back", systemImage: "chevron.left")
+                    }
+                    .disabled( appState.centralViewStack.count == 0)
+                }
+
                 // MARK: --- Add more ToolbarItems here as .principal if needed ... eg
                 ToolbarItem( placement: .principal ) {
                     Button( action: { withAnimation { /* Action here */ } },

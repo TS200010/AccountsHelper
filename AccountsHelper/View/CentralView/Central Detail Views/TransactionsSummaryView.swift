@@ -200,21 +200,21 @@ struct TransactionsSummaryView: View {
             
 
             categoriesTable
-                .toolbar { toolbarItems }
+//                .toolbar { toolbarItems }
                 .navigationTitle("Transactions Summary")
         }
     }
     
     // MARK: - Toolbar
-    private var toolbarItems: some ToolbarContent {
-        Group {
-            ToolbarItem(placement: .navigation) {
-                Button {
-                    appState.popCentralView()
-                } label: {
-                    Label("Back", systemImage: "chevron.left")
-                }
-            }
-        }
-    }
+//    private var toolbarItems: some ToolbarContent {
+//        Group {
+//            ToolbarItem(placement: .navigation) {
+//                Button {
+//                    appState.popCentralView()
+//                } label: {
+//                    Label("Back", systemImage: "chevron.left")
+//                }
+//            }
+//        }
+//    }
 }
