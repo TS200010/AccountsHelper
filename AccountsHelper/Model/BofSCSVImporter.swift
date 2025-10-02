@@ -1,10 +1,11 @@
 import Foundation
 import CoreData
 
-class BofSCSVImporter: CSVImporter {
+class BofSCSVImporter: TxImporter {
 
     static var displayName: String = "BofS CSV Importer"
     static var paymentMethod: PaymentMethod = .BofSPV
+    static var importType: ImportType = .csv
 
     @MainActor
     static func importTransactions(

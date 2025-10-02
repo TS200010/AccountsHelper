@@ -60,7 +60,7 @@ struct CentralViews: View {
         case .AMEXCSVImport:
             #if os(macOS)
 //            AMEXCSVImportView()
-            CSVImportView<AMEXCSVImporter>()
+            TxImportView<AMEXCSVImporter>()
             #else
             Text("Not implemented on iOS")
             #endif
@@ -68,7 +68,7 @@ struct CentralViews: View {
         case .BofSCSVImport:
             #if os(macOS)
 //            AMEXCSVImportView()
-            CSVImportView<BofSCSVImporter>()
+            TxImportView<BofSCSVImporter>()
             #else
             Text("Not implemented on iOS")
             #endif
@@ -76,7 +76,7 @@ struct CentralViews: View {
         case .VISAPNGImport:
             #if os(macOS)
 //            AMEXCSVImportView()
-            CSVImportView<VISAPNGImporter>()
+            TxImportView<VISAPNGImporter>()
             #else
             Text("Not implemented on iOS")
             #endif

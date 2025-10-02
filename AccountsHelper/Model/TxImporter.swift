@@ -1,10 +1,19 @@
 import Foundation
 import CoreData
 
+enum ImportType {
+    case csv
+    case png
+//    case pdf
+//    case ofx
+    // etc
+}
+
 @MainActor
-protocol CSVImporter {
+protocol TxImporter {
     static var displayName: String { get }
     static var paymentMethod: PaymentMethod { get }
+    static var importType: ImportType { get }
 
     /// Import CSV and return Transactions, using the mergeHandler when duplicates are found.
     /// Transactions are created in a temporary child context, then saved into the main context.
@@ -22,7 +31,7 @@ protocol CSVImporter {
     static func findMergeCandidateInSnapshot(newTx: Transaction, snapshot: [Transaction]) -> Transaction?
 }
 
-extension CSVImporter {
+extension TxImporter {
     // MARK: - Temporary context creation
     static func makeTemporaryContext(parent: NSManagedObjectContext) -> NSManagedObjectContext {
         let tempContext = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)

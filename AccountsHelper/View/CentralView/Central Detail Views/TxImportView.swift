@@ -3,23 +3,23 @@ import SwiftUI
 import CoreData
 import AppKit
 
-struct CSVImportView<Importer: CSVImporter>: View {
+struct TxImportView<Importer: TxImporter>: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(AppState.self) var appState
 
-    // Live fetch, ensures view stays in sync with Core Data
+    // Live fetch ensures view stays in sync with Core Data
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Transaction.transactionDate, ascending: true)],
         animation: .default
     )
     private var transactions: FetchedResults<Transaction>
 
-    @State private var statusMessage = "Select a CSV file to start import."
+    @State private var statusMessage = "Select a file to start import."
     @State private var importedCount = 0
 
     var body: some View {
         VStack(spacing: 20) {
-            Text("\(Importer.displayName) CSV Importer")
+            Text("\(Importer.displayName) Importer")
                 .font(.title)
 
             Text(statusMessage)
@@ -29,8 +29,8 @@ struct CSVImportView<Importer: CSVImporter>: View {
                 Text("Imported: \(importedCount)")
             }
 
-            Button("Select CSV File") {
-                selectCSVFile()
+            Button("Select File") {
+                selectFile()
             }
             .padding()
 
@@ -49,12 +49,20 @@ struct CSVImportView<Importer: CSVImporter>: View {
     }
 
     // MARK: - File Selection
-    private func selectCSVFile() {
+    private func selectFile() {
         let panel = NSOpenPanel()
-        panel.allowedFileTypes = ["csv"]
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
-        panel.title = "Select a \(Importer.displayName) CSV file"
+
+        // Dynamic allowed file types based on Importer
+        switch Importer.importType {
+        case .csv:
+            panel.allowedFileTypes = ["csv"]
+            panel.title = "Select a \(Importer.displayName) CSV file"
+        case .png:
+            panel.allowedFileTypes = ["png"]
+            panel.title = "Select a \(Importer.displayName) PNG file"
+        }
 
         if panel.runModal() == .OK, let url = panel.url {
             startImport(url: url)
@@ -63,13 +71,14 @@ struct CSVImportView<Importer: CSVImporter>: View {
 
     // MARK: - Start Import
     private func startImport(url: URL) {
-        statusMessage = "Parsing CSV..."
+        statusMessage = "Parsing file..."
 
         Task { @MainActor in
             let imported = await Importer.importTransactions(
                 fileURL: url,
                 context: viewContext,
                 mergeHandler: { existing, new in
+                    // Show merge dialog
                     await withCheckedContinuation { continuation in
                         appState.pushCentralView(
                             .transactionMergeView([existing, new]) {
@@ -81,9 +90,8 @@ struct CSVImportView<Importer: CSVImporter>: View {
             )
 
             importedCount = imported.count
-            statusMessage = "CSV import complete! Imported \(importedCount)"
+            statusMessage = "Import complete! Imported \(importedCount)"
         }
     }
 }
 #endif
-

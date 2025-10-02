@@ -8,10 +8,11 @@
 import Foundation
 import CoreData
 
-class AMEXCSVImporter: CSVImporter {
+class AMEXCSVImporter: TxImporter {
     
     static var displayName: String = "AMEX CSV Importer"
     static var paymentMethod: PaymentMethod = .AMEX
+    static var importType: ImportType = .csv
 
     @MainActor
     static func importTransactions(

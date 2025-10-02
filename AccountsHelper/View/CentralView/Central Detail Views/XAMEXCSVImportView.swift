@@ -200,7 +200,7 @@ struct XAMEXCSVImportView: View {
 // MARK: - AMEXCSVImporter helper
 
 #if os(macOS)
-extension CSVImporter {
+extension TxImporter {
     
     static func findMergeCandidateInSnapshot(
         newTx: TransactionStruct,
