@@ -35,23 +35,11 @@ struct ReconcilliationListView: View {
         sortDescriptors: [NSSortDescriptor(keyPath: \Reconciliation.statementDate, ascending: false)]
     ) var reconciliations: FetchedResults<Reconciliation>
     
-//    private func addBalancingTransaction(for tx: Transaction) {
-//        let newTx = Transaction(context: context)
-//        newTx.payee = "Balancing Transaction"
-//        newTx.explanation = "Automatically added to balance"
-//        newTx.currency = tx.currency
-//        newTx.txAmount = -gap  // This will make the gap zero
-//        newTx.transactionDate = Date()
-//        newTx.category = .ToBalance // your custom transaction type
-//
-//        do {
-//            try context.save()
-////            loadTransactions() // reload to refresh list and gap
-//        } catch {
-//            print("Failed to save balancing transaction: \(error)")
-//        }
-//    }
-
+    
+    // MARK: - Helper
+    private func hasInvalidTransactions(_ row: ReconciliationRow) -> Bool {
+        !(row.rec.isValid(in: context))
+    }
     
 
     // MARK: - Delete Function
@@ -87,18 +75,6 @@ struct ReconcilliationListView: View {
     }
 
     // MARK: - Grouped Rows
-//    private var groupedReconciliationRows: [(period: AccountingPeriod, rows: [ReconciliationRow])] {
-//        let dict = Dictionary(grouping: reconciliations) { $0.accountingPeriod }
-//        return dict.map { (period: $0.key, rows: $0.value.map { rec in
-//            let gap = (try? rec.reconciliationGap(in: context)) ?? 0
-//            return ReconciliationRow(rec: rec, gap: gap)
-//        }) }
-//        .sorted { lhs, rhs in
-//            lhs.period.year > rhs.period.year ||
-//            (lhs.period.year == rhs.period.year && lhs.period.month > rhs.period.month)
-//        }
-//    }
-    
     private var groupedReconciliationRows: [(period: AccountingPeriod, rows: [ReconciliationRow])] {
         let dict = Dictionary(grouping: reconciliationRows) { $0.rec.accountingPeriod }
         return dict.map { (period: $0.key, rows: $0.value) }
@@ -153,12 +129,14 @@ struct ReconcilliationListView: View {
                             TableColumn("Payment Method") { row in
                                 Text(row.rec.paymentMethod.description)
                                     .frame(maxWidth: .infinity, alignment: .leading)
+                                    .foregroundColor(hasInvalidTransactions(row) ? .red : .primary)
                                     .contentShape(Rectangle())
                                     .contextMenu { rowContextMenu(row) }
                             }
                             TableColumn("Ending Balance") { row in
                                 Text("\(row.rec.endingBalance.formatted(.number.precision(.fractionLength(2)))) \(row.rec.currency.description)")
                                     .frame(maxWidth: .infinity, alignment: .trailing)
+                                    .foregroundColor(hasInvalidTransactions(row) ? .red : .primary)
                                     .contentShape(Rectangle())
                                     .contextMenu { rowContextMenu(row) }
                             }

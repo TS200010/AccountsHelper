@@ -1,5 +1,5 @@
 //
-//  NavigatorEditAddView.swift
+//  NavigatorMenuView.swift
 //  AccountsHelper
 //
 //  Created by Anthony Stanners on 12/09/2025.
@@ -22,7 +22,7 @@ struct ItMkSidebarButtonStyle: ButtonStyle {
     }
 }
 
-struct NavigatorEditAddView: View {
+struct NavigatorMenuView: View {
     
     // MARK: --- Environment
     @Environment(AppState.self) var appState
@@ -179,7 +179,7 @@ struct NavigatorEditAddView: View {
                 HStack {
                     Image(systemName: "checkmark.seal")
                         .foregroundColor(appState.selectedCentralView == .reconcilliationListView ? .white : .teal)
-                    Text("Test Reconciliation")
+                    Text("Reconciliation")
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }

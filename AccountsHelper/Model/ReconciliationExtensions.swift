@@ -297,27 +297,6 @@ extension Reconciliation {
     /// Returns the difference between the expected ending balance
     /// (previous reconciliation balance + sum of transactions)
     /// and the actual reconciliation ending balance.
-//    func reconciliationGap(in context: NSManagedObjectContext) throws -> Decimal {
-//        let txs = try fetchTransactions(in: context)
-//        let sum = txs.reduce(Decimal(0)) { total, tx in
-//            total + tx.txAmount
-//        }
-//        
-//        let previousBalance: Decimal
-//        if let previous = try Reconciliation.fetchPrevious(
-//            for: self.paymentMethod,
-//            before: self.statementDate!,
-//            context: context
-//        ) {
-//            previousBalance = previous.endingBalance
-//        } else {
-//            previousBalance = 0
-//        }
-//        
-//        let expectedBalance = previousBalance + sum
-//        return expectedBalance - self.endingBalance
-//    }
-    
     func reconciliationGap(in context: NSManagedObjectContext) throws -> Decimal {
         let txs = try fetchTransactions(in: context) 
 
@@ -359,6 +338,17 @@ extension Reconciliation {
     func debitsTotalInGBP(in context: NSManagedObjectContext) throws -> Decimal {
         let txs = try fetchTransactions(in: context).filter { $0.debitCredit == .DR }
         return txs.reduce(Decimal(0)) { $0 + $1.totalAmountInGBP }
+    }
+    
+    // Determines validitity
+    func isValid(in context: NSManagedObjectContext) -> Bool {
+        do {
+            let txs = try fetchTransactions(in: context)
+            return txs.allSatisfy { $0.isValid() }
+        } catch {
+            print("Failed to fetch transactions: \(error)")
+            return false
+        }
     }
 
     
