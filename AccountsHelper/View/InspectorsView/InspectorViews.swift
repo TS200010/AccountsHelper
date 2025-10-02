@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import CoreData
 import ItMkLibrary
 
 struct InspectorViews: View {
@@ -22,8 +23,8 @@ struct InspectorViews: View {
             case .viewTransaction:
                 InspectTransaction()
                 
-            case .InspectorViewTwo:
-                InspectorViewTwo()
+            case .viewCategoryBreakdown:
+                InspectorCategoryBreakdown( )
                 
             case .InspectorViewThree:
                 InspectorViewThree()

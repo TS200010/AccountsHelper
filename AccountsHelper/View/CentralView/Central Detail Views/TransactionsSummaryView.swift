@@ -1,6 +1,12 @@
 import SwiftUI
 import CoreData
 
+struct TransactionsInspectorView: View {
+    var body: some View {
+        Text("Transactions Inspector View")
+    }
+}
+
 // MARK: - Extension to sum transactions including splits
 extension Array where Element == Transaction {
     func sumByCategoryIncludingSplitsInGBP() -> [Category: Decimal] {
@@ -25,26 +31,12 @@ extension Decimal {
     }
 }
 
-//extension Array where Element == Transaction {
-//    var totalInGBP: Decimal {
-//        self.reduce(0) { $0 + $1.totalAmountInGBP }
-//    }
-//
-//    var totalCreditsInGBP: Decimal {
-//        self.filter { $0.totalAmountInGBP > 0 }
-//            .reduce(0) { $0 + $1.totalAmountInGBP }
-//    }
-//
-//    var totalDebitsInGBP: Decimal {
-//        self.filter { $0.totalAmountInGBP < 0 }
-//            .reduce(0) { $0 + $1.totalAmountInGBP }
-//    }
-//}
 
 // MARK: - CategoryRow Wrapper
 fileprivate struct CategoryRow: Identifiable, Hashable {
     let category: Category
     let total: Decimal
+    let transactionIDs: [NSManagedObjectID]
     
     var id: Int32 { category.id } // stable ID for selection
     
@@ -52,6 +44,16 @@ fileprivate struct CategoryRow: Identifiable, Hashable {
         String(format: "%.2f", NSDecimalNumber(decimal: total).doubleValue)
     }
 }
+//fileprivate struct CategoryRow: Identifiable, Hashable {
+//    let category: Category
+//    let total: Decimal
+//    
+//    var id: Int32 { category.id } // stable ID for selection
+//    
+//    var totalString: String {
+//        String(format: "%.2f", NSDecimalNumber(decimal: total).doubleValue)
+//    }
+//}
 
 // MARK: - TransactionsSummaryView
 struct TransactionsSummaryView: View {
@@ -70,19 +72,49 @@ struct TransactionsSummaryView: View {
         )
     }
     
+    
     // Derived rows
     fileprivate var categoryRows: [CategoryRow] {
-        let byCategory = Array(transactions).sumByCategoryIncludingSplitsInGBP()
-        let rows = Category.allCases
+        // Group totals and transaction IDs by category
+        var grouped: [Category: (total: Decimal, ids: [NSManagedObjectID])] = [:]
+        
+        for category in Category.allCases {
+            grouped[category] = (0, [])
+        }
+        
+        for tx in transactions {
+            let id = tx.objectID
+            
+            // Main split
+            grouped[tx.splitCategory]!.total += tx.splitAmountInGBP
+            grouped[tx.splitCategory]!.ids.append(id)
+            
+            // Remainder split
+            grouped[tx.splitRemainderCategory]!.total += tx.splitRemainderAmountInGBP
+            grouped[tx.splitRemainderCategory]!.ids.append(id)
+        }
+        
+        // Build array of CategoryRow
+        return Category.allCases
             .sorted { $0.rawValue < $1.rawValue }
-            .map { category -> CategoryRow in
-                let total = byCategory[category] ?? 0
-                let row = CategoryRow(category: category, total: total)
-                print("CategoryRow created: \(row.category.description), id: \(row.id)")
-                return row
+            .map { category in
+                let (total, ids) = grouped[category]!
+                return CategoryRow(category: category, total: total, transactionIDs: ids)
             }
-        return rows
     }
+    
+//    fileprivate var categoryRows: [CategoryRow] {
+//        let byCategory = Array(transactions).sumByCategoryIncludingSplitsInGBP()
+//        let rows = Category.allCases
+//            .sorted { $0.rawValue < $1.rawValue }
+//            .map { category -> CategoryRow in
+//                let total = byCategory[category] ?? 0
+//                let row = CategoryRow(category: category, total: total)
+//                print("CategoryRow created: \(row.category.description), id: \(row.id)")
+//                return row
+//            }
+//        return rows
+//    }
     
     // MARK: - Table
     private var categoriesTable: some View {
@@ -92,6 +124,15 @@ struct TransactionsSummaryView: View {
             }
             TableColumn("Total") { row in
                 Text(row.totalString)
+            }
+        }
+        .onChange(of: selectedCategoryID) { newValue in
+            if let id = newValue,
+               let row = categoryRows.first(where: { $0.id == id }) {
+                appState.selectedInspectorTransactionIDs = row.transactionIDs
+                appState.selectedInspectorView = .viewCategoryBreakdown
+            } else {
+                appState.selectedInspectorTransactionIDs = []
             }
         }
         .tableStyle(.inset(alternatesRowBackgrounds: true))

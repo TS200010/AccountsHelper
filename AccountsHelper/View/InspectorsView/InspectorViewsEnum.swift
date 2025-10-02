@@ -5,10 +5,11 @@
 //  Created by Anthony Stanners on 08/09/2025.
 //
 
-enum InspectorViewsEnum: String {
-    
+import CoreData
+
+enum InspectorViewsEnum: Equatable {
     case emptyView
     case viewTransaction
-    case InspectorViewTwo
+    case viewCategoryBreakdown
     case InspectorViewThree
 }

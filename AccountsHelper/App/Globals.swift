@@ -49,6 +49,7 @@ class AppState {
 
     var selectedTransactionID: NSManagedObjectID? = nil
     var selectedNavigatorView: NavigatorViewsEnum = .edit
+    var selectedInspectorTransactionIDs: [ NSManagedObjectID ] = []
     
     // Central view stack
     public private(set) var centralViewStack: [CentralViewsEnum] = []
