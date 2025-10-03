@@ -16,12 +16,6 @@ let dateFormatter: DateFormatter = {
     return f
 }()
 
-//let dateOnlyFormatter: DateFormatter = {
-//    let formatter = DateFormatter()
-//    formatter.dateStyle = .medium
-//    formatter.timeStyle = .none  // <-- no time
-//    return formatter
-//}()
 
 let dateOnlyFormatter: DateFormatter = {
     let formatter = DateFormatter()

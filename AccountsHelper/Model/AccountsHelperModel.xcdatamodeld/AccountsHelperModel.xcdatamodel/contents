@@ -8,6 +8,7 @@
     <entity name="Reconciliation" representedClassName="Reconciliation" syncable="YES" codeGenerationType="class">
         <attribute name="currencyCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="endingBalanceCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="finalised" optional="YES" attributeType="Boolean" usesScalarValueType="YES"/>
         <attribute name="paymentMethodCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="periodKey" optional="YES" attributeType="String"/>
         <attribute name="periodMonth" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>

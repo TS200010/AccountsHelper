@@ -215,7 +215,7 @@ struct ReconcilliationListView: View {
     // MARK: - Row Context Menu
     @ViewBuilder
     private func rowContextMenu(_ row: ReconciliationRow) -> some View {
-        Button("Transactions") {
+        Button {
             selectedReconciliationID = row.id
             let predicate = NSPredicate(
                 format: "paymentMethodCD == %d AND transactionDate >= %@ AND transactionDate <= %@",
@@ -224,7 +224,8 @@ struct ReconcilliationListView: View {
                 row.rec.transactionEndDate as NSDate
             )
             appState.pushCentralView(.browseTransactions(predicate))
-//            showDetail = true
+        }  label: {
+            Label("Transactions", systemImage: "list.bullet")
         }
         
         Button {
@@ -235,13 +236,12 @@ struct ReconcilliationListView: View {
                 row.rec.transactionEndDate as NSDate
             )
             appState.pushCentralView(.transactionSummary( predicate ))
- //           appState.pushCentralView( .transactionSummary( ) )
         } label: {
             Label("Summary", systemImage: "doc.text.magnifyingglass")
         }
         
         // Calculate gap on demand
-        Button("Add Balancing Tx") {
+        Button {
             do {
                 let gap = try row.rec.reconciliationGap(in: context)
                 guard gap != 0 else { return }
@@ -258,13 +258,14 @@ struct ReconcilliationListView: View {
 
                 try context.save()
                 refreshRows()
-                
-//                // Force recalculation / refresh
-//                objectWillChange.send() // triggers SwiftUI update
+
             } catch {
                 print("Failed to add balancing transaction: \(error)")
             }
         }
+        label: {
+           Label("Add Balancing Tx", systemImage: "plus.circle.fill")
+       }
         .disabled((try? row.rec.reconciliationGap(in: context)) == 0)
         
         Divider()

@@ -196,7 +196,7 @@ struct TransactionsSummaryView: View {
                     //                Text("New Balance: \(String(format: "%.2f", NSDecimalNumber(decimal: newBalance).doubleValue)) GBP")
                     
                 }
-                .padding(0)
+            .padding( .horizontal, 10 )
             
 
             categoriesTable
