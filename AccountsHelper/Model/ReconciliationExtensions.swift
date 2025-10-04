@@ -117,6 +117,11 @@ extension Reconciliation {
         return endingBalance
     }
     
+    // MARK: --- IsClosed
+    var isClosed: Bool {
+        closed
+    }
+    
     // MARK: --- PaymentMethod
     var paymentMethod: PaymentMethod {
         PaymentMethod(rawValue: paymentMethodCD) ?? .unknown

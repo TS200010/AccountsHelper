@@ -254,6 +254,7 @@ extension BrowseTransactionsView {
                     appState.pushCentralView(.editTransaction(existingTransaction: row.transaction))
                     appState.refreshInspector()
                 }
+                .disabled(anySelectedTransactionClosed)
             }
 
             // Merge Transactions - when exactly two rows are selected
@@ -263,6 +264,7 @@ extension BrowseTransactionsView {
                     appState.pushCentralView(.transactionMergeView(mergeCandidates))
                     appState.refreshInspector()
                 }
+                .disabled(anySelectedTransactionClosed)
                 Divider()
             }
 
@@ -273,6 +275,7 @@ extension BrowseTransactionsView {
             } label: {
                 Label("Delete Transaction(s)", systemImage: "trash")
             }
+            .disabled(anySelectedTransactionClosed)
         }
     }
 
@@ -281,6 +284,7 @@ extension BrowseTransactionsView {
     private func multiLineTableCell(_ content: String, for row: TransactionRow) -> some View {
         HStack {
             Text(content)
+                .foregroundColor(row.transaction.closed ? .blue : (row.transaction.isValid() ? .primary : .red))
                 .lineLimit(nil)
             Spacer()
         }
@@ -434,6 +438,17 @@ extension BrowseTransactionsView {
                 print("Failed to delete transactions: \(error.localizedDescription)")
                 viewContext.rollback()
             }
+        }
+    }
+}
+
+// MARK: --- BrowseTransactionsView Helpers
+extension BrowseTransactionsView {
+
+    private var anySelectedTransactionClosed: Bool {
+        selectedTransactionIDs.contains { id in
+            guard let tx = transactions.first(where: { $0.objectID == id }) else { return false }
+            return tx.closed
         }
     }
 }

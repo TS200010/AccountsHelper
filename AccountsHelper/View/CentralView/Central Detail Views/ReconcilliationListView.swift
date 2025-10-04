@@ -385,7 +385,7 @@ extension ReconcilliationListView {
         } label: {
             Label("Add Balancing Tx", systemImage: "plus.circle.fill")
         }
-        .disabled( row.rec.reconciliationGap(in: context) == 0 )
+        .disabled( row.rec.reconciliationGap(in: context) == 0 || row.rec.closed )
         
         Button {
             selectedReconciliation = row.id  
@@ -393,7 +393,7 @@ extension ReconcilliationListView {
         } label: {
             Label("Close Period", systemImage: "checkmark.square.fill")
         }
-        .disabled(!row.rec.canCloseAccountingPeriod(in: context))
+        .disabled(!row.rec.canCloseAccountingPeriod(in: context) || row.rec.closed )
         
         Divider()
         
@@ -403,5 +403,6 @@ extension ReconcilliationListView {
         } label: {
             Label("Delete", systemImage: "trash")
         }
+        .disabled(row.rec.closed)
     }
 }
