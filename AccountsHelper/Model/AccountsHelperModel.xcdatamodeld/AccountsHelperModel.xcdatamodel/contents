@@ -23,7 +23,7 @@
         <attribute name="commissionAmountCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="currencyCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="debitCreditCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
-        <attribute name="exchangeRateCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="exchangeRateCD" optional="YES" attributeType="Integer 32" defaultValueString="100" usesScalarValueType="YES"/>
         <attribute name="explanation" optional="YES" attributeType="String"/>
         <attribute name="extendedDetails" optional="YES" attributeType="String"/>
         <attribute name="payee" optional="YES" attributeType="String"/>

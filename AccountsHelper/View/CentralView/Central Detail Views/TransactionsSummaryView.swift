@@ -17,9 +17,25 @@ extension Array where Element == Transaction {
         }
         
         for tx in self {
-            result[tx.splitCategory, default: 0] += tx.splitAmountInGBP
-            result[tx.splitRemainderCategory, default: 0] += tx.splitRemainderAmountInGBP
+            let splitAmt = tx.splitAmountInGBP
+            if !splitAmt.isNaN {
+                result[tx.splitCategory, default: 0] += splitAmt
+            } else {
+                print("⚠️ NaN splitAmountInGBP in tx:", tx)
+            }
+
+            let remainderAmt = tx.splitRemainderAmountInGBP
+            if !remainderAmt.isNaN {
+                result[tx.splitRemainderCategory, default: 0] += remainderAmt
+            } else {
+                print("⚠️ NaN splitRemainderAmountInGBP in tx:", tx)
+            }
         }
+        
+//        for tx in self {
+//            result[tx.splitCategory, default: 0] += tx.splitAmountInGBP
+//            result[tx.splitRemainderCategory, default: 0] += tx.splitRemainderAmountInGBP
+//        }
         
         return result
     }

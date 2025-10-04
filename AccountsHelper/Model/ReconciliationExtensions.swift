@@ -164,16 +164,16 @@ extension Reconciliation {
     }
     
     // MARK: --- CreditsTotalInGBP
-    func creditsTotalInGBP(in context: NSManagedObjectContext) throws -> Decimal {
-        let txs = try fetchTransactions(in: context).filter { $0.debitCredit == .CR }
-        return txs.reduce(Decimal(0)) { $0 + $1.totalAmountInGBP }
-    }
+//    func XcreditsTotalInGBP(in context: NSManagedObjectContext) throws -> Decimal {
+//        let txs = try fetchTransactions(in: context).filter { $0.debitCredit == .CR }
+//        return txs.reduce(Decimal(0)) { $0 + $1.totalAmountInGBP }
+//    }
     
     // MARK: --- DebitsTotalInGBP
-    func debitsTotalInGBP(in context: NSManagedObjectContext) throws -> Decimal {
-        let txs = try fetchTransactions(in: context).filter { $0.debitCredit == .DR }
-        return txs.reduce(Decimal(0)) { $0 + $1.totalAmountInGBP }
-    }
+//    func XdebitsTotalInGBP(in context: NSManagedObjectContext) throws -> Decimal {
+//        let txs = try fetchTransactions(in: context).filter { $0.debitCredit == .DR }
+//        return txs.reduce(Decimal(0)) { $0 + $1.totalAmountInGBP }
+//    }
     
     // MARK: --- FetchTransactions
     func fetchTransactions(in context: NSManagedObjectContext) throws -> [Transaction] {
@@ -208,6 +208,7 @@ extension Reconciliation {
     
     // MARK: --- ReconciliationGap
     func reconciliationGap(in context: NSManagedObjectContext) -> Decimal {
+
         do {
             let txs = try fetchTransactions(in: context)
             let sumInGBP = txs.reduce(Decimal(0)) { $0 + $1.totalAmountInGBP }
@@ -220,6 +221,11 @@ extension Reconciliation {
             }
             
             let expectedBalance = previousBalance + sumInGBP
+            let safePreviousBalance = previousBalance
+            let safeSumInGBP = sumInGBP
+            let expectedBalance2 = safePreviousBalance + safeSumInGBP
+            let gap = expectedBalance - self.endingBalance
+            
             return expectedBalance - self.endingBalance
         } catch {
             print("Failed to compute reconciliation gap: \(error)")

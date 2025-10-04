@@ -64,9 +64,6 @@ fileprivate struct TransactionRow: Identifiable, Hashable {
         return result
     }
 
-    // MARK: --- DebitCredit
-    var debitCredit: String { transaction.debitCredit.description }
-
     // MARK: --- Explanation
     var explanation: String { transaction.explanation ?? "" }
 

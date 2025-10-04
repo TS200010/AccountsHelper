@@ -35,6 +35,7 @@ let gNavigatorMaxWidth:      CGFloat = 350
 let gMinToolbarHeight:       CGFloat = 30
 let gMaxToolbarHeight:       CGFloat = 30
 let gCentralViewHeadingSize: CGFloat = 170
+let gInvalidReconciliationGap: Decimal = Decimal(999999)
 
 // MARK: --- Defaults
 let gAppName: String = Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "UnknownAppName"
@@ -47,9 +48,10 @@ var gGlobalAlert: GlobalAlert = GlobalAlert()
 @Observable
 class AppState {
 
-    var selectedTransactionID: NSManagedObjectID? = nil
-    var selectedNavigatorView: NavigatorViewsEnum = .edit
+    var selectedTransactionID:           NSManagedObjectID? = nil
+    var selectedNavigatorView:           NavigatorViewsEnum = .edit
     var selectedInspectorTransactionIDs: [ NSManagedObjectID ] = []
+    var selectedReconciliationID:        NSManagedObjectID? = nil
     
     // Central view stack
     public private(set) var centralViewStack: [CentralViewsEnum] = []

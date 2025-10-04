@@ -11,5 +11,6 @@ enum InspectorViewsEnum: Equatable {
     case emptyView
     case viewTransaction
     case viewCategoryBreakdown
+    case viewReconciliation
     case InspectorViewThree
 }

@@ -115,8 +115,13 @@ extension Transaction {
     }
 
     var exchangeRate: Decimal {
-        get { Decimal(exchangeRateCD) / 100 }
-        set { exchangeRateCD = decimalToCents(newValue) }
+        get {
+            let rate = Decimal(exchangeRateCD) / 100
+            return rate == 0 ? 1 : rate   // avoid divide-by-zero → force 1
+        }
+        set {
+            exchangeRateCD = decimalToCents(newValue == 0 ? 1 : newValue)
+        }
     }
 
     var payer: Payer {
@@ -137,8 +142,11 @@ extension Transaction {
     
     // Split amount converted to GBP, with commission included
     var splitAmountInGBP: Decimal {
+        assert( exchangeRate != 0 )
         let converted = splitAmount / exchangeRate   // convert to GBP
-        return converted + commissionAmount          // add commission
+        let value = converted + commissionAmount     // add commission
+        if value.isNaN { return Decimal(0) }
+        return value
     }
 
     // Split Remainder Amount
@@ -149,7 +157,10 @@ extension Transaction {
 
     // Remainder split amount converted to GBP, commission is NOT included in the remainder, as it is in the splitAmount
     var splitRemainderAmountInGBP: Decimal {
-        return splitRemainderAmount / exchangeRate
+        assert( exchangeRate != 0 )
+        let value = splitRemainderAmount / exchangeRate
+        if value.isNaN { return Decimal(0) }
+        return value
     }
     
     var txAmount: Decimal {
@@ -173,7 +184,6 @@ extension Transaction {
         NSDecimalRound(&roundedTotal, &totalCopy, 2, .plain)
         return roundedTotal
     }
-    
 }
 
 
@@ -198,11 +208,6 @@ extension Transaction {
         return formatter
     }()
     
-//    func txAmountAsStringOld() -> String? {
-//        let amount = NSDecimalNumber(decimal: txAmount)
-//        return String(format: "%.2f", amount.doubleValue)
-//    }
-    
     func commissionAmountAsString() -> String? {
         let amount = NSDecimalNumber(decimal: commissionAmount)
         return String(format: "%.2f", amount.doubleValue)
@@ -220,36 +225,20 @@ extension Transaction {
     }
     
     func exchangeRateAsString() -> String? {
-//        guard let fx = exchangeRate as? NSDecimalNumber else { return nil }
-//        
-//        switch currency {
-//            
-//        case .GBP:
-//            return ""
-//
-//        case .JPY:
-//            return String(format: "%.0f", fx.doubleValue)
-//            
-//        default:
-//            return String(format: "%.2f", fx.doubleValue)
-//        }
         let fx = NSDecimalNumber(decimal: exchangeRate)
         switch currency {
         case .GBP:
-            return ""
+            return String(format: "%.2f", fx.doubleValue)
+//            return ""
         case .JPY:
             return String(format: "%.0f", fx.doubleValue)
         default:
             return String(format: "%.2f", fx.doubleValue)
         }
-
     }
     
     func splitRemainderAsString() -> String? {
-//        guard let amount = splitRemainderAmount as? NSDecimalNumber else { return nil }
-//        return String(format: "%.2f", amount.doubleValue)
         let amountNumber = NSDecimalNumber(decimal: splitRemainderAmount)
-
         switch currency {
         case .JPY:
             return String(format: "%.0f", amountNumber.doubleValue)
@@ -258,7 +247,6 @@ extension Transaction {
         }
     }
 }
-
 
 
 // MARK: --- GenerateRandomTransactions
@@ -321,38 +309,38 @@ extension Transaction {
     }
 }
 
-extension Transaction {
-    /// Creates a new Core Data Transaction from a TransactionStruct
-    static func create(from temp: TransactionStruct, in context: NSManagedObjectContext) -> Transaction {
-        let transaction = Transaction(context: context)
-        
-        // Simple String properties
-        transaction.accountNumber = temp.accountNumber
-        transaction.address = temp.address
-        transaction.explanation = temp.explanation
-        transaction.extendedDetails = temp.extendedDetails
-        transaction.payee = temp.payee
-        transaction.reference = temp.reference
-        transaction.timestamp = temp.timestamp
-        transaction.transactionDate = temp.transactionDate
-        
-        // Enum-backed properties
-        transaction.categoryCD = temp.category.rawValue
-        transaction.splitCategoryCD = temp.splitCategory.rawValue
-        transaction.currencyCD = temp.currency.rawValue
-        transaction.debitCreditCD = temp.debitCredit.rawValue
-        transaction.payerCD = temp.payer.rawValue
-        transaction.paymentMethodCD = temp.paymentMethod.rawValue
-        
-        // Amounts and rates (convert Decimal → Int32 storage)
-        transaction.txAmount = temp.txAmount
-        transaction.splitAmount = temp.splitAmount
-        transaction.exchangeRate = temp.exchangeRate
-        transaction.commissionAmount = temp.commissionAmount
-        
-        return transaction
-    }
-}
+//extension Transaction {
+//    /// Creates a new Core Data Transaction from a TransactionStruct
+//    static func XXcreate(from temp: TransactionStruct, in context: NSManagedObjectContext) -> Transaction {
+//        let transaction = Transaction(context: context)
+//        
+//        // Simple String properties
+//        transaction.accountNumber = temp.accountNumber
+//        transaction.address = temp.address
+//        transaction.explanation = temp.explanation
+//        transaction.extendedDetails = temp.extendedDetails
+//        transaction.payee = temp.payee
+//        transaction.reference = temp.reference
+//        transaction.timestamp = temp.timestamp
+//        transaction.transactionDate = temp.transactionDate
+//        
+//        // Enum-backed properties
+//        transaction.categoryCD = temp.category.rawValue
+//        transaction.splitCategoryCD = temp.splitCategory.rawValue
+//        transaction.currencyCD = temp.currency.rawValue
+//        transaction.debitCreditCD = temp.debitCredit.rawValue
+//        transaction.payerCD = temp.payer.rawValue
+//        transaction.paymentMethodCD = temp.paymentMethod.rawValue
+//        
+//        // Amounts and rates (convert Decimal → Int32 storage)
+//        transaction.txAmount = temp.txAmount
+//        transaction.splitAmount = temp.splitAmount
+//        transaction.exchangeRate = temp.exchangeRate
+//        transaction.commissionAmount = temp.commissionAmount
+//        
+//        return transaction
+//    }
+//}
 
 extension Transaction {
     /// Returns the number of matches for a TransactionStruct in the database, including paymentMethod

@@ -13,6 +13,7 @@ import ItMkLibrary
     
     case tony            = 1
     case yokko           = 2
+    case ACHelper        = 98
     case unknown         = 99
     
     init( _ s: String ) {
@@ -27,6 +28,7 @@ import ItMkLibrary
         switch s {
         case "Tony":                return .tony
         case "Yokko":               return .yokko
+        case "ACHelper":            return .ACHelper
         case "ANTHONY J STANNERS":  return .tony
         case "YOSHIKO STANNERS":    return .yokko
         default:        return .unknown
@@ -37,6 +39,7 @@ import ItMkLibrary
         switch self {
             case .tony:             return String( localized: "Tony" )
             case .yokko:            return String( localized: "Yokko" )
+            case .ACHelper:         return String( localized: "ACHelper" )
             case .unknown:          return String( localized: "Unknown" )
         }
     }
@@ -48,6 +51,8 @@ import ItMkLibrary
         switch i {
             case 1:  return Self.tony
             case 2:  return Self.yokko
+            case 98: return Self.ACHelper
+            case 99: return Self.unknown
             default: return Self.unknown
         }
     }

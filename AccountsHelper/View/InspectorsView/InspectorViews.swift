@@ -26,12 +26,18 @@ struct InspectorViews: View {
             case .viewCategoryBreakdown:
                 InspectorCategoryBreakdown( )
                 
+            case .viewReconciliation:
+                InspectReconciliation()
+                
             case .InspectorViewThree:
                 InspectorViewThree()
                 
-            default:
-                Text("Select an action from the toolbar" )
+//            default:
+//                Text("Select an action from the toolbar" )
                 
+            case .emptyView:
+                Text("Select an action from the toolbar" )
+
             }
         } .frame(maxWidth: .infinity, maxHeight: .infinity)
           .background( Color( Color.platformWindowBackgroundColor ) )
