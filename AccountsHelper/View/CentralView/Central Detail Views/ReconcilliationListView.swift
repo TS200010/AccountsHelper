@@ -395,6 +395,21 @@ extension ReconcilliationListView {
         }
         .disabled(!row.rec.canCloseAccountingPeriod(in: context) || row.rec.closed )
         
+        Button {
+            selectedReconciliation = row.id
+            do {
+                try row.rec.reopen(in: context)
+                refreshRows()
+                appState.refreshInspector()
+            } catch {
+                print("Failed to reopen reconciliation: \(error)")
+            }
+        } label: {
+            Label("Reopen Period", systemImage: "arrow.uturn.left.square.fill")
+        }
+        .disabled(!row.rec.isClosed || !row.rec.canReopenAccountingPeriod(in: context))
+        
+        
         Divider()
         
         Button(role: .destructive) {
@@ -403,6 +418,7 @@ extension ReconcilliationListView {
         } label: {
             Label("Delete", systemImage: "trash")
         }
-        .disabled(row.rec.closed)
+        .disabled(!row.rec.canDelete(in: context))
+//        .disabled(row.rec.closed)
     }
 }
