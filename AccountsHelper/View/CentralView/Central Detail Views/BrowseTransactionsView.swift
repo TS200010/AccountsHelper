@@ -338,13 +338,13 @@ extension BrowseTransactionsView {
             TableColumn("Payment Method") { row in tableCell(row.paymentMethod, for: row) }
                 .width(min: 50, ideal: 80, max: 100)
             TableColumn("Date") { row in tableCell(row.transactionDate, for: row) }
-                .width(min: 80, ideal: 100, max: 150)
+                .width(min: 90, ideal: 100, max: 150)
             TableColumn("Amount") { row in multiLineTableCell(row.displayAmount, for: row) }
-                .width(min: 120, ideal: 130, max: 150)
+                .width(min: 130, ideal: 130, max: 150)
             TableColumn("Fx") { row in tableCell(row.exchangeRate, for: row) }
                 .width(min: 50, ideal: 55, max: 60)
             TableColumn("Category") { row in tableCell(row.category, for: row) }
-                .width(min: 50, ideal: 80, max: 100)
+                .width(min: 90, ideal: 80, max: 100)
             TableColumn("Split") { row in multiLineTableCell(row.displaySplitAmount, for: row) }
                 .width(min: 200, ideal: 200, max: 300)
             TableColumn("Payee") { row in tableCell(row.payee, for: row) }
