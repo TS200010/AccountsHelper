@@ -295,6 +295,9 @@ struct MergeTransactionsView: View {
 
             do {
                 try viewContext.save()
+                DispatchQueue.main.async {
+                    appState.refreshInspector() // AFTER the save
+                }
             } catch {
                 print("Failed to merge transactions: \(error)")
                 viewContext.rollback()

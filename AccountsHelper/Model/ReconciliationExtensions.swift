@@ -175,6 +175,18 @@ extension Reconciliation {
 //        return txs.reduce(Decimal(0)) { $0 + $1.totalAmountInGBP }
 //    }
     
+    // MARK: --- Close
+    func close(in context: NSManagedObjectContext) throws -> Void {
+        
+        closed = true
+        let txs = try fetchTransactions(in: context)
+        for tx in txs {
+            tx.closed = true
+        }
+        try context.save()
+    }
+    
+    
     // MARK: --- FetchTransactions
     func fetchTransactions(in context: NSManagedObjectContext) throws -> [Transaction] {
         let request: NSFetchRequest<Transaction> = Transaction.fetchRequest()

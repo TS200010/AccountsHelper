@@ -13,6 +13,7 @@ struct BrowseCategoriesView: View {
     
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.undoManager) private var undoManager
+    @Environment(AppState.self) var appState
 
     @State private var showingDeleteConfirmation = false
     @State private var mappingsToDelete: Set<NSManagedObjectID> = []
@@ -58,6 +59,9 @@ struct BrowseCategoriesView: View {
                         }
                     }
                     try? context.save()
+                    DispatchQueue.main.async {
+                        appState.refreshInspector() // AFTER the save
+                    }
                 }
                 undoManager?.setActionName("Delete Category Mappings")
                 

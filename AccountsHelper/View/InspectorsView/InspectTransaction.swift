@@ -93,6 +93,7 @@ struct InspectTransaction: View {
                     .cornerRadius(12)
                     .padding()
                 }
+                .id(appState.inspectorRefreshTrigger)
             } else {
                 Text("No Transaction Selected")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)

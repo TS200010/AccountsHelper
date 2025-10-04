@@ -48,21 +48,24 @@ var gGlobalAlert: GlobalAlert = GlobalAlert()
 @Observable
 class AppState {
 
-    var selectedTransactionID:           NSManagedObjectID? = nil
-    var selectedNavigatorView:           NavigatorViewsEnum = .edit
-    var selectedInspectorTransactionIDs: [ NSManagedObjectID ] = []
-    var selectedReconciliationID:        NSManagedObjectID? = nil
-    
+    var selectedTransactionID: NSManagedObjectID? = nil
+    var selectedNavigatorView: NavigatorViewsEnum = .edit
+    var selectedInspectorTransactionIDs: [NSManagedObjectID] = []
+    var selectedReconciliationID: NSManagedObjectID? = nil
+
+    // Dummy trigger to force SwiftUI updates
+    var inspectorRefreshTrigger: Int = 0
+
     // Central view stack
-    public private(set) var centralViewStack: [CentralViewsEnum] = []
-    
+    private(set) var centralViewStack: [CentralViewsEnum] = []
+
     var selectedCentralView: CentralViewsEnum {
         centralViewStack.last ?? .emptyView
     }
-    
+
     var selectedInspectorView: InspectorViewsEnum = .emptyView
 
-    // MARK: - Central View Management
+    // MARK: --- Central View Management
     func pushCentralView(_ view: CentralViewsEnum) {
         centralViewStack.append(view)
     }
@@ -77,8 +80,16 @@ class AppState {
         centralViewStack = [view]
     }
 
-    // MARK: - Inspector View Management
+    // MARK: --- Inspector View Management
     func replaceInspectorView(with view: InspectorViewsEnum) {
         selectedInspectorView = view
     }
+
+    // MARK: --- Force Inspector Refresh
+    func refreshInspector() {
+        DispatchQueue.main.async {
+            self.inspectorRefreshTrigger += 1
+        }
+    }
 }
+

@@ -252,6 +252,7 @@ extension BrowseTransactionsView {
                 Button("Edit Transaction") {
                     appState.selectedTransactionID = row.id
                     appState.pushCentralView(.editTransaction(existingTransaction: row.transaction))
+                    appState.refreshInspector()
                 }
             }
 
@@ -260,6 +261,7 @@ extension BrowseTransactionsView {
                 Button("Merge Transactions") {
                     mergeCandidates = transactions.filter { selectedTransactionIDs.contains($0.objectID) }
                     appState.pushCentralView(.transactionMergeView(mergeCandidates))
+                    appState.refreshInspector()
                 }
                 Divider()
             }
@@ -316,7 +318,8 @@ extension BrowseTransactionsView {
     private func tableCell(_ content: String, for row: TransactionRow) -> some View {
         HStack {
             Text(content)
-                .foregroundColor(row.transaction.isValid() ? .primary : .red)
+//                .foregroundColor(row.transaction.isValid() ? .primary : .red)
+                .foregroundColor(row.transaction.closed ? .blue : (row.transaction.isValid() ? .primary : .red))
             Spacer()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -422,6 +425,9 @@ extension BrowseTransactionsView {
                         }
                     }
                     try? context.save()
+                    DispatchQueue.main.async {
+                        appState.refreshInspector() // AFTER the save
+                    }
                 }
                 undoManager?.setActionName("Delete Transactions")
             } catch {

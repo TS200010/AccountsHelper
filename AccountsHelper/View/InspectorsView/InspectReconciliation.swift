@@ -97,8 +97,24 @@ struct InspectReconciliation: View {
                             Text("Status:")
                                 .bold()
                             VStack(alignment: .leading) {
-                                Text(isBalanced ? "Balanced ✅" : "Unbalanced ⚠️")
-                                    .foregroundColor(isBalanced ? .green : .red)
+//                                Text(isBalanced ? "Balanced ✅" : "Unbalanced ⚠️")
+//                                    .foregroundColor(isBalanced ? .green : .red)
+                                HStack(spacing: 4) {
+                                    if isBalanced {
+                                        Text("Balanced")
+                                            .foregroundColor(.green)
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundColor(.green)
+                                            .font(.title3)
+                                    } else {
+                                        Text("Unbalanced")
+                                            .foregroundColor(.red)
+                                        Image(systemName: "exclamationmark.triangle.fill")
+                                            .foregroundColor(.red)
+                                            .font(.title3)
+                                    }
+                                }
+                                .font(.body)
                             }
                             Spacer()
                         }
@@ -122,10 +138,41 @@ struct InspectReconciliation: View {
                             .cornerRadius(12)
                         }
                         
+                        // Closed Status
+                        HStack {
+                            Text("Closed:")
+                                .bold()
+                            VStack(alignment: .leading) {
+//                                Text(rec.closed ? "Closed ✅" : "Not Closed ⚠️")
+//                                    .foregroundColor(rec.closed ? .blue : .red)
+                                HStack(spacing: 4) {
+                                    if rec.closed {
+                                        Text("Closed")
+                                            .foregroundColor(.blue)
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundColor(.blue)
+                                            .font(.title3)
+                                    } else {
+                                        Text("Not Closed")
+                                            .foregroundColor(.red)
+                                        Image(systemName: "exclamationmark.triangle.fill")
+                                            .foregroundColor(.red)
+                                            .font(.title3)
+                                    }
+                                }
+                                .font(.body)
+                            }
+                            Spacer()
+                        }
+                        .padding()
+                        .background(.ultraThinMaterial)
+                        .cornerRadius(12)
+                        
                         Spacer(minLength: 20)
                     }
                     .padding(20)
                 }
+                .id(appState.inspectorRefreshTrigger)
             } else {
                 Text("No Reconciliation Selected")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
