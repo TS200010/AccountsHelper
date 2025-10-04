@@ -34,6 +34,7 @@ struct ReconcilliationListView: View {
     @State private var showingDeleteConfirmation = false
     @State private var showingNewReconciliation = false
     @State private var showingCloseAccountingPeriod = false
+    @State private var showingXLSConfirmation = false
     @State private var showDetail = false
     
     // MARK: --- Fetch Request
@@ -84,6 +85,13 @@ struct ReconcilliationListView: View {
                     closeReconciliation(objectID)
                 }
             }
+        }
+        .confirmationDialog(
+            "Category totals copied to clipboard.",
+            isPresented: $showingXLSConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("OK", role: .cancel) { }
         }
         .onReceive(NotificationCenter.default.publisher(for: .NSManagedObjectContextDidSave, object: context)) { _ in
             refreshRows()
@@ -307,7 +315,7 @@ extension ReconcilliationListView {
 extension ReconcilliationListView {
     
     // MARK: --- AddBalancingTransaction
-    func addBalancingTransaction(for row: ReconciliationRow, in context: NSManagedObjectContext) {
+    private func addBalancingTransaction(for row: ReconciliationRow, in context: NSManagedObjectContext) {
         do {
             var gap = row.rec.reconciliationGap(in: context)
             if !gap.isFinite { gap = 0 } // Clamp NaN or infinite values to zero
@@ -345,6 +353,42 @@ extension ReconcilliationListView {
             print("Failed to add balancing transaction: \(error)")
         }
     }
+    
+    // MARK: --- XLS Summary Export (synchronous)
+    private func exportXLSSummary(for row: ReconciliationRow) {
+        do {
+            let predicate = NSPredicate(
+                format: "paymentMethodCD == %d AND transactionDate >= %@ AND transactionDate <= %@",
+                row.rec.paymentMethod.rawValue,
+                row.rec.transactionStartDate as NSDate,
+                row.rec.transactionEndDate as NSDate
+            )
+            let fetchRequest: NSFetchRequest<Transaction> = Transaction.fetchRequest()
+            fetchRequest.predicate = predicate
+            let transactions = try context.fetch(fetchRequest)
+
+            // Sum by category
+            let totals = Array(transactions).sumByCategoryIncludingSplitsInGBP()
+
+            // Build tab-separated text including zeros
+            let text = Category.allCases.map { category in
+                let total = totals[category] ?? 0
+                return "\(category.description)\t\(total.string2f)"
+            }.joined(separator: "\n")
+
+            // Copy to clipboard
+            let pasteboard = NSPasteboard.general
+            pasteboard.clearContents()
+            pasteboard.setString(text, forType: .string)
+
+            // Show confirmation dialog
+            showingXLSConfirmation = true
+
+        } catch {
+            print("Failed to export XLS summary: \(error)")
+        }
+    }
+
 }
 
 
@@ -378,6 +422,12 @@ extension ReconcilliationListView {
             appState.pushCentralView(.transactionSummary(predicate))
         } label: {
             Label("Summary", systemImage: "doc.text.magnifyingglass")
+        }
+        
+        Button {
+            exportXLSSummary(for: row)
+        } label: {
+            Label("XLS Summary", systemImage: "doc.on.doc")
         }
         
         Button {
