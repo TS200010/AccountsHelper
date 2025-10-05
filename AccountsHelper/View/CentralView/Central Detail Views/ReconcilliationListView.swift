@@ -354,8 +354,10 @@ extension ReconcilliationListView {
         }
     }
     
-    // MARK: --- XLS Summary Export (synchronous)
-    private func exportXLSSummary(for row: ReconciliationRow) {
+    // MARK: --- CategoryTotals
+    // Fetch transactions for the given reconciliation row and sum totals by category
+    // ... (including splits in GBP)
+    fileprivate func categoryTotals(for row: ReconciliationRow) -> [Category: Decimal] {
         do {
             let predicate = NSPredicate(
                 format: "paymentMethodCD == %d AND transactionDate >= %@ AND transactionDate <= %@",
@@ -367,27 +369,98 @@ extension ReconcilliationListView {
             fetchRequest.predicate = predicate
             let transactions = try context.fetch(fetchRequest)
 
-            // Sum by category
-            let totals = Array(transactions).sumByCategoryIncludingSplitsInGBP()
-
-            // Build tab-separated text including zeros
-            let text = Category.allCases.map { category in
-                let total = totals[category] ?? 0
-                return "\(category.description)\t\(total.string2f)"
-            }.joined(separator: "\n")
-
-            // Copy to clipboard
-            let pasteboard = NSPasteboard.general
-            pasteboard.clearContents()
-            pasteboard.setString(text, forType: .string)
-
-            // Show confirmation dialog
-            showingXLSConfirmation = true
+            return transactions.sumByCategoryIncludingSplitsInGBP()
 
         } catch {
-            print("Failed to export XLS summary: \(error)")
+            print("Failed to fetch category totals for reconciliation: \(error)")
+            return [:]
         }
     }
+    
+    // MARK: --- XLS Summary Export (synchronous)
+    private func exportXLSSummary(for row: ReconciliationRow) {
+        let totals = categoryTotals(for: row) // Use shared helper
+
+        // Build tab-separated text including zeros
+        let text = Category.allCases.map { category in
+            let total = totals[category] ?? 0
+            return "\(category.description)\t\(total.string2f)"
+        }.joined(separator: "\n")
+
+        // Copy to clipboard
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(text, forType: .string)
+
+        // Show confirmation dialog
+        showingXLSConfirmation = true
+    }
+    
+    // MARK: --- PrintReconciliationSummary
+//    private func printReconciliationSummary(for row: ReconciliationRow) {
+//        let totals = context.categoryTotals(for: row)
+//
+//        let printInfo = NSPrintInfo.shared
+//        printInfo.horizontalPagination = .automatic
+//        printInfo.verticalPagination = .automatic
+//        printInfo.topMargin = 20
+//        printInfo.leftMargin = 20
+//        printInfo.rightMargin = 20
+//        printInfo.bottomMargin = 20
+//
+//        let printView = VStack(alignment: .leading, spacing: 16) {
+//
+//            // Top Row: Accounting Period and Date Printed
+//            HStack {
+//                Text("Accounting Period: \(row.rec.periodKey)")
+//                Spacer()
+//                Text("Printed: \(Date.now.formatted(date: .abbreviated, time: .shortened))")
+//            }
+//            .font(.headline)
+//
+//            // Centered Category
+//            HStack {
+//                Spacer()
+//                Text(row.rec.paymentMethod.description)
+//                    .font(.title2)
+//                    .fontWeight(.semibold)
+//                Spacer()
+//            }
+//
+//            Divider()
+//
+//            // Category Totals
+//            VStack(alignment: .leading, spacing: 8) {
+//                for category in Category.allCases.sorted(by: { $0.rawValue < $1.rawValue }) {
+//                    let row = categoryRows[index]
+//                    let category = Category.allCases[index]
+//                    let total = totals[category] ?? 0
+//                    HStack {
+//                        Text(category.description)
+//                        Spacer()
+//                        Text(category.currency == .JPY ? total.string0f : total.string2f)
+//                            .monospacedDigit()
+//                    }
+//                }
+//            }
+//
+//            Divider()
+//
+//            // Overall totals
+//            HStack {
+//                let grandTotal = totals.values.reduce(0, +)
+//                Spacer()
+//                Text("Grand Total: \(grandTotal.string2f) GBP")
+//                    .fontWeight(.bold)
+//            }
+//        }
+//        .padding(24)
+//
+//        // Print the SwiftUI view
+//        let hostingView = NSHostingView(rootView: printView)
+//        let printOperation = NSPrintOperation(view: hostingView, printInfo: printInfo)
+//        printOperation.run()
+//    }
 
 }
 
@@ -428,6 +501,17 @@ extension ReconcilliationListView {
             exportXLSSummary(for: row)
         } label: {
             Label("XLS Summary", systemImage: "doc.on.doc")
+        }
+        
+        Button {
+            let totals = categoryTotals(for: row)
+            CategoryPrintHelper.printCategoriesSummary(
+                categoryTotals: totals,
+                accountingPeriod: row.rec.periodKey ?? "No Period Key",
+                paymentMethod: row.rec.paymentMethod.description
+            )
+        } label: {
+            Label("Print Summary", systemImage: "printer")
         }
         
         Button {
