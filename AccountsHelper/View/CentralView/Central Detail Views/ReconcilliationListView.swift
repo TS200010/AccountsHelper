@@ -5,11 +5,6 @@
 //  Created by Anthony Stanners on 26/09/2025.
 //
 
-/*
- 
- To Close a reconciliation we need to
- (1) Ensure we canCloseAccountingPeriod()
- */
 import SwiftUI
 import CoreData
 
@@ -166,40 +161,6 @@ extension ReconcilliationListView {
                                             .contextMenu { rowContextMenu(row) }
                                     }
                                 }
-                            
-//                            TableColumn("Payment Method") { row in
-//                                Text(row.rec.paymentMethod.description)
-//                                    .frame(maxWidth: .infinity, alignment: .leading)
-//                                    .foregroundColor(hasInvalidTransactions(row) ? .red : .primary)
-//                                    .foregroundColor(row.rec.closed ? .blue : .primary)
-//                                    .contentShape(Rectangle())
-//                                    .contextMenu { rowContextMenu(row) }
-//                            }
-//                            TableColumn("Ending Balance") { row in
-//                                Text("\(row.rec.endingBalance.formatted(.number.precision(.fractionLength(2)))) \(row.rec.currency.description)")
-//                                    .frame(maxWidth: .infinity, alignment: .trailing)
-//                                    .foregroundColor(hasInvalidTransactions(row) ? .red : .primary)
-//                                    .contentShape(Rectangle())
-//                                    .contextMenu { rowContextMenu(row) }
-//                            }
-//                            TableColumn("Statement Date") { row in
-//                                if let date = row.rec.statementDate {
-//                                    Text(date, style: .date)
-//                                        .foregroundColor(.gray)
-//                                        .frame(maxWidth: .infinity, alignment: .leading)
-//                                        .contentShape(Rectangle())
-//                                        .contextMenu { rowContextMenu(row) }
-//                                }
-//                            }
-//                            TableColumn("Gap") { row in
-//                                if row.gap != 0 {
-//                                    Text("\(row.gap.formatted(.number.precision(.fractionLength(2))))")
-//                                        .foregroundColor(.red)
-//                                        .frame(maxWidth: .infinity, alignment: .trailing)
-//                                        .contentShape(Rectangle())
-//                                        .contextMenu { rowContextMenu(row) }
-//                                }
-//                            }
                         }
                         .tableStyle(.inset)
                         .frame(minHeight: CGFloat(rows.count) * 28)
@@ -395,73 +356,6 @@ extension ReconcilliationListView {
         // Show confirmation dialog
         showingXLSConfirmation = true
     }
-    
-    // MARK: --- PrintReconciliationSummary
-//    private func printReconciliationSummary(for row: ReconciliationRow) {
-//        let totals = context.categoryTotals(for: row)
-//
-//        let printInfo = NSPrintInfo.shared
-//        printInfo.horizontalPagination = .automatic
-//        printInfo.verticalPagination = .automatic
-//        printInfo.topMargin = 20
-//        printInfo.leftMargin = 20
-//        printInfo.rightMargin = 20
-//        printInfo.bottomMargin = 20
-//
-//        let printView = VStack(alignment: .leading, spacing: 16) {
-//
-//            // Top Row: Accounting Period and Date Printed
-//            HStack {
-//                Text("Accounting Period: \(row.rec.periodKey)")
-//                Spacer()
-//                Text("Printed: \(Date.now.formatted(date: .abbreviated, time: .shortened))")
-//            }
-//            .font(.headline)
-//
-//            // Centered Category
-//            HStack {
-//                Spacer()
-//                Text(row.rec.paymentMethod.description)
-//                    .font(.title2)
-//                    .fontWeight(.semibold)
-//                Spacer()
-//            }
-//
-//            Divider()
-//
-//            // Category Totals
-//            VStack(alignment: .leading, spacing: 8) {
-//                for category in Category.allCases.sorted(by: { $0.rawValue < $1.rawValue }) {
-//                    let row = categoryRows[index]
-//                    let category = Category.allCases[index]
-//                    let total = totals[category] ?? 0
-//                    HStack {
-//                        Text(category.description)
-//                        Spacer()
-//                        Text(category.currency == .JPY ? total.string0f : total.string2f)
-//                            .monospacedDigit()
-//                    }
-//                }
-//            }
-//
-//            Divider()
-//
-//            // Overall totals
-//            HStack {
-//                let grandTotal = totals.values.reduce(0, +)
-//                Spacer()
-//                Text("Grand Total: \(grandTotal.string2f) GBP")
-//                    .fontWeight(.bold)
-//            }
-//        }
-//        .padding(24)
-//
-//        // Print the SwiftUI view
-//        let hostingView = NSHostingView(rootView: printView)
-//        let printOperation = NSPrintOperation(view: hostingView, printInfo: printInfo)
-//        printOperation.run()
-//    }
-
 }
 
 
@@ -503,17 +397,13 @@ extension ReconcilliationListView {
             Label("XLS Summary", systemImage: "doc.on.doc")
         }
         
-        Button {
-            let totals = categoryTotals(for: row)
-            CategoryPrintHelper.printCategoriesSummary(
-                categoryTotals: totals,
-                accountingPeriod: row.rec.periodKey ?? "No Period Key",
-                paymentMethod: row.rec.paymentMethod.description
-            )
-        } label: {
-            Label("Print Summary", systemImage: "printer")
-        }
-        
+//        Button {
+//            let predicate = NSPredicate(value: true) // or specific row if needed
+//            CategoriesSummaryView().printSnapshot(predicate: predicate)
+//        } label: {
+//            Label("Print Summary", systemImage: "printer")
+//        }
+
         Button {
             addBalancingTransaction(for: row, in: context)
         } label: {

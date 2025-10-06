@@ -69,16 +69,27 @@ struct CategoriesSummaryView: View {
     
     @FetchRequest private var transactions: FetchedResults<Transaction>
     @Environment(\.managedObjectContext) private var viewContext
-    @Environment(AppState.self) var appState
+//    @Environment(AppState.self) var appState
+    @Environment(AppState.self) private var appStateOptional: AppState?
+
+    
+    var isPrinting: Bool = false
     
     // Single selection
     @State private var selectedCategoryID: Int32?
     
-    init(predicate: NSPredicate? = nil) {
+//    init(predicate: NSPredicate? = nil) {
+//        _transactions = FetchRequest(
+//            sortDescriptors: [NSSortDescriptor(keyPath: \Transaction.timestamp, ascending: true)],
+//            predicate: predicate
+//        )
+//    }
+    init(predicate: NSPredicate? = nil, isPrinting: Bool = false) {
         _transactions = FetchRequest(
             sortDescriptors: [NSSortDescriptor(keyPath: \Transaction.timestamp, ascending: true)],
             predicate: predicate
         )
+        self.isPrinting = isPrinting
     }
     
     
@@ -108,10 +119,14 @@ struct CategoriesSummaryView: View {
         .onChange(of: selectedCategoryID) { newValue in
             if let id = newValue,
                let row = categoryRows.first(where: { $0.id == id }) {
-                appState.selectedInspectorTransactionIDs = row.transactionIDs
-                appState.selectedInspectorView = .viewCategoryBreakdown
+                if !isPrinting {
+                    appStateOptional?.selectedInspectorTransactionIDs = row.transactionIDs
+                    appStateOptional?.selectedInspectorView = .viewCategoryBreakdown
+                }
             } else {
-                appState.selectedInspectorTransactionIDs = []
+                if !isPrinting {
+                    appStateOptional?.selectedInspectorTransactionIDs = []
+                }
             }
         }
         .tableStyle(.inset(alternatesRowBackgrounds: true))
@@ -129,9 +144,11 @@ struct CategoriesSummaryView: View {
         }
         .contentShape(Rectangle())
         .contextMenu {
-            Button("Transactions") {
-                let predicate = NSPredicate(format: "categoryCD == %d", row.id)
-                    appState.pushCentralView(.browseTransactions( predicate ) )
+            if !isPrinting {
+                Button("Transactions") {
+                    let predicate = NSPredicate(format: "categoryCD == %d", row.id)
+                        appStateOptional?.pushCentralView(.browseTransactions( predicate ) )
+                }
             }
         }
     }
@@ -160,125 +177,7 @@ struct CategoriesSummaryView: View {
         )
     }
     
-    // MARK: --- Print Support
-//    fileprivate func generateCategoriesSummaryPDF(categoryRows: [CategoryRow], accountingPeriod: String) -> Data? {
-//        
-//        let pageWidth: CGFloat = 600
-//        let pageHeight: CGFloat = 800
-//        let margin: CGFloat = 40
-//        
-//        // Create a PDF document
-//        let pdfDocument = PDFDocument()
-//        
-//        // Start a PDF page
-//        let pdfPage = PDFPage()
-//        let pdfView = NSView(frame: NSRect(x: 0, y: 0, width: pageWidth, height: pageHeight))
-//        
-//        var yPosition = pageHeight - margin
-//        
-//        // Header: Accounting period left, date right
-//        let dateFormatter = DateFormatter()
-//        dateFormatter.dateStyle = .short
-//        dateFormatter.timeStyle = .short
-//        let dateString = dateFormatter.string(from: Date())
-//        
-//        let header = NSTextField(labelWithString: accountingPeriod)
-//        header.font = NSFont.boldSystemFont(ofSize: 16)
-//        header.frame = NSRect(x: margin, y: yPosition - 20, width: pageWidth/2 - margin, height: 20)
-//        pdfView.addSubview(header)
-//        
-//        let dateLabel = NSTextField(labelWithString: dateString)
-//        dateLabel.alignment = .right
-//        dateLabel.font = NSFont.systemFont(ofSize: 14)
-//        dateLabel.frame = NSRect(x: pageWidth/2, y: yPosition - 20, width: pageWidth/2 - margin, height: 20)
-//        pdfView.addSubview(dateLabel)
-//        
-//        yPosition -= 40
-//        
-//        // Table headers
-//        let colCategory = NSTextField(labelWithString: "Category")
-//        colCategory.font = NSFont.boldSystemFont(ofSize: 14)
-//        colCategory.frame = NSRect(x: margin, y: yPosition, width: pageWidth/2, height: 20)
-//        pdfView.addSubview(colCategory)
-//        
-//        let colTotal = NSTextField(labelWithString: "Total")
-//        colTotal.font = NSFont.boldSystemFont(ofSize: 14)
-//        colTotal.alignment = .right
-//        colTotal.frame = NSRect(x: pageWidth/2, y: yPosition, width: pageWidth/2 - margin, height: 20)
-//        pdfView.addSubview(colTotal)
-//        
-//        yPosition -= 25
-//        
-//        // Iterate categories in enum order
-//        for row in categoryRows {
-//            let categoryLabel = NSTextField(labelWithString: row.category.description)
-//            categoryLabel.frame = NSRect(x: margin, y: yPosition, width: pageWidth/2, height: 20)
-//            pdfView.addSubview(categoryLabel)
-//            
-//            let totalString: String
-//            // TODO: Tweak JPY formatting
-////            if row.category.currencyCode == "JPY" {
-////                totalString = row.total.string0f
-////            } else {
-////                totalString = row.total.string2f
-////            }
-//            totalString = row.total.string2f
-//            
-//            let totalLabel = NSTextField(labelWithString: totalString)
-//            totalLabel.alignment = .right
-//            totalLabel.frame = NSRect(x: pageWidth/2, y: yPosition, width: pageWidth/2 - margin, height: 20)
-//            pdfView.addSubview(totalLabel)
-//            
-//            yPosition -= 20
-//        }
-//        
-//        // Render NSView into PDF page
-//        let rep = pdfView.bitmapImageRepForCachingDisplay(in: pdfView.bounds)!
-//        pdfView.cacheDisplay(in: pdfView.bounds, to: rep)
-//        
-//        let image = NSImage(size: pdfView.bounds.size)
-//        image.addRepresentation(rep)
-//        
-//        let pdfBounds = CGRect(origin: .zero, size: pdfView.bounds.size)
-//        let pdfData = NSMutableData()
-//        let consumer = CGDataConsumer(data: pdfData as CFMutableData)!
-//        var mediaBox = pdfBounds
-//        let context = CGContext(consumer: consumer, mediaBox: &mediaBox, nil)!
-//        
-//        context.beginPDFPage(nil)
-//        context.draw(image.cgImage(forProposedRect: nil, context: nil, hints: nil)!, in: pdfBounds)
-//        context.endPDFPage()
-//        context.closePDF()
-//        
-//        return pdfData as Data
-//    }
-    
-//    fileprivate func printCategoriesSummary(categoryRows: [CategoryRow], accountingPeriod: String) {
-//        
-//        guard let pdfData = generateCategoriesSummaryPDF(categoryRows: categoryRows, accountingPeriod: accountingPeriod),
-//              let pdfDocument = PDFDocument(data: pdfData) else {
-//            print("Failed to generate PDF")
-//            return
-//        }
-//        
-//        let printInfo = NSPrintInfo.shared
-//        printInfo.horizontalPagination = .automatic
-//        printInfo.verticalPagination = .automatic
-//        printInfo.topMargin = 20
-//        printInfo.leftMargin = 20
-//        printInfo.rightMargin = 20
-//        printInfo.bottomMargin = 20
-//        
-//        let printView = PDFView(frame: .zero)
-//        printView.document = pdfDocument
-//        printView.autoScales = true
-//        
-//        let printOperation = NSPrintOperation(view: printView, printInfo: printInfo)
-//        printOperation.showsPrintPanel = true   // show standard print dialog
-//        printOperation.showsProgressPanel = true
-//        printOperation.run()
-//    }
-    
+
     
     // MARK: --- Body
     var body: some View {
@@ -289,10 +188,559 @@ struct CategoriesSummaryView: View {
                     Text("Total CRs: \(totals.totalCR) GBP")
                     Text("Total DRs: \(totals.totalDR) GBP")
                 }
+
             .padding( .horizontal, 10 )
             
             categoriesTable
                 .navigationTitle("Transactions Summary")
+        }
+        .toolbar {
+            ToolbarItem(placement: .automatic) {
+                Button {
+//                    printHelloWorld()
+                    printSelf()
+                } label: {
+                    Label("Print Summary", systemImage: "printer")
+                }
+            }
+        }
+    }
+}
+
+// MARK: --- PRINT SUPPORT
+
+//struct CategoriesPrintView: View {
+//    let rows: [CategoryPrintRow]
+//    let totals: (total: Decimal, totalCR: Decimal, totalDR: Decimal)
+//    
+//    var body: some View {
+//        VStack(alignment: .leading, spacing: 10) {
+//            Text("Transactions Summary")
+//                .font(.title)
+//                .padding(.bottom, 10)
+//            
+//            HStack(spacing: 40) {
+//                Text("Total: \(totals.total.string2f) GBP")
+//                Text("Total CRs: \(totals.totalCR.string2f) GBP")
+//                Text("Total DRs: \(totals.totalDR.string2f) GBP")
+//            }
+//            .padding(.bottom, 10)
+//            
+//            VStack(alignment: .leading, spacing: 5) {
+//                ForEach(rows) { row in
+//                    HStack {
+//                        Text(row.name)
+//                        Spacer()
+//                        Text(row.totalString)
+//                    }
+//                }
+//            }
+//            .padding(.top, 5)
+//        }
+//        .padding()
+//        .frame(width: 595, height: 842) // A4
+//    }
+//}
+
+struct CategoryPrintRow: Identifiable {
+    let id: Int32
+    let name: String
+    let total: Decimal
+    
+    var totalString: String {
+        String(format: "%.2f", NSDecimalNumber(decimal: total).doubleValue)
+    }
+}
+
+struct CategoriesPrintView: View {
+    let rows: [CategoryPrintRow]
+    let totals: (total: Decimal, totalCR: Decimal, totalDR: Decimal)
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Transactions Summary")
+                .font(.system(size: 14, weight: .bold))
+            
+            HStack(spacing: 20) {
+                Text("Total: \(totals.total.string2f) GBP")
+                    .font(.system(size: 12))
+                Text("Total CRs: \(totals.totalCR.string2f) GBP")
+                    .font(.system(size: 12))
+                Text("Total DRs: \(totals.totalDR.string2f) GBP")
+                    .font(.system(size: 12))
+            }
+            
+            VStack(alignment: .leading, spacing: 2) {
+                ForEach(rows) { row in
+                    HStack {
+                        Text(row.name)
+                            .font(.system(size: 10))
+                        Spacer()
+                        Text(row.totalString)
+                            .font(.system(size: 10))
+                    }
+                }
+            }
+            
+            Spacer() // push content to top
+        }
+        .padding(5)
+        .frame(width: 595, height: 842, alignment: .topLeading) // A4
+    }
+}
+
+
+
+//extension CategoriesSummaryView {
+//
+//    func printSelf() {
+//        DispatchQueue.main.async {
+//            // 1. Precompute data
+//            let predicate = transactions.nsPredicate ?? NSPredicate(value: true)
+//            let totalsDecimal = viewContext.categoryTotals(for: predicate)
+//            
+//            let rows = Category.allCases
+//                .sorted { $0.rawValue < $1.rawValue }
+//                .map { category in
+//                    CategoryPrintRow(
+//                        id: category.id,
+//                        name: category.description,
+//                        total: totalsDecimal[category] ?? 0
+//                    )
+//                }
+//            
+//            var total: Decimal = 0
+//            var totalCR: Decimal = 0
+//            var totalDR: Decimal = 0
+//            for tx in transactions {
+//                let amount = tx.totalAmountInGBP
+//                total += amount
+//                if amount > 0 { totalCR += amount }
+//                else if amount < 0 { totalDR += amount }
+//            }
+//            
+//            let printView = CategoriesPrintView(
+//                rows: rows,
+//                totals: (total: total, totalCR: totalCR, totalDR: totalDR)
+//            )
+//            
+//            // 2. Hosting view with large height to include all content
+//            let hostingView = NSHostingView(rootView: printView)
+//            hostingView.frame = CGRect(x: 0, y: 0, width: 595, height: 2000) // tall frame
+//            hostingView.layoutSubtreeIfNeeded()
+//            
+//            let contentSize = hostingView.fittingSize
+//            let a4Size = CGSize(width: 595, height: 842) // A4 points
+//            
+//            // 3. Compute scale to fit A4
+//            let scale = min(a4Size.width / contentSize.width,
+//                            a4Size.height / contentSize.height)
+//            
+//            // 4. Render PDF
+//            var mediaBox = CGRect(origin: .zero, size: a4Size)
+//            let pdfData = NSMutableData()
+//            guard let consumer = CGDataConsumer(data: pdfData as CFMutableData),
+//                  let pdfContext = CGContext(consumer: consumer, mediaBox: &mediaBox, nil)
+//            else { return }
+//            
+//            pdfContext.beginPDFPage(nil)
+//            pdfContext.saveGState()
+//            
+//            // Flip vertically
+//            pdfContext.translateBy(x: 0, y: a4Size.height)
+//            pdfContext.scaleBy(x: 1.0, y: -1.0)
+//            
+//            // Center and scale content to fit exactly
+//            let offsetX = (a4Size.width - contentSize.width * scale) / 2
+//            let offsetY = (a4Size.height - contentSize.height * scale) / 2
+//            pdfContext.translateBy(x: offsetX, y: offsetY)
+//            pdfContext.scaleBy(x: scale, y: scale)
+//            
+//            // Render the hosting view
+//            hostingView.layer?.render(in: pdfContext)
+//            
+//            pdfContext.restoreGState()
+//            pdfContext.endPDFPage()
+//            pdfContext.closePDF()
+//            
+//            // 5. Print PDF
+//            guard let document = PDFDocument(data: pdfData as Data) else { return }
+//            let pdfView = PDFView(frame: NSRect(x: 0, y: 0, width: a4Size.width, height: a4Size.height))
+//            pdfView.document = document
+//            
+//            let printOp = NSPrintOperation(view: pdfView)
+//            printOp.showsPrintPanel = true
+//            printOp.showsProgressPanel = true
+//            printOp.run()
+//        }
+//    }
+//}
+
+import AppKit
+import PDFKit
+
+extension CategoriesSummaryView {
+
+    func printHelloWorld() {
+        DispatchQueue.main.async {
+            let a4Size = CGSize(width: 595, height: 842)
+            let margin: CGFloat = 50
+            let rowHeight: CGFloat = 24
+            let colWidths: [CGFloat] = [200, 150, 100] // 3 columns
+
+            // Sample data
+            let headers = ["Category", "Count", "Total GBP"]
+            let rows = [
+                ["Food", "5", "123.45"],
+                ["Transport", "3", "67.80"],
+                ["Entertainment", "2", "45.00"]
+            ]
+
+            // 1. Create PDF data buffer
+            let pdfData = NSMutableData()
+            var mediaBox = CGRect(origin: .zero, size: a4Size)
+
+            guard let consumer = CGDataConsumer(data: pdfData as CFMutableData),
+                  let context = CGContext(consumer: consumer, mediaBox: &mediaBox, nil) else {
+                print("Failed to create PDF context")
+                return
+            }
+
+            // 2. Begin PDF page
+            context.beginPDFPage(nil)
+
+            // 3. Set NSGraphicsContext for NSString drawing
+            let nsContext = NSGraphicsContext(cgContext: context, flipped: false)
+            NSGraphicsContext.current = nsContext
+
+            let font = NSFont.systemFont(ofSize: 14)
+            let attributes: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: NSColor.black]
+
+            var yPos = a4Size.height - margin
+
+            // Draw table headers
+            var xPos = margin
+            for (i, header) in headers.enumerated() {
+                header.draw(at: CGPoint(x: xPos, y: yPos), withAttributes: attributes)
+                xPos += colWidths[i]
+            }
+            yPos -= rowHeight
+
+            // Draw table rows
+            for row in rows {
+                xPos = margin
+                for (i, cell) in row.enumerated() {
+                    cell.draw(at: CGPoint(x: xPos, y: yPos), withAttributes: attributes)
+                    xPos += colWidths[i]
+                }
+                yPos -= rowHeight
+            }
+
+            // 4. Clean up
+            NSGraphicsContext.current = nil
+            context.endPDFPage()
+            context.closePDF()
+
+            // 5. Load PDFDocument
+            guard let document = PDFDocument(data: pdfData as Data) else { return }
+
+            // 6. Print
+            let printInfo = NSPrintInfo.shared
+            if #available(macOS 12.0, *) {
+                if let printOp = document.printOperation(
+                    for: printInfo,
+                    scalingMode: .pageScaleNone,
+                    autoRotate: true
+                ) {
+                    printOp.showsPrintPanel = true
+                    printOp.showsProgressPanel = true
+                    printOp.run()
+                }
+            } else {
+                let pdfView = PDFView(frame: NSRect(origin: .zero, size: a4Size))
+                pdfView.document = document
+                let printOp = NSPrintOperation(view: pdfView)
+                printOp.showsPrintPanel = true
+                printOp.showsProgressPanel = true
+                printOp.run()
+            }
+        }
+    }
+}
+
+import AppKit
+import PDFKit
+import SwiftUI
+
+extension CategoriesSummaryView {
+
+    func printSelfNotScaled() {
+        DispatchQueue.main.async {
+            let a4Size = CGSize(width: 595, height: 842) // A4 points
+            let margin: CGFloat = 50
+            let rowHeight: CGFloat = 20
+            let font = NSFont.systemFont(ofSize: 12)
+            let attributes: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: NSColor.black]
+
+            // 1. Precompute data
+            let predicate = transactions.nsPredicate ?? NSPredicate(value: true)
+            let totalsDecimal = viewContext.categoryTotals(for: predicate)
+
+            let rows = Category.allCases
+                .sorted { $0.rawValue < $1.rawValue }
+                .map { category in
+                    CategoryPrintRow(
+                        id: category.id,
+                        name: category.description,
+                        total: totalsDecimal[category] ?? 0
+                    )
+                }
+
+            var total: Decimal = 0
+            var totalCR: Decimal = 0
+            var totalDR: Decimal = 0
+            for tx in transactions {
+                let amount = tx.totalAmountInGBP
+                total += amount
+                if amount > 0 { totalCR += amount }
+                else if amount < 0 { totalDR += amount }
+            }
+
+            // 2. Create PDF context
+            let pdfData = NSMutableData()
+            var mediaBox = CGRect(origin: .zero, size: a4Size)
+
+            guard let consumer = CGDataConsumer(data: pdfData as CFMutableData),
+                  let context = CGContext(consumer: consumer, mediaBox: &mediaBox, nil)
+            else { return }
+
+            context.beginPDFPage(nil)
+
+            // 3. Set NSGraphicsContext for drawing
+            let nsContext = NSGraphicsContext(cgContext: context, flipped: false)
+            NSGraphicsContext.current = nsContext
+
+            var yPos = a4Size.height - margin
+
+            // Draw Title
+            let title = "Transactions Summary" as NSString
+            title.draw(at: CGPoint(x: margin, y: yPos), withAttributes: [.font: NSFont.boldSystemFont(ofSize: 16)])
+            yPos -= rowHeight * 2
+
+            // Draw table headers
+            let colWidths: [CGFloat] = [300, 100] // Category, Total
+            let headers = ["Category", "Total GBP"]
+            var xPos = margin
+            for (i, header) in headers.enumerated() {
+                header.draw(at: CGPoint(x: xPos, y: yPos), withAttributes: [.font: NSFont.boldSystemFont(ofSize: 12)])
+                xPos += colWidths[i]
+            }
+            yPos -= rowHeight
+
+            // Draw table rows
+            for row in rows {
+                xPos = margin
+                let cells = [row.name, row.totalString]
+                for (i, cell) in cells.enumerated() {
+                    cell.draw(at: CGPoint(x: xPos, y: yPos), withAttributes: attributes)
+                    xPos += colWidths[i]
+                }
+                yPos -= rowHeight
+            }
+
+            yPos -= rowHeight
+
+            // Draw totals
+            let totalsText = "Total: \(total.string2f)   CR: \(totalCR.string2f)   DR: \(totalDR.string2f)" as NSString
+            totalsText.draw(at: CGPoint(x: margin, y: yPos), withAttributes: [.font: NSFont.boldSystemFont(ofSize: 12)])
+
+            NSGraphicsContext.current = nil
+            context.endPDFPage()
+            context.closePDF()
+
+            // 4. Load PDFDocument and print
+            guard let document = PDFDocument(data: pdfData as Data) else { return }
+            let pdfView = PDFView(frame: NSRect(x: 0, y: 0, width: a4Size.width, height: a4Size.height))
+            pdfView.document = document
+
+            let printOp = NSPrintOperation(view: pdfView)
+            printOp.showsPrintPanel = true
+            printOp.showsProgressPanel = true
+            printOp.run()
+        }
+    }
+}
+
+
+
+import AppKit
+import PDFKit
+import SwiftUI
+
+extension CategoriesSummaryView {
+
+    func printSelfBestChatGPTSoFar() {
+        DispatchQueue.main.async {
+            let a4Size = CGSize(width: 595, height: 842) // A4 points
+            let margin: CGFloat = 40
+            let rowHeight: CGFloat = 14
+            let fontSize: CGFloat = 10
+
+            // 1. Precompute data
+            let predicate = transactions.nsPredicate ?? NSPredicate(value: true)
+            let totalsDecimal = viewContext.categoryTotals(for: predicate)
+
+            let rows = Category.allCases
+                .sorted { $0.rawValue < $1.rawValue }
+                .map { category in
+                    CategoryPrintRow(
+                        id: category.id,
+                        name: category.description,
+                        total: totalsDecimal[category] ?? 0
+                    )
+                }
+
+            var total: Decimal = 0
+            var totalCR: Decimal = 0
+            var totalDR: Decimal = 0
+            for tx in transactions {
+                let amount = tx.totalAmountInGBP
+                total += amount
+                if amount > 0 { totalCR += amount }
+                else if amount < 0 { totalDR += amount }
+            }
+
+            // 2. Create PDF context
+            let pdfData = NSMutableData()
+            var mediaBox = CGRect(origin: .zero, size: a4Size)
+            guard let consumer = CGDataConsumer(data: pdfData as CFMutableData),
+                  let context = CGContext(consumer: consumer, mediaBox: &mediaBox, nil)
+            else { return }
+
+            context.beginPDFPage(nil)
+            let nsContext = NSGraphicsContext(cgContext: context, flipped: false)
+            NSGraphicsContext.current = nsContext
+
+            // 3. Start drawing top-aligned
+            context.saveGState()
+            var yPos = margin
+
+            // Draw Title
+            let title = "Transactions Summary" as NSString
+            title.draw(at: CGPoint(x: margin, y: yPos), withAttributes: [.font: NSFont.boldSystemFont(ofSize: fontSize + 2),
+                                                                        .foregroundColor: NSColor.black])
+            yPos += rowHeight * 2
+
+            // Table headers
+            let colWidths: [CGFloat] = [300, 100]
+            let headers = ["Category", "Total GBP"]
+            var xPos: CGFloat = margin
+            let headerFont = NSFont.boldSystemFont(ofSize: fontSize)
+            for (i, header) in headers.enumerated() {
+                header.draw(at: CGPoint(x: xPos, y: yPos), withAttributes: [.font: headerFont, .foregroundColor: NSColor.black])
+                xPos += colWidths[i]
+            }
+            yPos += rowHeight
+
+            // Table rows
+            let rowFont = NSFont.systemFont(ofSize: fontSize)
+            let rowAttributes: [NSAttributedString.Key: Any] = [.font: rowFont, .foregroundColor: NSColor.black]
+            for row in rows {
+                xPos = margin
+                let cells = [row.name, row.totalString]
+                for (i, cell) in cells.enumerated() {
+                    cell.draw(at: CGPoint(x: xPos, y: yPos), withAttributes: rowAttributes)
+                    xPos += colWidths[i]
+                }
+                yPos += rowHeight
+            }
+
+            yPos += rowHeight / 2
+
+            // Totals
+            let totalsText = "Total: \(total.string2f)   CR: \(totalCR.string2f)   DR: \(totalDR.string2f)" as NSString
+            totalsText.draw(at: CGPoint(x: margin, y: yPos), withAttributes: [.font: NSFont.boldSystemFont(ofSize: fontSize),
+                                                                            .foregroundColor: NSColor.black])
+
+            context.restoreGState()
+            NSGraphicsContext.current = nil
+            context.endPDFPage()
+            context.closePDF()
+
+            // 4. Print PDF
+            guard let document = PDFDocument(data: pdfData as Data) else { return }
+            let pdfView = PDFView(frame: NSRect(x: 0, y: 0, width: a4Size.width, height: a4Size.height))
+            pdfView.document = document
+
+            let printOp = NSPrintOperation(view: pdfView)
+            printOp.showsPrintPanel = true
+            printOp.showsProgressPanel = true
+            printOp.run()
+        }
+    }
+}
+
+extension CategoriesSummaryView {
+    func printSelf() {
+        DispatchQueue.main.async {
+            // 1. Prepare data
+            let predicate = transactions.nsPredicate ?? NSPredicate(value: true)
+            let totalsDecimal = viewContext.categoryTotals(for: predicate)
+            
+            let rows = Category.allCases
+                .sorted { $0.rawValue < $1.rawValue }
+                .map { category in
+                    CategoryPrintRow(
+                        id: category.id,
+                        name: category.description,
+                        total: totalsDecimal[category] ?? 0
+                    )
+                }
+            
+            var total: Decimal = 0
+            var totalCR: Decimal = 0
+            var totalDR: Decimal = 0
+            for tx in transactions {
+                let amount = tx.totalAmountInGBP
+                total += amount
+                if amount > 0 { totalCR += amount }
+                else if amount < 0 { totalDR += amount }
+            }
+            
+            // 2. Build report text
+            var report = "Category Summary Report\n\n"
+            report += String(format: "%-30@ %15@\n", "Category" as NSString, "Total" as NSString)
+            report += String(repeating: "-", count: 46) + "\n"
+
+            for row in rows {
+                let name = row.name.prefix(30)
+                let totalStr = String(format: "%.2f", NSDecimalNumber(decimal: row.total).doubleValue)
+                let paddedName = name.padding(toLength: 30, withPad: " ", startingAt: 0)
+                let paddedTotal = totalStr.padding(toLength: 15, withPad: " ", startingAt: 0)
+                report += "\(paddedName)\(paddedTotal)\n"
+            }
+
+            report += "\n"
+            report += "----------------------------------------------\n"
+            report += String(format: "%-30@ %15.2f\n", "Total CR" as NSString, NSDecimalNumber(decimal: totalCR).doubleValue)
+            report += String(format: "%-30@ %15.2f\n", "Total DR" as NSString, NSDecimalNumber(decimal: totalDR).doubleValue)
+            report += String(format: "%-30@ %15.2f\n", "Net Total" as NSString, NSDecimalNumber(decimal: total).doubleValue)
+
+        
+            // 3. Create text view
+            let textView = NSTextView(frame: NSRect(x: 0, y: 0, width: 595, height: 700))
+            textView.string = report
+            textView.font = NSFont.monospacedSystemFont(ofSize: 10, weight: .regular)
+            textView.isEditable = false
+            textView.sizeToFit()
+            textView.isHorizontallyResizable = false
+            textView.isVerticallyResizable = true
+            
+            // 4. Print operation
+            let printOp = NSPrintOperation(view: textView)
+            printOp.showsPrintPanel = true
+            printOp.showsProgressPanel = true
+            printOp.run()
         }
     }
 }
