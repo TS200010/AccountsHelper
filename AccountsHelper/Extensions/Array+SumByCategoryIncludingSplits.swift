@@ -7,24 +7,32 @@
 
 import Foundation
 
-// Sums txAmounts by category for a given payment method, including split transactions
-//extension Array where Element == Transaction {
-//    
-//    func sumByCategoryIncludingSplits(for paymentMethod: PaymentMethod) -> [String: Decimal] {
-//        var result: [String: Decimal] = [:]
-//        
-//        for tx in self where tx.paymentMethod == paymentMethod {
-//            
-//            // Add the splitAmount to its category
-//            let splitCategory = tx.splitCategory.description
-//            result[splitCategory.description, default: 0] += tx.splitAmount
-//            
-//            // Add the remainder to the main category
-//            let remainderCategory = tx.splitRemainderCategory
-//            result[remainderCategory.description, default: 0] += tx.splitRemainderAmount
-//        }
-//        
-//        return result
-//    }
-//}
+// MARK: --- Extension to sum transactions including splits
+extension Array where Element == Transaction {
+    func sumByCategoryIncludingSplitsInGBP() -> [Category: Decimal] {
+        var result: [Category: Decimal] = [:]
+        
+        for category in Category.allCases {
+            result[category] = 0
+        }
+        
+        for tx in self {
+            let splitAmt = tx.splitAmountInGBP
+            if !splitAmt.isNaN {
+                result[tx.splitCategory, default: 0] += splitAmt
+            } else {
+                print("⚠️ NaN splitAmountInGBP in tx:", tx)
+            }
+
+            let remainderAmt = tx.splitRemainderAmountInGBP
+            if !remainderAmt.isNaN {
+                result[tx.splitRemainderCategory, default: 0] += remainderAmt
+            } else {
+                print("⚠️ NaN splitRemainderAmountInGBP in tx:", tx)
+            }
+        }
+        
+        return result
+    }
+}
 
