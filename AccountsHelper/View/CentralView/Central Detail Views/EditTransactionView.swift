@@ -428,7 +428,7 @@ struct LabeledDecimalField: View {
                 .textFieldStyle(.roundedBorder)
                 .frame(maxWidth: 80)
                 .padding(.trailing, 8)
-                .keyboardType(.decimalPad)
+                .keyboardType(.numbersAndPunctuation)
                 .focused($focused)
                 .submitLabel(.done)
                 .onAppear { text = formatDecimal(amount) }
@@ -545,7 +545,7 @@ struct LabeledDecimalWithFX: View {
                     .textFieldStyle(.roundedBorder)
                     .frame(width: 80)
                     .background(Color(UIColor.systemBackground)) // system adaptive background
-                    .keyboardType(.decimalPad)
+                    .keyboardType(.numbersAndPunctuation)
                     .focused($focusedField, equals: fieldID)
                     .onSubmit {
                         focusedField = nil

@@ -37,11 +37,21 @@ struct NavigatorMenuView: View {
     var body: some View {
         
         VStack {
+            //                #if os(iOS)
+            if gUseLiveStore {
+                Text( "Using LIVE Store")
+                    .foregroundColor(.green)
+            } else {
+                Text( "Using TEST Store")
+                    .foregroundStyle(.red)
+            }
+            //                #endif
+            Divider()
             Button {
                 #if os(macOS)
                 appState.replaceCentralView(with: .addTransaction)
                 #else
-                appState.selectedCentralView = .addTransaction
+                appState.replaceCentralView(with: .addTransaction)
                 showingEditAddTransactionSheet = true
                 #endif
             } label: {
@@ -60,7 +70,7 @@ struct NavigatorMenuView: View {
                 #if os(macOS)
                 appState.replaceCentralView(with: .browseTransactions(nil))
                 #else
-                appState.selectedCentralView = .browseTransactions(nil)
+                appState.replaceCentralView(with: .browseTransactions(nil))
                 showingBrowseTransactionsView = true
                 #endif
             } label: {
@@ -83,7 +93,7 @@ struct NavigatorMenuView: View {
                 #if os(macOS)
                 appState.replaceCentralView(with: .browseCategories)
                 #else
-                appState.selectedCentralView = .browseTransactions
+                appState.replaceCentralView(with: .browseCategories)
                 #endif
             } label: {
                 HStack {

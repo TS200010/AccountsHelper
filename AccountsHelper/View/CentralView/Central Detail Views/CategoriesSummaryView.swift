@@ -66,7 +66,9 @@ struct CategoriesSummaryView: View {
                 appStateOptional?.selectedInspectorTransactionIDs = []
             }
         }
+        #if os(macOS)
         .tableStyle(.inset(alternatesRowBackgrounds: true))
+        #endif
         .frame(minWidth: 300, maxWidth: .infinity, minHeight: 200)
         .padding()
     }
@@ -160,6 +162,7 @@ extension CategoriesSummaryView {
     // MARK: --- PrintCategoriesSummary
     func printCategoriesSummary() {
         
+        #if os(macOS)
         func formatLine(label: String, amount: Decimal) -> String {
             let amountStr = String(format: "%.2f", NSDecimalNumber(decimal: amount).doubleValue)
             let paddedLabel = label.padding(toLength: 30, withPad: " ", startingAt: 0)
@@ -293,5 +296,7 @@ extension CategoriesSummaryView {
             printOp.showsProgressPanel = true
             printOp.run()
         }
+#endif
     }
+
 }

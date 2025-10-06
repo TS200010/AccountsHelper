@@ -8,10 +8,13 @@
 import Foundation
 import CoreData
 import Vision
+#if os(macOS)
 import AppKit   // macOS only (for NSImage)
+#endif
 
 class VISAPNGImporter: TxImporter {
 
+#if os(macOS)
     static var displayName: String = "VISA PNG Importer"
     static var paymentMethod: PaymentMethod = .VISA
     static var importType: ImportType = .png
@@ -249,4 +252,15 @@ class VISAPNGImporter: TxImporter {
 
         return rows
     }
+#else
+    static var displayName: String = ""
+    
+    static var paymentMethod: PaymentMethod = .unknown
+    
+    static var importType: ImportType = .csv
+    
+    static func importTransactions(fileURL: URL, context: NSManagedObjectContext, mergeHandler: nonisolated(nonsending) (Transaction, Transaction) async -> Transaction) async -> [Transaction] {
+        []
+    }
+#endif
 }

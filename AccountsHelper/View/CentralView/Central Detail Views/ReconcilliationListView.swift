@@ -25,12 +25,13 @@ struct ReconcilliationListView: View {
     
     // MARK: --- Local State
     @State private var reconciliationRows: [ReconciliationRow] = []
-    @State private var selectedReconciliation: NSManagedObjectID? = nil
+//    @State private var selectedReconciliation: NSManagedObjectID? = nil
     @State private var showingDeleteConfirmation = false
     @State private var showingNewReconciliation = false
     @State private var showingCloseAccountingPeriod = false
     @State private var showingXLSConfirmation = false
     @State private var showDetail = false
+    @State private var showingEditReconciliation = false
     
     // MARK: --- Fetch Request
     @FetchRequest(
@@ -56,15 +57,21 @@ struct ReconcilliationListView: View {
             }
             .frame(minWidth: 400, minHeight: 300)
         }
+        .sheet(isPresented: $showingEditReconciliation, onDismiss: { refreshRows() }) {
+            NavigationStack {
+                EditReconcilationView()
+            }
+            .frame(minWidth: 400, minHeight: 300)
+        }
         .confirmationDialog(
             "Are you sure you want to delete this Reconciliation?",
             isPresented: $showingDeleteConfirmation,
             titleVisibility: .visible
         ) {
             Button("Delete", role: .destructive) {
-                if let objectID = selectedReconciliation {
+                if let objectID = appState.selectedReconciliationID {
                     deleteReconciliation(objectID)
-                    selectedReconciliation = nil
+                    appState.selectedReconciliationID = nil
                 }
             }
         } message: {
@@ -76,7 +83,7 @@ struct ReconcilliationListView: View {
             titleVisibility: .visible
         ) {
             Button("Close", role: .destructive) {
-                if let objectID = selectedReconciliation {
+                if let objectID = appState.selectedReconciliationID {
                     closeReconciliation(objectID)
                 }
             }
@@ -340,6 +347,7 @@ extension ReconcilliationListView {
     
     // MARK: --- XLS Summary Export (synchronous)
     private func exportXLSSummary(for row: ReconciliationRow) {
+        #if os(macOS)
         let totals = categoryTotals(for: row) // Use shared helper
 
         // Build tab-separated text including zeros
@@ -355,16 +363,27 @@ extension ReconcilliationListView {
 
         // Show confirmation dialog
         showingXLSConfirmation = true
+        #endif
     }
 }
 
 
 // MARK: --- VIEW CONTEXT MENU
 extension ReconcilliationListView {
+
     
     // MARK: --- RowContextMenu
     @ViewBuilder
     private func rowContextMenu(_ row: ReconciliationRow) -> some View {
+        
+        var canAddBalancingTransaction: Bool {
+            row.rec.reconciliationGap(in: context) == 0 || row.rec.closed || row.rec.isAnOpeningBalance
+        }
+        
+        var canAddEndingBalance: Bool {
+            row.rec.closed 
+        }
+        
         Button {
             appState.selectedReconciliationID = row.id
             appState.replaceInspectorView( with: .viewReconciliation)
@@ -396,23 +415,24 @@ extension ReconcilliationListView {
         } label: {
             Label("XLS Summary", systemImage: "doc.on.doc")
         }
-        
-//        Button {
-//            let predicate = NSPredicate(value: true) // or specific row if needed
-//            CategoriesSummaryView().printSnapshot(predicate: predicate)
-//        } label: {
-//            Label("Print Summary", systemImage: "printer")
-//        }
 
         Button {
             addBalancingTransaction(for: row, in: context)
         } label: {
             Label("Add Balancing Tx", systemImage: "plus.circle.fill")
         }
-        .disabled( row.rec.reconciliationGap(in: context) == 0 || row.rec.closed )
+        .disabled( canAddBalancingTransaction )
         
         Button {
-            selectedReconciliation = row.id  
+            appState.selectedReconciliationID = row.id
+            showingEditReconciliation = true // Trigger modal sheet
+        } label: {
+            Label("Edit Ending Balance", systemImage: "pencil.circle")
+        }
+        .disabled( canAddEndingBalance )
+        
+        Button {
+            appState.selectedReconciliationID = row.id
             showingCloseAccountingPeriod = true
         } label: {
             Label("Close Period", systemImage: "checkmark.square.fill")
@@ -420,7 +440,7 @@ extension ReconcilliationListView {
         .disabled(!row.rec.canCloseAccountingPeriod(in: context) || row.rec.closed )
         
         Button {
-            selectedReconciliation = row.id
+            appState.selectedReconciliationID = row.id
             do {
                 try row.rec.reopen(in: context)
                 refreshRows()
@@ -437,7 +457,7 @@ extension ReconcilliationListView {
         Divider()
         
         Button(role: .destructive) {
-            selectedReconciliation = row.id
+            appState.selectedReconciliationID = row.id
             showingDeleteConfirmation = true
         } label: {
             Label("Delete", systemImage: "trash")

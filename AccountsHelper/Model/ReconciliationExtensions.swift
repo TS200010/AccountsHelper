@@ -122,6 +122,15 @@ extension Reconciliation {
         closed
     }
     
+    // MARK: --- IsAnOpeningBalance
+    var isAnOpeningBalance: Bool {
+        guard let date = statementDate else { return false }
+        // January 2, 0001 as a sentinel for opening balances
+        let calendar = Calendar(identifier: .gregorian)
+        let sentinel = calendar.date(from: DateComponents(year: 1, month: 1, day: 2))!
+        return date < sentinel
+    }
+    
     // MARK: --- PaymentMethod
     var paymentMethod: PaymentMethod {
         PaymentMethod(rawValue: paymentMethodCD) ?? .unknown
@@ -290,6 +299,8 @@ extension Reconciliation {
     
     // MARK: --- ReconciliationGap
     func reconciliationGap(in context: NSManagedObjectContext) -> Decimal {
+        
+        if isAnOpeningBalance { return 0 } // Opening balances do not have a gap
 
         do {
             let txs = try fetchTransactions(in: context)
