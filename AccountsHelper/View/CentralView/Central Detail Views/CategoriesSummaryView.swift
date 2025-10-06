@@ -159,6 +159,14 @@ extension CategoriesSummaryView {
     
     // MARK: --- PrintCategoriesSummary
     func printCategoriesSummary() {
+        
+        func formatLine(label: String, amount: Decimal) -> String {
+            let amountStr = String(format: "%.2f", NSDecimalNumber(decimal: amount).doubleValue)
+            let paddedLabel = label.padding(toLength: 30, withPad: " ", startingAt: 0)
+            let paddedAmount = String(repeating: " ", count: max(0, 15 - amountStr.count)) + amountStr
+            return "\(paddedLabel)\(paddedAmount)\n"
+        }
+        
         DispatchQueue.main.async {
             // 1. Prepare data
             let predicate = transactions.nsPredicate ?? NSPredicate(value: true)
@@ -183,10 +191,65 @@ extension CategoriesSummaryView {
                 if amount > 0 { totalCR += amount }
                 else if amount < 0 { totalDR += amount }
             }
+
+
+            //  Try to get Reconciliation (for current period & method)
+
+//            if let firstTx = transactions.first {
+//                reconciliation = try? Reconciliation.fetchPrevious(
+//                    for: firstTx.paymentMethod,
+//                    before: firstTx.transactionDate ?? Date(),
+//                    context: viewContext
+//                )
+//            } else {
+//                reconciliation = nil
+//            }
+            // 1. Fetch the selected reconciliation
+            let reconciliation: Reconciliation? = {
+                if let recID = appStateOptional?.selectedReconciliationID,
+                   let rec = try? viewContext.existingObject(with: recID) as? Reconciliation {
+                    return rec
+                } else {
+                    return nil
+                }
+            }()
             
+            // Extract data from Reconciliation
+            var startBalance: Decimal = 0
+            var endBalance: Decimal = 0
+//            if let firstTx = transactions.first,
+//               let context = firstTx.managedObjectContext,
+//               let reconciliation = try? Reconciliation.fetchPrevious(
+//                   for: firstTx.paymentMethod,
+//                   before: firstTx.transactionDate ?? Date(),
+//                   context: context
+//               ) {
+            if let rec = reconciliation {
+                startBalance = rec.endingBalance
+                endBalance = startBalance + total
+            }
+
             // 2. Build report text
-            // 2. Build simple report text
-            var report = "Category Summary Report\n\n"
+            var report = "Category Summary Report"
+            
+            // --- First line: payment method / account ---
+            if let rec = reconciliation {
+                report += " — \(rec.paymentMethod.description)\n"
+            } else {
+                report += "\n"
+            }
+
+            // --- Second line: accounting period, statement date, closed ---
+            if let rec = reconciliation {
+                let period = "\(rec.periodMonth)/\(rec.periodYear)"
+                let statementDate = rec.statementDate?.formatted(date: .numeric, time: .omitted) ?? "-"
+                let closed = rec.closed ? "Closed" : "Open"
+                report += "\(period) | \(statementDate) | \(closed)\n\n"
+            } else {
+                report += "No reconciliation found\n\n"
+            }
+
+            // --- Category table header ---
             report += String(format: "%-30@ %15@\n", "Category" as NSString, "Total" as NSString)
             report += String(repeating: "-", count: 46) + "\n"
 
@@ -203,23 +266,18 @@ extension CategoriesSummaryView {
                 
                 report += "\(paddedName)\(paddedTotal)\n"
             }
-
+            
             report += "\n"
             report += String(repeating: "-", count: 46) + "\n"
 
-            func formatLine(label: String, amount: Decimal) -> String {
-                let amountStr = String(format: "%.2f", NSDecimalNumber(decimal: amount).doubleValue)
-                let paddedLabel = label.padding(toLength: 30, withPad: " ", startingAt: 0)
-                let paddedAmount = String(repeating: " ", count: max(0, 15 - amountStr.count)) + amountStr
-                return "\(paddedLabel)\(paddedAmount)\n"
-            }
-
+            // --- Totals / starting & ending balances at the bottom ---
+            report += formatLine(label: "Starting Balance", amount: startBalance)
             report += formatLine(label: "Total CR", amount: totalCR)
             report += formatLine(label: "Total DR", amount: totalDR)
             report += formatLine(label: "Net Total", amount: total)
+            report += formatLine(label: "Ending Balance", amount: endBalance)
+            report += "\n"
 
-
-        
             // 3. Create text view
             let textView = NSTextView(frame: NSRect(x: 0, y: 0, width: 595, height: 700))
             textView.string = report
