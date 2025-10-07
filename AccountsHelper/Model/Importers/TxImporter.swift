@@ -1,13 +1,22 @@
+//
+//  TxImporter.swift
+//  AccountsHelper
+//
+//  Created by Anthony Stanners on 07/10/2025.
+//
+
 import Foundation
 import CoreData
 
 enum ImportType {
     case csv
     case png
-//    case pdf
-//    case ofx
+    // case pdf
+    // case ofx
     // etc
 }
+
+// MARK: --- IxImporter Protocol
 
 @MainActor
 protocol TxImporter {
@@ -32,14 +41,15 @@ protocol TxImporter {
 }
 
 extension TxImporter {
-    // MARK: - Temporary context creation
+    // MARK: --- Temporary Context Creation
     static func makeTemporaryContext(parent: NSManagedObjectContext) -> NSManagedObjectContext {
         let tempContext = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
         tempContext.parent = parent
         return tempContext
     }
 
-    // MARK: - CSV Parser (handles quotes, multi-line fields, trims trailing empty headers)
+    // MARK: --- CSV Parser
+    /// Handles quotes, multi-line fields, trims trailing empty headers
     static func parseCSV(csvData: String) -> [[String]] {
         var rows: [[String]] = []
         var currentRow: [String] = []
@@ -78,7 +88,7 @@ extension TxImporter {
         return rows
     }
 
-    // MARK: - Default merge candidate matching
+    // MARK: --- Default Merge Candidate Matching
     static func findMergeCandidateInSnapshot(newTx: Transaction, snapshot: [Transaction]) -> Transaction? {
         for existing in snapshot {
             guard existing.txAmount == newTx.txAmount,
@@ -99,4 +109,3 @@ extension TxImporter {
         return nil
     }
 }
-
