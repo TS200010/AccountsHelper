@@ -12,7 +12,7 @@ import CoreData
 extension NSManagedObjectContext {
     
     /// Debug Core Data objects for a given entity, checking IDs, attributes, and relationships
-    func debugCloudKitSync(for entityName: String) {
+    func XdebugCloudKitSync(for entityName: String) {
         let fetchRequest = NSFetchRequest<NSManagedObject>(entityName: entityName)
 
         do {

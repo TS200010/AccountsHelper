@@ -70,9 +70,9 @@ struct EditTransactionView: View {
 
         do {
             try viewContext.save()
-            let context = PersistenceController.shared.container.viewContext
-            context.debugCloudKitSync(for: "Transaction")
-            context.debugCloudKitSync(for: "CategoryMapping")
+//            let context = PersistenceController.shared.container.viewContext
+//            context.debugCloudKitSync(for: "Transaction")
+//            context.debugCloudKitSync(for: "CategoryMapping")
             print("Transaction saved!")
         } catch {
             print("Failed to save transaction: \(error)")

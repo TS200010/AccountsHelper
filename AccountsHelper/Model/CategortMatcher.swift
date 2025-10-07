@@ -44,16 +44,6 @@ class CategoryMatcher {
             saveContextSilently()
             return exact.category
         }
-
-//        // 2. Prefix match
-//        if let prefix = mappings
-//            .filter({ ($0.inputString?.isEmpty == false) && normalized.hasPrefix($0.inputString!.lowercased()) })
-//            .max(by: { $0.usageCount < $1.usageCount }) {
-//
-//            prefix.incrementUsage()
-//            saveContextSilently()
-//            return prefix.category
-//        }
         
         // 2. Prefix match with case/whitespace/diacritic-insensitive Unicode normalization
         if let prefix = mappings
@@ -146,7 +136,6 @@ class CategoryMatcher {
             }
             
             let txRequest: NSFetchRequest<Transaction> = Transaction.fetchRequest()
-//            txRequest.predicate = NSPredicate(format: "categoryCD == %d OR categoryCD == 0", Category.unknown.rawValue)
             txRequest.predicate = NSPredicate(format: "categoryCD == %d OR categoryCD == %d OR categoryCD == nil", Category.unknown.rawValue, 0)
             print (Category.unknown.rawValue)
             guard let transactions = try? context.fetch(txRequest), !transactions.isEmpty else {
@@ -169,8 +158,8 @@ class CategoryMatcher {
             if changed {
                 do {
                     try context.save()
-                    let context = PersistenceController.shared.container.viewContext
-                    context.debugCloudKitSync(for: "CategoryMapping")
+//                    let context = PersistenceController.shared.container.viewContext
+//                    context.debugCloudKitSync(for: "CategoryMapping")
                 } catch {
                     NSLog("Failed to save transactions during reapply: \(error)")
                 }

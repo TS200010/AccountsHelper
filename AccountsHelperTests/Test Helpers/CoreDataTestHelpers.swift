@@ -11,9 +11,8 @@ final class CoreDataTestHelpers {
 
     /// Creates an in-memory NSPersistentContainer for testing
     static func makeInMemoryContainer() -> NSPersistentContainer {
-        // Load the model from the app bundle
-        guard let modelURL = Bundle(for: Transaction.self)
-                .url(forResource: "AccountsHelperModel", withExtension: "momd"),
+        // Load the model from the main app bundle
+        guard let modelURL = Bundle.main.url(forResource: "AccountsHelperModel", withExtension: "momd"),
               let model = NSManagedObjectModel(contentsOf: modelURL) else {
             fatalError("Failed to load Core Data model from app bundle")
         }

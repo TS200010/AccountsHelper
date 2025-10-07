@@ -99,7 +99,6 @@ struct TransactionStruct {
         self.timestamp = timestamp
         self.transactionDate = transactionDate
         self.commissionAmount = commissionAmount
-        reset()
     }
     
     init(from transaction: Transaction) {

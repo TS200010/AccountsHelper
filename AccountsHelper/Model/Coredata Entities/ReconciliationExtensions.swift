@@ -8,57 +8,12 @@
 import Foundation
 import CoreData
 
-/*
-     @NSManaged public var statementDate: Date?
-     @NSManaged public var paymentMethodCD: Int32
-     @NSManaged public var periodYear: Int32
-     @NSManaged public var periodMonth: Int32
-     @NSManaged public var periodKey: String?
-     @NSManaged public var endingBalanceCD: Int32
-     @NSManaged public var currencyCD: Int32
- */
-
-/*
-| ------------------ | ------------------ | ---------------------------------------------------- |
-| Property / Method  | Type               | Description                                          |
-| ------------------ | ------------------ | ---------------------------------------------------- |
-| `endingBalanceCD`  | `Int32`            | Core Data storage for ending balance in cents        |
-| `endingBalance`    | `Decimal`          | Computed ending balance (`endingBalanceCD / 100`)    |
-| `paymentMethodCD`  | `Int32`            | Core Data storage for payment method enum raw value  |
-| `paymentMethod`    | `PaymentMethod`    | Computed property for type-safe access to pmt method |
-| `currencyCD`       | `Int32`            | Core Data storage for currency enum raw value        |
-| `currency`         | `Currency`         | Computed property for type-safe access to currency   |
-| `periodYear`       | `Int32`            | Accounting period year                               |
-| `periodMonth`      | `Int32`            | Accounting period month (1–12)                       |
-| `periodKey`        | `String`           | Unique composite key `"year-month-method"`           |
-| `statementDate`    | `Date`             | Actual statement date of the reconciliation          |
-| `accountingPeriod` | `AccountingPeriod` | Computed struct for grouping/display of period       |
-| ------------------ | ------------------ | ---------------------------------------------------- |
-*/
-
-/*
- |------------------------------|-----------------------|-----------------------------------------------------------------------|
- | Property / Method            | Type                  | Description                                                           |
- |------------------------------|-----------------------|-----------------------------------------------------------------------|
- | `paymentMethod`              | PaymentMethod         | Computed property to access the payment method enum                   |
- | `currency`                   | Currency              | Computed property for currency; enforced GBP for AMEX, VISA, BoS      |
- | `endingBalance`              | Decimal               | Computed balance in units (from endingBalanceCD in cents)             |
- | `accountingPeriod`           | AccountingPeriod      | Computed struct grouping periodYear and periodMonth                   |
- | `startOrFetch(method:period:endingBalance:currency:in:)`
- |                              | Reconciliation        | Returns existing or creates new reconciliation for period + method    |
- | `fetch(for:method:context:)` | [Reconciliation]      | Fetch all reconciliations for a specific period and payment method    |
- | `fetch(for:context:)`        | [Reconciliation]      | Fetch all reconciliations for a specific period (all payment methods) |
- | `fetchOne(for:method:context:)` | Reconciliation?    | Fetch a single reconciliation for a period + payment method           |
- |------------------------------|-----------------------|-----------------------------------------------------------------------|
-
- */
-
 // MARK: --- CentsConvertible
 extension Reconciliation: CentsConvertible {}
 
 // MARK: --- INITIALISATION
 extension Reconciliation {
-    
+
     // MARK: --- ConvenienceInit
     convenience init(
         context: NSManagedObjectContext,
@@ -82,12 +37,12 @@ extension Reconciliation {
 
 // MARK: --- COMPUTED PROPERTIES
 extension Reconciliation {
-    
+
     // MARK: --- AccountingPeriod
     var accountingPeriod: AccountingPeriod {
         AccountingPeriod(year: Int(periodYear), month: Int(periodMonth))
     }
-    
+
     // MARK: --- Currency
     var currency: Currency {
         get { Currency(rawValue: currencyCD) ?? .unknown }
@@ -100,42 +55,33 @@ extension Reconciliation {
             }
         }
     }
-    
+
     // MARK: --- EndingBalance
     var endingBalance: Decimal {
         get { Decimal(endingBalanceCD) / 100 }
         set { endingBalanceCD = decimalToCents(newValue) }
     }
-    
+
     // MARK: --- EndingBalanceInGBP
-    var endingBalanceInGBP: Decimal {
-        return endingBalance
-    }
-    
+    var endingBalanceInGBP: Decimal { endingBalance }
+
     // MARK: --- NewBalanceInGBP
-    var newBalanceInGBP: Decimal {
-        return endingBalance
-    }
-    
+    var newBalanceInGBP: Decimal { endingBalance }
+
     // MARK: --- IsClosed
-    var isClosed: Bool {
-        closed
-    }
-    
+    var isClosed: Bool { closed }
+
     // MARK: --- IsAnOpeningBalance
     var isAnOpeningBalance: Bool {
         guard let date = statementDate else { return false }
-        // January 2, 0001 as a sentinel for opening balances
         let calendar = Calendar(identifier: .gregorian)
         let sentinel = calendar.date(from: DateComponents(year: 1, month: 1, day: 2))!
         return date < sentinel
     }
-    
+
     // MARK: --- PaymentMethod
-    var paymentMethod: PaymentMethod {
-        PaymentMethod(rawValue: paymentMethodCD) ?? .unknown
-    }
-    
+    var paymentMethod: PaymentMethod { PaymentMethod(rawValue: paymentMethodCD) ?? .unknown }
+
     // MARK: --- PreviousBalanceInGBP
     var previousBalanceInGBP: Decimal {
         if let context = self.managedObjectContext,
@@ -144,25 +90,21 @@ extension Reconciliation {
         }
         return 0
     }
-    
+
     // MARK: --- TotalTransactionsInGBP
     var totalTransactionsInGBP: Decimal {
         guard let context = self.managedObjectContext else { return 0 }
         return (try? fetchTransactions(in: context).reduce(Decimal(0)) { $0 + $1.totalAmountInGBP }) ?? 0
     }
-    
+
     // MARK: --- TransactionEndDate
-    var transactionEndDate: Date {
-        return self.statementDate ?? Date.distantPast
-    }
-    
+    var transactionEndDate: Date { self.statementDate ?? Date.distantPast }
+
     // MARK: --- TransactionStartDate
     var transactionStartDate: Date {
-        guard let currentStatement = self.statementDate else {
-            return Date.distantPast
-        }
+        guard let currentStatement = self.statementDate else { return Date.distantPast }
         if let context = self.managedObjectContext,
-           let previous = try? Reconciliation.fetchPrevious(for: self.paymentMethod, before: self.statementDate!, context: context) {
+           let previous = try? Reconciliation.fetchPrevious(for: self.paymentMethod, before: currentStatement, context: context) {
             return Calendar.current.date(byAdding: .day, value: 1, to: previous.statementDate!)!
         }
         return currentStatement
@@ -171,12 +113,11 @@ extension Reconciliation {
 
 // MARK: --- RECONCILIATION
 extension Reconciliation {
-    
+
     // MARK: --- CanReOpenAccountingPeriod
     func canReopenAccountingPeriod(in context: NSManagedObjectContext) -> Bool {
         guard let statementDate = self.statementDate else { return false }
-        
-        // Fetch any reconciliation for the same payment method with a later date that is closed
+
         let request: NSFetchRequest<Reconciliation> = Reconciliation.fetchRequest()
         request.predicate = NSPredicate(
             format: "paymentMethodCD == %d AND statementDate > %@ AND closed == YES",
@@ -184,7 +125,7 @@ extension Reconciliation {
             statementDate as NSDate
         )
         request.fetchLimit = 1
-        
+
         do {
             let laterClosed = try context.fetch(request)
             return laterClosed.isEmpty
@@ -193,51 +134,31 @@ extension Reconciliation {
             return false
         }
     }
-    
+
     // MARK: --- CanCloseAccountingPeriod
     func canCloseAccountingPeriod(in context: NSManagedObjectContext) -> Bool {
-        return reconciliationGap(in: context) == 0
+        reconciliationGap(in: context) == 0
             && isValid(in: context)
-            && isPreviousClosed(in: context) // <-- New check added
+            && isPreviousClosed(in: context)
     }
-    
+
     // MARK: --- CanDelete
     func canDelete(in context: NSManagedObjectContext) -> Bool {
-        // Cannot delete if already closed
         guard !closed else { return false }
-        
-        // Cannot delete if opening/baseline and there is a later reconciliation
         if previousBalanceInGBP == 0 && hasLaterReconciliation(in: context) {
             return false
         }
-        
         return true
     }
-    
-    // MARK: --- CreditsTotalInGBP
-//    func XcreditsTotalInGBP(in context: NSManagedObjectContext) throws -> Decimal {
-//        let txs = try fetchTransactions(in: context).filter { $0.debitCredit == .CR }
-//        return txs.reduce(Decimal(0)) { $0 + $1.totalAmountInGBP }
-//    }
-    
-    // MARK: --- DebitsTotalInGBP
-//    func XdebitsTotalInGBP(in context: NSManagedObjectContext) throws -> Decimal {
-//        let txs = try fetchTransactions(in: context).filter { $0.debitCredit == .DR }
-//        return txs.reduce(Decimal(0)) { $0 + $1.totalAmountInGBP }
-//    }
-    
+
     // MARK: --- Close
-    func close(in context: NSManagedObjectContext) throws -> Void {
-        
+    func close(in context: NSManagedObjectContext) throws {
         closed = true
         let txs = try fetchTransactions(in: context)
-        for tx in txs {
-            tx.closed = true
-        }
+        for tx in txs { tx.closed = true }
         try context.save()
     }
-    
-    
+
     // MARK: --- FetchTransactions
     func fetchTransactions(in context: NSManagedObjectContext) throws -> [Transaction] {
         let request: NSFetchRequest<Transaction> = Transaction.fetchRequest()
@@ -252,7 +173,7 @@ extension Reconciliation {
         request.sortDescriptors = [NSSortDescriptor(key: "transactionDate", ascending: true)]
         return try context.fetch(request)
     }
-    
+
     // MARK: --- HasLaterReconciliation
     func hasLaterReconciliation(in context: NSManagedObjectContext) -> Bool {
         guard let statementDate = self.statementDate else { return false }
@@ -271,21 +192,18 @@ extension Reconciliation {
             return false
         }
     }
-    
+
     // MARK: --- IsBalanced
-    func isBalanced(in context: NSManagedObjectContext) -> Bool {
-        reconciliationGap(in: context) == 0
-    }
-    
-    // MARK: --- IsPreviousCLosed
+    func isBalanced(in context: NSManagedObjectContext) -> Bool { reconciliationGap(in: context) == 0 }
+
+    // MARK: --- IsPreviousClosed
     func isPreviousClosed(in context: NSManagedObjectContext) -> Bool {
         guard let previous = try? Reconciliation.fetchPrevious(for: self.paymentMethod, before: self.statementDate ?? Date.distantPast, context: context) else {
-            // No previous reconciliation exists, so nothing to block
             return true
         }
         return previous.closed
     }
-    
+
     // MARK: --- IsValid
     func isValid(in context: NSManagedObjectContext) -> Bool {
         do {
@@ -296,55 +214,40 @@ extension Reconciliation {
             return false
         }
     }
-    
+
     // MARK: --- ReconciliationGap
     func reconciliationGap(in context: NSManagedObjectContext) -> Decimal {
-        
-        if isAnOpeningBalance { return 0 } // Opening balances do not have a gap
-
+        if isAnOpeningBalance { return 0 }
         do {
             let txs = try fetchTransactions(in: context)
             let sumInGBP = txs.reduce(Decimal(0)) { $0 + $1.totalAmountInGBP }
-            
+
             let previousBalance: Decimal
             if let prev = try? Reconciliation.fetchPrevious(for: self.paymentMethod, before: self.transactionEndDate, context: context) {
                 previousBalance = prev.endingBalance
-            } else {
-                previousBalance = 0
-            }
-            
-            let expectedBalance = previousBalance + sumInGBP
-            let safePreviousBalance = previousBalance
-            let safeSumInGBP = sumInGBP
-            let expectedBalance2 = safePreviousBalance + safeSumInGBP
-            let gap = expectedBalance - self.endingBalance
-            
-            return expectedBalance - self.endingBalance
+            } else { previousBalance = 0 }
+
+            return (previousBalance + sumInGBP) - self.endingBalance
         } catch {
             print("Failed to compute reconciliation gap: \(error)")
             return 0
         }
     }
-    
+
     // MARK: --- Reopen
     func reopen(in context: NSManagedObjectContext) throws {
         closed = false
-        
-        // Reopen all transactions in this reconciliation
         let txs = try fetchTransactions(in: context)
-        for tx in txs {
-            tx.closed = false
-        }
-        
+        for tx in txs { tx.closed = false }
         try context.save()
     }
-    
+
     // MARK: --- TransactionsTotalInGBP
     func transactionsTotalInGBP(in context: NSManagedObjectContext) throws -> Decimal {
         let txs = try fetchTransactions(in: context)
         return txs.reduce(Decimal(0)) { $0 + $1.totalAmountInGBP }
     }
-    
+
     // MARK: --- CreateNew
     @discardableResult
     static func createNew(
@@ -370,7 +273,7 @@ extension Reconciliation {
         try context.save()
         return rec
     }
-    
+
     // MARK: --- EnsureBaseline
     static func ensureBaseline(for paymentMethod: PaymentMethod, in context: NSManagedObjectContext) throws -> Reconciliation {
         let request: NSFetchRequest<Reconciliation> = Reconciliation.fetchRequest()
@@ -394,7 +297,7 @@ extension Reconciliation {
         try context.save()
         return baseline
     }
-    
+
     // MARK: --- FetchPrevious
     static func fetchPrevious(
         for paymentMethod: PaymentMethod,
@@ -411,7 +314,7 @@ extension Reconciliation {
         request.fetchLimit = 1
         return try context.fetch(request).first
     }
-    
+
     // MARK: --- MakePeriodKey
     static func makePeriodKey(year: Int32, month: Int32, paymentMethod: PaymentMethod) -> String {
         "\(year)-\(String(format: "%02d", month))-\(paymentMethod.code)"
@@ -420,7 +323,7 @@ extension Reconciliation {
 
 // MARK: --- FETCH HELPERS
 extension Reconciliation {
-    
+
     static func fetch(
         for period: AccountingPeriod,
         context: NSManagedObjectContext
@@ -436,7 +339,7 @@ extension Reconciliation {
         ]
         return try context.fetch(request)
     }
-    
+
     static func fetch(
         for period: AccountingPeriod,
         paymentMethod: PaymentMethod,
@@ -450,7 +353,7 @@ extension Reconciliation {
         request.sortDescriptors = [NSSortDescriptor(key: "statementDate", ascending: true)]
         return try context.fetch(request)
     }
-    
+
     static func fetchOne(
         for period: AccountingPeriod,
         paymentMethod: PaymentMethod,
