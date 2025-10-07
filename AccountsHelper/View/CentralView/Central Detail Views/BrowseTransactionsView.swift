@@ -90,8 +90,8 @@ fileprivate struct TransactionRow: Identifiable, Hashable {
 
     // MARK: --- SplitRemainderAsString
     var splitRemainderAsString: String {
-        guard let amount = transaction.splitRemainderAmount as? NSDecimalNumber else { return "" }
-        return String(format: "%.2f", amount.doubleValue)
+        let amount = transaction.splitRemainderAmount
+        return amount.string2f
     }
 
     // MARK: --- SplitRemainderCategory
@@ -357,7 +357,7 @@ extension BrowseTransactionsView {
         .frame(minHeight: 300)
         .tableStyle(.inset)
         .contextMenu { SortContextMenu() }
-        .onChange(of: selectedTransactionIDs) { newSelection in
+        .onChange(of: selectedTransactionIDs) { _, newSelection in
             if let firstID = newSelection.first {
                 appState.selectedTransactionID = firstID
                 appState.selectedInspectorView = .viewTransaction

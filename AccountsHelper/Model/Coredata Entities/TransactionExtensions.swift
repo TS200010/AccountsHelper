@@ -236,7 +236,7 @@ extension Transaction {
         let startDate = Calendar.current.date(byAdding: .day, value: -7, to: date)!
         let endDate   = Calendar.current.date(byAdding: .day, value: 1, to: date)!
         let txAmountCDValue: Int32 = {
-            var value = temp.txAmount * 100
+            let value = temp.txAmount * 100
             var result = Decimal()
             var copy = value
             NSDecimalRound(&result, &copy, 0, .plain)

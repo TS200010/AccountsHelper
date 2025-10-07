@@ -24,7 +24,7 @@ struct EditReconcilationView: View {
     // MARK: --- Body
     var body: some View {
         VStack(spacing: 20) {
-            if let rec = reconciliation {
+            if let _  = reconciliation {
                 Text("Edit Reconcilation")
                     .font(.title2)
                     .bold()

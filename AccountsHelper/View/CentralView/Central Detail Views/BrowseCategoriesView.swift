@@ -134,7 +134,7 @@ struct BrowseCategoriesView: View {
                     .contextMenu { contextMenu(for: mapping ) }
             }
             TableColumn("Input String") { mapping in
-                Text(mapping.inputString ?? "")
+                Text(mapping.inputString)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             TableColumn("Usage Count") { mapping in

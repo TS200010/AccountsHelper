@@ -57,7 +57,7 @@ struct CategoriesSummaryView: View {
                 Text(row.totalString)
             }
         }
-        .onChange(of: selectedCategoryID) { newValue in
+        .onChange(of: selectedCategoryID) { _, newValue in
             if let id = newValue,
                let row = categoryRows.first(where: { $0.id == id }) {
                 appStateOptional?.selectedInspectorTransactionIDs = row.transactionIDs

@@ -30,7 +30,7 @@ protocol TxImporter {
     static func importTransactions(
         fileURL: URL,
         context: NSManagedObjectContext,
-        mergeHandler: (Transaction, Transaction) async -> Transaction
+        mergeHandler: @MainActor (Transaction, Transaction) async -> Transaction
     ) async -> [Transaction]
 
     /// Basic CSV parsing

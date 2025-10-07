@@ -29,7 +29,7 @@ struct InspectReconciliation: View {
     }
     
     private var reconciliationGap: Decimal {
-        (try? reconciliation?.reconciliationGap(in: viewContext)) ?? 0
+        reconciliation?.reconciliationGap(in: viewContext) ?? 0
     }
     
     private var isBalanced: Bool {

@@ -61,6 +61,7 @@ struct EditTransactionView: View {
     // MARK: --- Reset
     func resetForm() {
         transactionData = TransactionStruct()
+        transactionData.setDefaults()
     }
 
     // MARK: - Save
@@ -70,9 +71,6 @@ struct EditTransactionView: View {
 
         do {
             try viewContext.save()
-//            let context = PersistenceController.shared.container.viewContext
-//            context.debugCloudKitSync(for: "Transaction")
-//            context.debugCloudKitSync(for: "CategoryMapping")
             print("Transaction saved!")
         } catch {
             print("Failed to save transaction: \(error)")
@@ -84,10 +82,6 @@ struct EditTransactionView: View {
         if let payee = transactionData.payee {
             matcher.teachMapping(for: payee, category: transactionData.category)
         }
-
-        onSave?(transactionData)
-//        appState.selectedTransactionID = nil
-//        appState.popCentralView()
     }
 
     // MARK: - Body
@@ -130,15 +124,6 @@ struct EditTransactionView: View {
                     .focused($focusedField, equals: .main)
 
                 LabeledPicker(label: "Payment Method", selection: $transactionData.paymentMethod, isValid: transactionData.isPaymentMethodValid())
-
-//                LabeledTextField(label: "Payee",
-//                                 text: Binding($transactionData.payee, defaultValue: ""),
-//                                 isValid: transactionData.payee?.isEmpty == false)
-//                    .onChange(of: transactionData.payee) { newValue in
-//                        guard let payee = newValue, !payee.isEmpty else { return }
-//                        let matcher = CategoryMatcher(context: viewContext)
-//                        transactionData.category = matcher.matchCategory(for: payee)
-//                    }
                 
                 LabeledTextField(
                     label: "Payee",
@@ -148,7 +133,7 @@ struct EditTransactionView: View {
                     ),
                     isValid: transactionData.isPayeeValid()
                 )
-                .onChange(of: transactionData.payee) { newValue in
+                .onChange(of: transactionData.payee) { _, newValue in
                     guard let payee = newValue, !payee.isEmpty else { return }
                     let matcher = CategoryMatcher(context: viewContext)
                     transactionData.category = matcher.matchCategory(for: payee)
@@ -380,7 +365,7 @@ struct LabeledPicker<T: CaseIterable & Hashable>: View where T.AllCases: RandomA
                 .frame(width: labelWidth, alignment: .trailing)
             Picker("", selection: $selection) {
                 ForEach(Array(T.allCases), id: \.self) { option in
-                    Text("\(option)").tag(option)
+                    Text(String(describing: option)).tag(option)
                 }
             }
             .pickerStyle(.menu)
@@ -486,7 +471,7 @@ struct LabeledDecimalField: View {
                 .frame(maxWidth: 80)
                 .focused($focused)
                 .onAppear { text = formatDecimal(amount) }
-                .onChange(of: focused) { new in if !new { commit() } }
+                .onChange(of: focused) { _, new in if !new { commit() } }
                 .onSubmit { commit() }
                 .overlay(RoundedRectangle(cornerRadius: 4).stroke(isValid ? Color.clear : Color.red))
             Spacer()
@@ -650,7 +635,7 @@ struct LabeledDecimalWithFX: View {
                         focusedField = nil
                         commitText()
                     }
-                    .onChange(of: focusedField) { newFocused in
+                    .onChange(of: focusedField) { _, newFocused in
                         if newFocused != fieldID {
                             commitText()
                         }
@@ -658,7 +643,7 @@ struct LabeledDecimalWithFX: View {
                     .onAppear {
                         text = formatDecimal(amount)
                     }
-                    .onChange(of: amount) { newAmount in
+                    .onChange(of: amount) { _, newAmount in
                         let formatted = formatDecimal(newAmount)
                         if formatted != text {
                             text = formatted

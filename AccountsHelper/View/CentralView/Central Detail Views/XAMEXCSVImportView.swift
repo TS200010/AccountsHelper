@@ -10,6 +10,7 @@
 import SwiftUI
 import CoreData
 import AppKit
+import UniformTypeIdentifiers
 
 fileprivate struct MergeCandidate: Identifiable {
     let id = UUID()
@@ -97,7 +98,7 @@ struct XAMEXCSVImportView: View {
     
     private func selectCSVFile() {
         let panel = NSOpenPanel()
-        panel.allowedFileTypes = ["csv"]
+        panel.allowedContentTypes = [.commaSeparatedText]
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
         panel.title = "Select an AMEX CSV file to import"

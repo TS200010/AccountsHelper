@@ -113,7 +113,7 @@ struct NavigatorMenuView: View {
                 let currency: Currency = .GBP
                 let startDate = Calendar.current.date(byAdding: .month, value: -1, to: Date())!
                 let endDate = Date()
-                let transactions = Transaction.generateRandomTransactions(
+                let _ = Transaction.generateRandomTransactions(
                     for: paymentMethod,
                     currency: currency,
                     startDate: startDate,

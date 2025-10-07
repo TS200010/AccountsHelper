@@ -85,7 +85,7 @@ struct TransactionStructTests {
     @Test
     func testReset() async throws {
         var tx = makeDefaultTransaction()
-        tx.reset()
+        tx.setDefaults()
         #expect(tx.txAmount == 0)
         #expect(tx.category == .unknown)
         #expect(tx.splitCategory == .unknown)

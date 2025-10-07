@@ -18,7 +18,7 @@ class BofSCSVImporter: TxImporter {
     static func importTransactions(
         fileURL: URL,
         context: NSManagedObjectContext,
-        mergeHandler: @Sendable (Transaction, Transaction) async -> Transaction
+        mergeHandler: @MainActor (Transaction, Transaction) async -> Transaction
     ) async -> [Transaction] {
 
         // MARK: --- Setup

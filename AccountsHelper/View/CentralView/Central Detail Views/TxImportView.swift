@@ -2,6 +2,7 @@
 import SwiftUI
 import CoreData
 import AppKit
+import UniformTypeIdentifiers
 
 struct TxImportView<Importer: TxImporter>: View {
     @Environment(\.managedObjectContext) private var viewContext
@@ -57,10 +58,10 @@ struct TxImportView<Importer: TxImporter>: View {
         // Dynamic allowed file types based on Importer
         switch Importer.importType {
         case .csv:
-            panel.allowedFileTypes = ["csv"]
+            panel.allowedContentTypes = [.commaSeparatedText]
             panel.title = "Select a \(Importer.displayName) CSV file"
         case .png:
-            panel.allowedFileTypes = ["png"]
+            panel.allowedContentTypes = [.png]
             panel.title = "Select a \(Importer.displayName) PNG file"
         }
 

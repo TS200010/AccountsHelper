@@ -75,8 +75,9 @@ struct CentralViews: View {
             
         case .VISAPNGImport:
             #if os(macOS)
+            Text("Not implemented as we had so many problems.")
 //            AMEXCSVImportView()
-            TxImportView<VISAPNGImporter>()
+//            TxImportView<VISAPNGImporter>()
             #else
             Text("Not implemented on iOS")
             #endif

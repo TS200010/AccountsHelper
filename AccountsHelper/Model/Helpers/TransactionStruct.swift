@@ -81,20 +81,20 @@ struct TransactionStruct {
         accountNumber: String? = nil,
         address: String? = nil,
         category: Category = .unknown,
-        currency: Currency = .unknown,
-        debitCredit: DebitCredit = .unknown,
+        currency: Currency = .GBP,
+        debitCredit: DebitCredit = .DR,
         exchangeRate: Decimal = 1.0,
         explanation: String? = nil,
         extendedDetails: String? = nil,
         payee: String? = nil,
-        payer: Payer = .unknown,
-        paymentMethod: PaymentMethod = .unknown,
+        payer: Payer = .tony,
+        paymentMethod: PaymentMethod = .AMEX,
         reference: String? = nil,
         splitAmount: Decimal = 0,
         splitCategory: Category = .unknown,
         txAmount: Decimal = 0,
-        timestamp: Date? = nil,
-        transactionDate: Date? = nil,
+        timestamp: Date? = Date(),
+        transactionDate: Date? = Date(),
         commissionAmount: Decimal = 0
     ) {
         self.accountNumber = accountNumber
@@ -142,7 +142,7 @@ struct TransactionStruct {
     // MARK: --- Methods
     
     /// Reset this transaction to default values
-    mutating func reset() {
+    mutating func setDefaults() {
         txAmount = 0
         category = .unknown
         splitCategory = .unknown
@@ -151,7 +151,7 @@ struct TransactionStruct {
         exchangeRate = 1.0
         payee = ""
         payer = .tony
-        paymentMethod = .unknown
+        paymentMethod = .AMEX
         splitAmount = 0
         transactionDate = Date()
         timestamp = Date()
