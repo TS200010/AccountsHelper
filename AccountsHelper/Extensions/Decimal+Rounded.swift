@@ -7,8 +7,10 @@
 
 import Foundation
 
+// MARK: --- Decimal rounding extension
 extension Decimal {
-    /// Round a decimal to a given scale using a rounding mode
+    
+    // Round a decimal to a given scale using a rounding mode
     func rounded(scale: Int, roundingMode: NSDecimalNumber.RoundingMode) -> Decimal {
         var result = Decimal()
         var value = self

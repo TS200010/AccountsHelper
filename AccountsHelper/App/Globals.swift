@@ -10,10 +10,9 @@ import CoreData
 import ItMkLibrary
 import SwiftUI
 
-
 // MARK: --- Global variables used throughout the App
 
-// MARK: --- Which Coredata DEVELOPMENT Store to use. This is not apples Production yet
+// MARK: --- Which CoreData DEVELOPMENT Store to use. This is not Apple's Production yet
 #if os(iOS)
 // MARK: --- iOS
 let gUseLiveStore = true
@@ -26,9 +25,7 @@ let gUseLiveStore = false
 // ... run on both .dev and .live
 let gUploadSchema = false
 
-
 // MARK: --- For debugging Views. The compiler will optimise out unused variables.
-// use
 let gViewCheck = false
 
 // MARK: --- To remove Magic numbers from the code
@@ -37,7 +34,8 @@ let gNavigatorMaxWidth:      CGFloat = 350
 let gMinToolbarHeight:       CGFloat = 30
 let gMaxToolbarHeight:       CGFloat = 30
 let gCentralViewHeadingSize: CGFloat = 170
-let gInvalidReconciliationGap: Decimal = Decimal(999999)
+let gInvalidReconciliationGap: Decimal = Decimal(999_999)
+let gNumTransactionAttributes = 19 // Number minus one as we do not care about TimeStamp
 
 // MARK: --- Defaults
 let gAppName: String = Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "UnknownAppName"
@@ -50,15 +48,13 @@ var gGlobalAlert: GlobalAlert = GlobalAlert()
 @Observable
 class AppState {
 
+    // MARK: --- Properties
     var selectedTransactionID: NSManagedObjectID? = nil
     var selectedNavigatorView: NavigatorViewsEnum = .edit
     var selectedInspectorTransactionIDs: [NSManagedObjectID] = []
     var selectedReconciliationID: NSManagedObjectID? = nil
+    var inspectorRefreshTrigger: Int = 0 // Dummy trigger to force SwiftUI updates
 
-    // Dummy trigger to force SwiftUI updates
-    var inspectorRefreshTrigger: Int = 0
-
-    // Central view stack
     private(set) var centralViewStack: [CentralViewsEnum] = []
 
     var selectedCentralView: CentralViewsEnum {
@@ -87,11 +83,9 @@ class AppState {
         selectedInspectorView = view
     }
 
-    // MARK: --- Force Inspector Refresh
     func refreshInspector() {
         DispatchQueue.main.async {
             self.inspectorRefreshTrigger += 1
         }
     }
 }
-

@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="24299" systemVersion="25A354" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithCloudKit="YES" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
-    <entity name="CategoryMapping" representedClassName="CategoryMapping" syncable="YES" codeGenerationType="class">
+    <entity name="CategoryMapping" representedClassName="AccountsHelper.CategoryMapping" syncable="YES" codeGenerationType="class">
         <attribute name="categoryRawValue" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="inputString" optional="YES" attributeType="String"/>
         <attribute name="usageCount" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
     </entity>
-    <entity name="Reconciliation" representedClassName="Reconciliation" syncable="YES" codeGenerationType="class">
+    <entity name="Reconciliation" representedClassName="AccountsHelper.Reconciliation" syncable="YES" codeGenerationType="class">
         <attribute name="closed" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
         <attribute name="currencyCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="endingBalanceCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
@@ -15,7 +15,7 @@
         <attribute name="periodYear" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="statementDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
     </entity>
-    <entity name="Transaction" representedClassName="Transaction" syncable="YES" codeGenerationType="class">
+    <entity name="Transaction" representedClassName="AccountsHelper.Transaction" syncable="YES" codeGenerationType="class">
         <attribute name="accountingPeriod" optional="YES" attributeType="String"/>
         <attribute name="accountNumber" optional="YES" attributeType="String"/>
         <attribute name="address" optional="YES" attributeType="String"/>

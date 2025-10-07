@@ -8,24 +8,30 @@
 import Foundation
 import ItMkLibrary
 
-@objc enum Currency: Int32, CaseIterable, Codable, HasStringRepresentation, CustomStringConvertible {
-    
-    
-    case GBP             = 1
-    case USD             = 2
-    case JPY             = 3
-    case EUR             = 4
-    case unknown         = 99
-    
-    init( _ s: String ) {
-        self = Currency.fromString( s )
+@objc enum Currency: Int32, CaseIterable, Codable, HasStringRepresentation, CustomStringConvertible, Identifiable {
+
+    // MARK: --- Cases
+    case GBP      = 1
+    case USD      = 2
+    case JPY      = 3
+    case EUR      = 4
+    case unknown  = 99
+
+    // MARK: --- Identifiable
+    var id: Int32 { self.rawValue }
+
+    // MARK: --- Initializer from String
+    init(_ s: String) {
+        self = Currency.fromString(s)
     }
-    
+
+    // MARK: --- Raw Value Helper
     func rawValueAsString() -> String {
         return self.rawValue.description
     }
-    
-    static func fromString( _ s: String ) -> Currency {
+
+    // MARK: --- String conversion
+    static func fromString(_ s: String) -> Currency {
         switch s {
         case "GBP":             return .GBP
         case "USD":             return .USD
@@ -36,32 +42,30 @@ import ItMkLibrary
         default:                return .unknown
         }
     }
-    
+
+    // MARK: --- Int Conversion Helpers
+    static func fromInt(_ i: Int) -> Currency {
+        switch i {
+        case 1: return .GBP
+        case 2: return .USD
+        case 3: return .JPY
+        case 4: return .EUR
+        default: return .unknown
+        }
+    }
+
+    static func fromInt32(_ i: Int32) -> Currency {
+        return Currency.fromInt(Int(i))
+    }
+
+    // MARK: --- CustomStringConvertible
     var description: String {
         switch self {
-            case .GBP:             return String( localized: "GBP" )
-            case .USD:             return String( localized: "USD" )
-            case .JPY:             return String( localized: "JPY" )
-            case .EUR:             return String( localized: "EUR" )
-            case .unknown:          return String( localized: "Unknown" )
+        case .GBP:     return String(localized: "GBP")
+        case .USD:     return String(localized: "USD")
+        case .JPY:     return String(localized: "JPY")
+        case .EUR:     return String(localized: "EUR")
+        case .unknown: return String(localized: "Unknown")
         }
-    }
-    
-    // TODO: Not sure we need these
-    
-    static func fromInt( _ i: Int ) -> Currency {
-        
-        switch i {
-            case 1:  return Self.GBP
-            case 2:  return Self.USD
-            case 3:  return Self.JPY
-            case 4:  return Self.EUR
-            default: return Self.unknown
-        }
-    }
-    
-    static func fromInt32( _ i: Int32 ) -> Currency {
-        
-        return Currency.fromInt( Int( i ) )
     }
 }

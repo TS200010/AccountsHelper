@@ -8,6 +8,7 @@
 import Foundation
 import CoreData
 
+// MARK: --- NSManagedObjectContext Category Totals
 extension NSManagedObjectContext {
 
     /// Fetch transactions matching a predicate and sum by category including splits in GBP

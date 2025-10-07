@@ -5,12 +5,14 @@
 //  Created by Anthony Stanners on 19/09/2025.
 //
 
-
 import CoreData
 import os.log
 import SwiftUI
 
+// MARK: --- NSManagedObjectContext Safe Save
 extension NSManagedObjectContext {
+    
+    /// Save context safely, showing alert on failure
     func saveSafely(showingAlert: Binding<Bool>, alertMessage: Binding<String>) {
         do {
             if hasChanges {

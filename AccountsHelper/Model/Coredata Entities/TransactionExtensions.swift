@@ -5,72 +5,9 @@
 //  Created by Anthony Stanners on 13/09/2025.
 //
 
-protocol OptionalProtocol {
-    func wrappedOrNilString() -> String
-}
-
-extension Optional: OptionalProtocol {
-    func wrappedOrNilString() -> String {
-        switch self {
-        case .some(let value):
-            return "\(value)"
-        case .none:
-            return "nil"
-        }
-    }
-}
-
 import Foundation
 import CoreData
 
-/*
- @NSManaged public var accountingPeriod: String?
- @NSManaged public var accountNumber: String?
- @NSManaged public var address: String?
- @NSManaged public var categoryCD: Int32
- @NSManaged public var commissionAmountCD: Int32
- @NSManaged public var currencyCD: Int32
- @NSManaged public var debitCreditCD: Int32
- @NSManaged public var exchangeRateCD: Int32
- @NSManaged public var explanation: String?
- @NSManaged public var extendedDetails: String?
- @NSManaged public var payee: String?
- @NSManaged public var payerCD: Int32
- @NSManaged public var paymentMethodCD: Int32
- @NSManaged public var reference: String?
- @NSManaged public var splitAmountCD: Int32
- @NSManaged public var splitCategoryCD: Int32
- @NSManaged public var timestamp: Date?
- @NSManaged public var transactionDate: Date?
- @NSManaged public var txAmountCD: Int32
- */
-
-/*
- | --------------------------- | --------------- | -------------------------------------------------------- |
- | Property / Method           | Type            | Description                                              |
- | --------------------------- | --------------- | -------------------------------------------------------- |
- | `txAmount`                  | `Decimal`       | Transaction amount                                       |
- | `splitAmount`               | `Decimal`       | First split amount                                       |
- | `splitRemainderAmount`      | `Decimal`       | Computed remainder = `txAmount - splitAmount`            |
- | `commissionAmount`          | `Decimal`       | Commission amount                                        |
- | `exchangeRate`              | `Decimal`       | Exchange rate                                            |
- | `totalInGBP`                | `Decimal`       | `(txAmount * exchangeRate) + commissionAmount` (rounded) |
- | --------------------------- | --------------- | -------------------------------------------------------- |
- | `category`                  | `Category`      | Transaction category                                     |
- | `splitCategory`             | `Category`      | Split transaction category                               |
- | `splitRemainderCategory`    | `Category`      | Category for the remainder (same as main category)       |
- | --------------------------- | --------------- | -------------------------------------------------------- |
- | `currency`                  | `Currency`      | Transaction currency                                     |
- | `debitCredit`               | `DebitCredit`   | Debit or credit type                                     |
- | `payer`                     | `Payer`         | Who paid the transaction                                 |
- | `paymentMethod`             | `PaymentMethod` | Payment method used                                      |
- | --------------------------- | --------------- | -------------------------------------------------------- |
- | `txAmountAsString()`        | `String?`       | Formatted transaction amount                             |
- | `splitRemainderAsString()`  | `String?`       | Formatted remainder amount                               |
- | `exchangeRateAsString()`    | `String?`       | Formatted exchange rate                                  |
- | `transactionDateAsString()` | `String?`       | Formatted transaction date                               |
- | --------------------------- | --------------- | -------------------------------------------------------- |
-*/
 
 // MARK: --- CentsConvertible conformance
 extension Transaction: CentsConvertible {}
@@ -80,13 +17,6 @@ extension Transaction: TransactionValidatable {}
 
 // MARK: --- Computed properties for Transaction
 extension Transaction {
-    
-//    private func decimalToCents(_ value: Decimal) -> Int32 {
-//        var scaled = value * 100
-//        var rounded = Decimal()
-//        NSDecimalRound(&rounded, &scaled, 0, .plain)
-//        return Int32(truncating: NSDecimalNumber(decimal: rounded))
-//    }
     
     var category: Category {
         get { Category(rawValue: categoryCD) ?? .unknown }
@@ -379,21 +309,14 @@ extension Transaction {
     
     // Returns a string representing all comparable fields for equality checks, excluding id and timestamp
     func comparableFieldsRepresentation() -> String {
+        
         var components: [String] = []
         
         let mirror = Mirror(reflecting: self)
         for child in mirror.children {
             guard let label = child.label else { continue }
-            
             if label == "id" || label == "timestamp" { continue }
-            
-            let value: Any
-            if let v = child.value as? OptionalProtocol {
-                value = v.wrappedOrNilString()
-            } else {
-                value = child.value
-            }
-            
+            let value = String(describing: child.value)
             components.append("\(label)=\(value)")
         }
         

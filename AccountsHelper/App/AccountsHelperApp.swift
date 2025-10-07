@@ -12,8 +12,7 @@ import CoreData
 @main
 struct AccountsHelperApp: App {
     
-    // MARK: --- Global Variabless
-//    @ObservedObject static var gGlobalAlert = GlobalAlert()
+    // MARK: --- Global Variables
     let persistenceController = PersistenceController.shared
     
     // MARK: --- State: Tracks Global UI states between NavigatorView, CentralView and InspectorView
@@ -24,18 +23,16 @@ struct AccountsHelperApp: App {
         UserDefaults.standard.set(true, forKey: "com.apple.CoreData.CloudKitDebug")
         
         // Any other setup
-        assert(MergeField.allCases.count == 19, "🚨 MergeField count mismatch! Did you add a new field?")
+        assert(MergeField.allCases.count == gNumTransactionAttributes, "🚨 MergeField count mismatch! Did you add a new field?")
     }
     
+    // MARK: --- Body
     var body: some Scene {
-        
         WindowGroup {
             ContentView()
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
-                .environmentObject( gGlobalAlert )
-                .environment( appState )
+                .environmentObject(gGlobalAlert)
+                .environment(appState)
         }
-
     }
 }
-
