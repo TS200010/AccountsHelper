@@ -1,3 +1,10 @@
+//
+//  BofSCSVImporter.swift
+//  AccountsHelper
+//
+//  Created by ChatGPT on 07/10/2025.
+//
+
 import Foundation
 import CoreData
 
@@ -13,7 +20,8 @@ class BofSCSVImporter: TxImporter {
         context: NSManagedObjectContext,
         mergeHandler: @Sendable (Transaction, Transaction) async -> Transaction
     ) async -> [Transaction] {
-        // Create a child context for safe import
+
+        // MARK: --- Setup
         let tempContext = makeTemporaryContext(parent: context)
         var createdTransactions: [Transaction] = []
 
@@ -29,6 +37,7 @@ class BofSCSVImporter: TxImporter {
             let fetchRequest: NSFetchRequest<Transaction> = Transaction.fetchRequest()
             let existingSnapshot = (try? context.fetch(fetchRequest)) ?? []
 
+            // MARK: --- Row Processing
             for row in rows.dropFirst() {
                 guard row.count == headers.count else { continue }
 
@@ -76,6 +85,7 @@ class BofSCSVImporter: TxImporter {
                     }
                 }
 
+                // MARK: --- Default Properties
                 newTx.timestamp = Date()
                 newTx.payer = .tony
                 newTx.paymentMethod = paymentMethod
@@ -83,9 +93,11 @@ class BofSCSVImporter: TxImporter {
                 newTx.currency = .GBP
                 newTx.exchangeRate = 1
 
-                // Check for duplicates across new + existing
-                if let existing = Self.findMergeCandidateInSnapshot(newTx: newTx,
-                                                                   snapshot: createdTransactions + existingSnapshot) {
+                // MARK: --- Duplicate Checking
+                if let existing = Self.findMergeCandidateInSnapshot(
+                    newTx: newTx,
+                    snapshot: createdTransactions + existingSnapshot
+                ) {
 
                     if existing.comparableFieldsRepresentation() == newTx.comparableFieldsRepresentation() {
                         // Exactly the same → skip
@@ -103,7 +115,7 @@ class BofSCSVImporter: TxImporter {
                 }
             }
 
-            // Save child context → pushes into parent
+            // MARK: --- Save Contexts
             try tempContext.save()
             try context.save()
 
@@ -121,4 +133,3 @@ class BofSCSVImporter: TxImporter {
         }
     }
 }
-
