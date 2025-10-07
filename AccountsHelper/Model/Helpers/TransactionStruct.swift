@@ -7,18 +7,27 @@
 
 import Foundation
 
-// MARK: --- TransactionValidatable conformance
+// MARK: --- TransactionValidatable Conformance
 extension TransactionStruct: TransactionValidatable {}
 
 // MARK: --- TransactionStruct
+/// Struct representation of a Transaction, independent of Core Data.
+/// Provides convenience initializers, derived properties, and conversion to/from Core Data Transaction objects.
 struct TransactionStruct {
     
+    // MARK: --- Properties
+    
+    /// Unique identifier
     var id = UUID()
     
+    /// Optional account number for the transaction
     var accountNumber: String?
+    
+    /// Optional address associated with transaction
     var address: String?
     
-    // Computed property equivalents
+    // MARK: --- Core transaction data
+    
     var category: Category
     var currency: Currency
     var debitCredit: DebitCredit
@@ -39,19 +48,24 @@ struct TransactionStruct {
     var transactionDate: Date?
     var commissionAmount: Decimal
     
-    // Derived properties
+    // MARK: --- Derived Properties
+    
+    /// Remaining amount after split
     var splitRemainderAmount: Decimal {
         txAmount - splitAmount
     }
     
+    /// Category associated with remainder (defaults to main category)
     var splitRemainderCategory: Category {
         category
     }
     
+    /// Whether this transaction is a split
     var isSplit: Bool {
         splitAmount != Decimal(0)
     }
     
+    /// Total in GBP after applying exchange rate and commission, rounded to 2 decimal places
     var totalInGBP: Decimal {
         let total = txAmount * exchangeRate + commissionAmount
         var roundedTotal = Decimal()
@@ -60,7 +74,9 @@ struct TransactionStruct {
         return roundedTotal
     }
     
-    // Initializer
+    // MARK: --- Initializers
+    
+    /// Default initializer with optional parameters
     init(
         accountNumber: String? = nil,
         address: String? = nil,
@@ -101,6 +117,7 @@ struct TransactionStruct {
         self.commissionAmount = commissionAmount
     }
     
+    /// Initialize from a Core Data Transaction object
     init(from transaction: Transaction) {
         self.accountNumber   = transaction.accountNumber
         self.address         = transaction.address
@@ -122,6 +139,9 @@ struct TransactionStruct {
         self.commissionAmount = transaction.commissionAmount
     }
     
+    // MARK: --- Methods
+    
+    /// Reset this transaction to default values
     mutating func reset() {
         txAmount = 0
         category = .unknown
@@ -138,6 +158,8 @@ struct TransactionStruct {
         explanation = ""
     }
     
+    /// Apply this struct’s values to a Core Data Transaction object
+    /// - Parameter transaction: Core Data Transaction to update
     func apply(to transaction: Transaction) {
         transaction.accountNumber   = accountNumber
         transaction.address         = address
@@ -159,4 +181,3 @@ struct TransactionStruct {
         transaction.commissionAmount = commissionAmount
     }
 }
-

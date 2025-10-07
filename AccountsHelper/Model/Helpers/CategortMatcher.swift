@@ -1,5 +1,5 @@
 //
-//  CategortMatcher.swift
+//  CategoryMatcher.swift
 //  AccountsHelper
 //
 //  Created by Anthony Stanners on 23/09/2025.
@@ -10,11 +10,16 @@ import CoreData
 
 /// Helps match input strings to a Category, using Core Data mappings
 class CategoryMatcher {
+    
+    // MARK: --- Properties
     private let context: NSManagedObjectContext
 
+    /// Initialize with a Core Data context
     init(context: NSManagedObjectContext) {
         self.context = context
     }
+
+    // MARK: --- String Normalization
 
     /// Normalise a string for comparison (UK style)
     private func normalize(_ string: String) -> String {
@@ -24,7 +29,8 @@ class CategoryMatcher {
             .joined()
     }
 
-    // MARK: - Matching
+    // MARK: --- Matching
+
     /// Find the best matching Category for an input string
     func matchCategory(for input: String) -> Category {
         let normalized = normalize(input)
@@ -45,7 +51,7 @@ class CategoryMatcher {
             return exact.category
         }
         
-        // 2. Prefix match with case/whitespace/diacritic-insensitive Unicode normalization
+        // 2. Prefix match (case/whitespace/diacritic-insensitive)
         if let prefix = mappings
             .filter({
                 guard let s = $0.inputString, !s.isEmpty else { return false }
@@ -69,7 +75,7 @@ class CategoryMatcher {
             return prefix.category
         }
 
-        // 3. Fuzzy (contains)
+        // 3. Fuzzy match (contains)
         if let fuzzy = mappings
             .filter({ ($0.inputString?.isEmpty == false) && normalized.contains($0.inputString!.lowercased()) })
             .max(by: { $0.usageCount < $1.usageCount }) {
@@ -79,9 +85,11 @@ class CategoryMatcher {
             return fuzzy.category
         }
 
+        // Default: unknown
         return .unknown
     }
 
+    /// Save context changes silently
     private func saveContextSilently() {
         guard context.hasChanges else { return }
         do {
@@ -91,8 +99,9 @@ class CategoryMatcher {
         }
     }
 
-    // MARK: - Teach Mapping (automatic reapply)
-    /// Teach a new mapping. This will create or update a CategoryMapping and then reapply to unknown transactions.
+    // MARK: --- Teach Mapping
+
+    /// Teach a new mapping. Creates or updates a CategoryMapping and reapplies it to unknown transactions.
     func teachMapping(for input: String, category: Category) {
         let normalized = normalize(input)
 
@@ -116,28 +125,23 @@ class CategoryMatcher {
                 NSLog("Failed to save new mapping: \(error)")
             }
 
-            // 🔁 Immediately reapply the mapping to unknown transactions.
-            // We call the reapply method on the same context to keep it simple and
-            // to ensure UI @FetchRequest observers update.
+            // 🔁 Reapply mapping immediately to unknown transactions
             self.reapplyMappingsToUnknownTransactions()
         }
     }
 
-    // MARK: - Reapply to unknown transactions
-    /// Scans Transactions with category == .unknown and attempts to match them using the mappings.
-    /// Uses the same context (so UI will see the changes immediately).
+    // MARK: --- Reapply to Unknown Transactions
+
+    /// Attempts to match Category for Transactions with category == .unknown
     func reapplyMappingsToUnknownTransactions() {
-        // Perform on context's queue
         context.performAndWait {
-            
-            let allTx: [Transaction] = (try? context.fetch(Transaction.fetchRequest())) ?? []
-            for tx in allTx {
-                print("categoryCD: \(tx.categoryCD), payee: \(tx.payee ?? "")")
-            }
-            
+
             let txRequest: NSFetchRequest<Transaction> = Transaction.fetchRequest()
-            txRequest.predicate = NSPredicate(format: "categoryCD == %d OR categoryCD == %d OR categoryCD == nil", Category.unknown.rawValue, 0)
-            print (Category.unknown.rawValue)
+            txRequest.predicate = NSPredicate(
+                format: "categoryCD == %d OR categoryCD == %d OR categoryCD == nil",
+                Category.unknown.rawValue, 0
+            )
+
             guard let transactions = try? context.fetch(txRequest), !transactions.isEmpty else {
                 NSLog("No unknown transactions to reapply.")
                 return
@@ -145,7 +149,6 @@ class CategoryMatcher {
 
             var changed = false
             for tx in transactions {
-                // Use `payee` as the text to match against
                 if let payee = tx.payee, !payee.isEmpty {
                     let matched = self.matchCategory(for: payee)
                     if matched != .unknown {
@@ -158,8 +161,6 @@ class CategoryMatcher {
             if changed {
                 do {
                     try context.save()
-//                    let context = PersistenceController.shared.container.viewContext
-//                    context.debugCloudKitSync(for: "CategoryMapping")
                 } catch {
                     NSLog("Failed to save transactions during reapply: \(error)")
                 }
