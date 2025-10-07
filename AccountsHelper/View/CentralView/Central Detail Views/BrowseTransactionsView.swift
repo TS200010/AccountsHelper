@@ -177,7 +177,7 @@ struct BrowseTransactionsView: View {
     @Environment(\.undoManager) private var undoManager
     @Environment(AppState.self) var appState
 
-    // MARK: --- Local State
+    // MARK: --- State
     @State private var ascending: Bool = true
     @State private var mergeCandidates: [Transaction] = []
     @State private var selectedTransaction: Transaction?
@@ -198,24 +198,17 @@ struct BrowseTransactionsView: View {
         )
     }
 
-    init(predicate: NSPredicate) {
-        _transactions = FetchRequest(
-            sortDescriptors: [NSSortDescriptor(keyPath: \Transaction.timestamp, ascending: true)],
-            predicate: predicate
-        )
-    }
-
     // MARK: --- Derived Rows
     private var transactionRows: [TransactionRow] {
-        let rows = transactions.map { TransactionRow(transaction: $0) }
-        return rows.sorted { lhs, rhs in
-            if let l = sortColumn.stringKey(for: lhs),
-               let r = sortColumn.stringKey(for: rhs) {
-                let cmp = l.localizedCompare(r)
-                return ascending ? cmp == .orderedAscending : cmp == .orderedDescending
+        transactions.map { TransactionRow(transaction: $0) }
+            .sorted { lhs, rhs in
+                if let l = sortColumn.stringKey(for: lhs),
+                   let r = sortColumn.stringKey(for: rhs) {
+                    let cmp = l.localizedCompare(r)
+                    return ascending ? cmp == .orderedAscending : cmp == .orderedDescending
+                }
+                return false
             }
-            return false
-        }
     }
 
     // MARK: --- Body
@@ -239,7 +232,7 @@ struct BrowseTransactionsView: View {
     }
 }
 
-// MARK: --- BrowseTransactionsView Extensions
+// MARK: --- Subviews & Helpers
 extension BrowseTransactionsView {
 
     // MARK: --- ContextMenu
@@ -247,7 +240,6 @@ extension BrowseTransactionsView {
     private func contextMenu(for row: TransactionRow) -> some View {
         if selectedTransactionIDs.contains(row.id) {
 
-            // Edit Transaction
             if selectedTransactionIDs.count == 1 {
                 Button("Edit Transaction") {
                     appState.selectedTransactionID = row.id
@@ -257,7 +249,6 @@ extension BrowseTransactionsView {
                 .disabled(anySelectedTransactionClosed)
             }
 
-            // Merge Transactions - when exactly two rows are selected
             if selectedTransactionIDs.count == 2 {
                 Button("Merge Transactions") {
                     mergeCandidates = transactions.filter { selectedTransactionIDs.contains($0.objectID) }
@@ -268,7 +259,6 @@ extension BrowseTransactionsView {
                 Divider()
             }
 
-            // Delete Transaction(s)
             Button(role: .destructive) {
                 transactionsToDelete = selectedTransactionIDs
                 showingDeleteConfirmation = true
@@ -293,6 +283,56 @@ extension BrowseTransactionsView {
         .contextMenu { contextMenu(for: row) }
     }
 
+    // MARK: --- TableCell
+    @ViewBuilder
+    private func tableCell(_ content: String, for row: TransactionRow) -> some View {
+        HStack {
+            Text(content)
+                .foregroundColor(row.transaction.closed ? .blue : (row.transaction.isValid() ? .primary : .red))
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+        .contextMenu { contextMenu(for: row) }
+    }
+
+    // MARK: --- TransactionsTable
+    private var transactionsTable: some View {
+        Table(transactionRows, selection: $selectedTransactionIDs) {
+#if os(macOS)
+            TableColumn("Payment Method") { tableCell($0.paymentMethod, for: $0) }
+                .width(min: 50, ideal: 80, max: 100)
+            TableColumn("Date") { tableCell($0.transactionDate, for: $0) }
+                .width(min: 90, ideal: 100, max: 150)
+            TableColumn("Amount") { multiLineTableCell($0.displayAmount, for: $0) }
+                .width(min: 130, ideal: 130, max: 150)
+            TableColumn("Fx") { tableCell($0.exchangeRate, for: $0) }
+                .width(min: 50, ideal: 55, max: 60)
+            TableColumn("Category") { tableCell($0.category, for: $0) }
+                .width(min: 90, ideal: 80, max: 100)
+            TableColumn("Split") { multiLineTableCell($0.displaySplitAmount, for: $0) }
+                .width(min: 200, ideal: 200, max: 300)
+            TableColumn("Payee") { tableCell($0.payee, for: $0) }
+                .width(min: 50, ideal: 100, max: 300)
+#else
+            TableColumn("Transaction") { tableCell($0.iOSRowForDisplay, for: $0) }
+#endif
+        }
+        .font(.system(.body, design: .monospaced))
+        .frame(minHeight: 300)
+        .tableStyle(.inset)
+        .contextMenu { SortContextMenu() }
+        .onChange(of: selectedTransactionIDs) { _, newSelection in
+            if let firstID = newSelection.first {
+                appState.selectedTransactionID = firstID
+                appState.selectedInspectorView = .viewTransaction
+            } else {
+                selectedTransaction = nil
+                appState.selectedTransactionID = nil
+            }
+        }
+    }
+
     // MARK: --- SortContextMenu
     @ViewBuilder
     private func SortContextMenu() -> some View {
@@ -315,57 +355,6 @@ extension BrowseTransactionsView {
         }
         .padding(8)
         .background(Color.platformWindowBackgroundColor)
-    }
-
-    // MARK: --- TableCell
-    @ViewBuilder
-    private func tableCell(_ content: String, for row: TransactionRow) -> some View {
-        HStack {
-            Text(content)
-//                .foregroundColor(row.transaction.isValid() ? .primary : .red)
-                .foregroundColor(row.transaction.closed ? .blue : (row.transaction.isValid() ? .primary : .red))
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .contentShape(Rectangle())
-        .contextMenu { contextMenu(for: row) }
-    }
-
-    // MARK: --- TransactionsTable
-    private var transactionsTable: some View {
-        Table(transactionRows, selection: $selectedTransactionIDs) {
-#if os(macOS)
-            TableColumn("Payment Method") { row in tableCell(row.paymentMethod, for: row) }
-                .width(min: 50, ideal: 80, max: 100)
-            TableColumn("Date") { row in tableCell(row.transactionDate, for: row) }
-                .width(min: 90, ideal: 100, max: 150)
-            TableColumn("Amount") { row in multiLineTableCell(row.displayAmount, for: row) }
-                .width(min: 130, ideal: 130, max: 150)
-            TableColumn("Fx") { row in tableCell(row.exchangeRate, for: row) }
-                .width(min: 50, ideal: 55, max: 60)
-            TableColumn("Category") { row in tableCell(row.category, for: row) }
-                .width(min: 90, ideal: 80, max: 100)
-            TableColumn("Split") { row in multiLineTableCell(row.displaySplitAmount, for: row) }
-                .width(min: 200, ideal: 200, max: 300)
-            TableColumn("Payee") { row in tableCell(row.payee, for: row) }
-                .width(min: 50, ideal: 100, max: 300)
-#else
-            TableColumn("Transaction") { row in tableCell(row.iOSRowForDisplay, for: row) }
-#endif
-        }
-        .font(.system(.body, design: .monospaced))
-        .frame(minHeight: 300)
-        .tableStyle(.inset)
-        .contextMenu { SortContextMenu() }
-        .onChange(of: selectedTransactionIDs) { _, newSelection in
-            if let firstID = newSelection.first {
-                appState.selectedTransactionID = firstID
-                appState.selectedInspectorView = .viewTransaction
-            } else {
-                selectedTransaction = nil
-                appState.selectedTransactionID = nil
-            }
-        }
     }
 
     // MARK: --- ToolbarItems
@@ -395,7 +384,7 @@ extension BrowseTransactionsView {
         }
     }
 
-    // MARK: --- UpdateSortColumn
+    // MARK: --- Helpers
     private func updateSortColumn(_ column: SortColumn) {
         if sortColumn == column {
             ascending.toggle()
@@ -406,7 +395,13 @@ extension BrowseTransactionsView {
         selectedTransactionIDs.removeAll()
     }
 
-    // MARK: --- DeleteTransactions
+    private var anySelectedTransactionClosed: Bool {
+        selectedTransactionIDs.contains { id in
+            guard let tx = transactions.first(where: { $0.objectID == id }) else { return false }
+            return tx.closed
+        }
+    }
+
     private func deleteTransactions(with ids: Set<NSManagedObjectID>) {
         viewContext.perform {
             let fetchRequest: NSFetchRequest<Transaction> = Transaction.fetchRequest()
@@ -430,7 +425,7 @@ extension BrowseTransactionsView {
                     }
                     try? context.save()
                     DispatchQueue.main.async {
-                        appState.refreshInspector() // AFTER the save
+                        appState.refreshInspector()
                     }
                 }
                 undoManager?.setActionName("Delete Transactions")
@@ -440,20 +435,4 @@ extension BrowseTransactionsView {
             }
         }
     }
-}
-
-// MARK: --- BrowseTransactionsView Helpers
-extension BrowseTransactionsView {
-
-    private var anySelectedTransactionClosed: Bool {
-        selectedTransactionIDs.contains { id in
-            guard let tx = transactions.first(where: { $0.objectID == id }) else { return false }
-            return tx.closed
-        }
-    }
-}
-
-// MARK: --- FETCH HELPERS
-extension BrowseTransactionsView {
-    // Add any future fetch helper functions here, alphabetized
 }

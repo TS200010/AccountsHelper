@@ -39,10 +39,10 @@ struct CentralViews: View {
             Text("Select an action from the toolbar")
 
         case .addTransaction:
-            EditTransactionView()
+            AddOrEditTransactionView()
 
         case .editTransaction(let tx):
-            EditTransactionView( transaction: tx )
+            AddOrEditTransactionView( transaction: tx )
 
         case .browseTransactions(let predicate):
             BrowseTransactionsView(predicate: predicate)

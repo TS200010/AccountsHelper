@@ -244,7 +244,7 @@ struct NavigatorMenuView: View {
 
 #if os(iOS)
         .sheet(isPresented: $showingEditAddTransactionSheet) {
-            EditTransactionView()
+            AddOrTransactionView()
         }
         .sheet(isPresented: $showingBrowseTransactionsView) {
             BrowseTransactionsView()

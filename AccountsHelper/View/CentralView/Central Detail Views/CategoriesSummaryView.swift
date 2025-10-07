@@ -1,6 +1,16 @@
 import SwiftUI
 import CoreData
 
+// MARK: - CategoryPrintRow
+struct CategoryPrintRow: Identifiable {
+    let id: Int32
+    let name: String
+    let total: Decimal
+    
+    var totalString: String {
+        String(format: "%.2f", NSDecimalNumber(decimal: total).doubleValue)
+    }
+}
 
 // MARK: - CategoryRow Wrapper
 fileprivate struct CategoryRow: Identifiable, Hashable {
@@ -8,24 +18,27 @@ fileprivate struct CategoryRow: Identifiable, Hashable {
     let total: Decimal
     let transactionIDs: [NSManagedObjectID]
     
-    var id: Int32 { category.id } // stable ID for selection
+    var id: Int32 { category.id }
     
     var totalString: String {
         String(format: "%.2f", NSDecimalNumber(decimal: total).doubleValue)
     }
 }
 
-
 // MARK: --- CategoriesSummaryView
 struct CategoriesSummaryView: View {
     
-    @FetchRequest private var transactions: FetchedResults<Transaction>
+    // MARK: --- Environment
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(AppState.self) private var appStateOptional: AppState?
     
-    // Single selection
+    // MARK: --- FetchRequest
+    @FetchRequest private var transactions: FetchedResults<Transaction>
+    
+    // MARK: --- State
     @State private var selectedCategoryID: Int32?
     
+    // MARK: --- Init
     init(predicate: NSPredicate? = nil, isPrinting: Bool = false) {
         _transactions = FetchRequest(
             sortDescriptors: [NSSortDescriptor(keyPath: \Transaction.timestamp, ascending: true)],
@@ -33,12 +46,11 @@ struct CategoriesSummaryView: View {
         )
     }
     
-    
-    // MARK: --- CategoryRows
+    // MARK: --- Derived Data
     fileprivate var categoryRows: [CategoryRow] {
         let predicate = transactions.nsPredicate ?? NSPredicate(value: true)
         let totals = viewContext.categoryTotals(for: predicate)
-
+        
         return Category.allCases
             .sorted { $0.rawValue < $1.rawValue }
             .map { category in
@@ -46,16 +58,52 @@ struct CategoriesSummaryView: View {
             }
     }
     
+    private var totals: (total: String, totalCR: String, totalDR: String) {
+        var total: Decimal = 0
+        var totalCR: Decimal = 0
+        var totalDR: Decimal = 0
+        
+        for tx in transactions {
+            let amount = tx.totalAmountInGBP
+            total += amount
+            if amount > 0 { totalCR += amount }
+            else if amount < 0 { totalDR += amount }
+        }
+        
+        return (
+            total: total.string2f,
+            totalCR: totalCR.string2f,
+            totalDR: totalDR.string2f
+        )
+    }
     
-    // MARK: --- CategoriesTable
+    // MARK: --- Body
+    var body: some View {
+        VStack(alignment: .leading) {
+            totalsView
+            categoriesTable
+                .navigationTitle("Transactions Summary")
+        }
+        .toolbar { printToolbarItem }
+    }
+}
+
+// MARK: --- Subviews
+extension CategoriesSummaryView {
+    
+    private var totalsView: some View {
+        HStack(spacing: 40) {
+            Text("Total: \(totals.total) GBP")
+            Text("Total CRs: \(totals.totalCR) GBP")
+            Text("Total DRs: \(totals.totalDR) GBP")
+        }
+        .padding(.horizontal, 10)
+    }
+    
     private var categoriesTable: some View {
         Table(categoryRows, selection: $selectedCategoryID) {
-            TableColumn("Category") { row in
-                categoryCell(for: row)
-            }
-            TableColumn("Total") { row in
-                Text(row.totalString)
-            }
+            TableColumn("Category") { categoryCell(for: $0) }
+            TableColumn("Total") { Text($0.totalString) }
         }
         .onChange(of: selectedCategoryID) { _, newValue in
             if let id = newValue,
@@ -73,8 +121,6 @@ struct CategoriesSummaryView: View {
         .padding()
     }
     
-    
-    // MARK: --- Category Cell (with Context Menu)
     @ViewBuilder
     private func categoryCell(for row: CategoryRow) -> some View {
         HStack {
@@ -85,105 +131,35 @@ struct CategoriesSummaryView: View {
         .contextMenu {
             Button("Transactions") {
                 let predicate = NSPredicate(format: "categoryCD == %d", row.id)
-                appStateOptional?.pushCentralView(.browseTransactions( predicate ) )
+                appStateOptional?.pushCentralView(.browseTransactions(predicate))
             }
         }
     }
     
-    
-    // MARK: --- Totals (Precompute totals as formatted strings)
-    private var totals: (total: String, totalCR: String, totalDR: String) {
-        var total: Decimal = 0
-        var totalCR: Decimal = 0
-        var totalDR: Decimal = 0
-
-        for tx in transactions {
-            let amount = tx.totalAmountInGBP
-            total += amount
-            if amount > 0 {
-                totalCR += amount
-            } else if amount < 0 {
-                totalDR += amount
-            }
-        }
-
-        return (
-            total: total.string2f,
-            totalCR: totalCR.string2f,
-            totalDR: totalDR.string2f,
-        )
-    }
-    
-
-    // MARK: --- Body
-    var body: some View {
-
-        VStack(alignment: .leading ) {
-            HStack ( spacing: 40) {
-                    Text("Total: \(totals.total) GBP")
-                    Text("Total CRs: \(totals.totalCR) GBP")
-                    Text("Total DRs: \(totals.totalDR) GBP")
-                }
-
-            .padding( .horizontal, 10 )
-            
-            categoriesTable
-                .navigationTitle("Transactions Summary")
-        }
-        .toolbar {
-            ToolbarItem(placement: .automatic) {
-                Button {
-                    printCategoriesSummary()
-                } label: {
-                    Label("Print Summary", systemImage: "printer")
-                }
+    private var printToolbarItem: some ToolbarContent {
+        ToolbarItem(placement: .automatic) {
+            Button {
+                printCategoriesSummary()
+            } label: {
+                Label("Print Summary", systemImage: "printer")
             }
         }
     }
 }
 
-
-// MARK: --- PRINT SUPPORT
-
-// MARK: --- CategoryPrintRow
-struct CategoryPrintRow: Identifiable {
-    let id: Int32
-    let name: String
-    let total: Decimal
-    
-    var totalString: String {
-        String(format: "%.2f", NSDecimalNumber(decimal: total).doubleValue)
-    }
-}
-
-
+// MARK: --- Print Support
 extension CategoriesSummaryView {
     
-    // MARK: --- PrintCategoriesSummary
     func printCategoriesSummary() {
-        
         #if os(macOS)
-        func formatLine(label: String, amount: Decimal) -> String {
-            let amountStr = String(format: "%.2f", NSDecimalNumber(decimal: amount).doubleValue)
-            let paddedLabel = label.padding(toLength: 30, withPad: " ", startingAt: 0)
-            let paddedAmount = String(repeating: " ", count: max(0, 15 - amountStr.count)) + amountStr
-            return "\(paddedLabel)\(paddedAmount)\n"
-        }
-        
         DispatchQueue.main.async {
-            // 1. Prepare data
+            // Prepare totals and rows
             let predicate = transactions.nsPredicate ?? NSPredicate(value: true)
             let totalsDecimal = viewContext.categoryTotals(for: predicate)
             
             let rows = Category.allCases
                 .sorted { $0.rawValue < $1.rawValue }
-                .map { category in
-                    CategoryPrintRow(
-                        id: category.id,
-                        name: category.description,
-                        total: totalsDecimal[category] ?? 0
-                    )
-                }
+                .map { CategoryPrintRow(id: $0.id, name: $0.description, total: totalsDecimal[$0] ?? 0) }
             
             var total: Decimal = 0
             var totalCR: Decimal = 0
@@ -194,109 +170,73 @@ extension CategoriesSummaryView {
                 if amount > 0 { totalCR += amount }
                 else if amount < 0 { totalDR += amount }
             }
-
-
-            //  Try to get Reconciliation (for current period & method)
-
-//            if let firstTx = transactions.first {
-//                reconciliation = try? Reconciliation.fetchPrevious(
-//                    for: firstTx.paymentMethod,
-//                    before: firstTx.transactionDate ?? Date(),
-//                    context: viewContext
-//                )
-//            } else {
-//                reconciliation = nil
-//            }
-            // 1. Fetch the selected reconciliation
+            
+            // Reconciliation info
             let reconciliation: Reconciliation? = {
                 if let recID = appStateOptional?.selectedReconciliationID,
                    let rec = try? viewContext.existingObject(with: recID) as? Reconciliation {
                     return rec
-                } else {
-                    return nil
                 }
+                return nil
             }()
             
-            // Extract data from Reconciliation
             var startBalance: Decimal = 0
             var endBalance: Decimal = 0
-//            if let firstTx = transactions.first,
-//               let context = firstTx.managedObjectContext,
-//               let reconciliation = try? Reconciliation.fetchPrevious(
-//                   for: firstTx.paymentMethod,
-//                   before: firstTx.transactionDate ?? Date(),
-//                   context: context
-//               ) {
             if let rec = reconciliation {
                 startBalance = rec.endingBalance
                 endBalance = startBalance + total
             }
-
-            // 2. Build report text
-            var report = "Category Summary Report"
             
-            // --- First line: payment method / account ---
-            if let rec = reconciliation {
-                report += " — \(rec.paymentMethod.description)\n"
-            } else {
-                report += "\n"
-            }
-
-            // --- Second line: accounting period, statement date, closed ---
+            // Build report text
+            let report = NSMutableString()
+            report.append("Category Summary Report")
+            if let rec = reconciliation { report.append(" — \(rec.paymentMethod.description)\n") }
+            else { report.append("\n") }
+            
             if let rec = reconciliation {
                 let period = "\(rec.periodMonth)/\(rec.periodYear)"
                 let statementDate = rec.statementDate?.formatted(date: .numeric, time: .omitted) ?? "-"
                 let closed = rec.closed ? "Closed" : "Open"
-                report += "\(period) | \(statementDate) | \(closed)\n\n"
-            } else {
-                report += "No reconciliation found\n\n"
-            }
-
-            // --- Category table header ---
-            report += String(format: "%-30@ %15@\n", "Category" as NSString, "Total" as NSString)
-            report += String(repeating: "-", count: 46) + "\n"
-
+                report.append("\(period) | \(statementDate) | \(closed)\n\n")
+            } else { report.append("No reconciliation found\n\n") }
+            
+            report.append(String(format: "%-30@ %15@\n", "Category" as NSString, "Total" as NSString))
+            report.append(String(repeating: "-", count: 46) + "\n")
             for row in rows {
-                let name = row.name.prefix(30)
-                let totalStr = String(format: "%.2f", NSDecimalNumber(decimal: row.total).doubleValue)
-                
-                // pad name on right, total on left for alignment
-                let paddedName = name.padding(toLength: 30, withPad: " ", startingAt: 0)
-                let paddedTotal = String(
-                    repeating: " ",
-                    count: max(0, 15 - totalStr.count)
-                ) + totalStr
-                
-                report += "\(paddedName)\(paddedTotal)\n"
+                let paddedName = row.name.padding(toLength: 30, withPad: " ", startingAt: 0)
+                let totalStr = row.totalString
+                let paddedTotal = String(repeating: " ", count: max(0, 15 - totalStr.count)) + totalStr
+                report.append("\(paddedName)\(paddedTotal)\n")
             }
             
-            report += "\n"
-            report += String(repeating: "-", count: 46) + "\n"
-
-            // --- Totals / starting & ending balances at the bottom ---
-            report += formatLine(label: "Starting Balance", amount: startBalance)
-            report += formatLine(label: "Total CR", amount: totalCR)
-            report += formatLine(label: "Total DR", amount: totalDR)
-            report += formatLine(label: "Net Total", amount: total)
-            report += formatLine(label: "Ending Balance", amount: endBalance)
-            report += "\n"
-
-            // 3. Create text view
+            report.append("\n" + String(repeating: "-", count: 46) + "\n")
+            func formatLine(label: String, amount: Decimal) -> String {
+                let amountStr = String(format: "%.2f", NSDecimalNumber(decimal: amount).doubleValue)
+                let paddedLabel = label.padding(toLength: 30, withPad: " ", startingAt: 0)
+                let paddedAmount = String(repeating: " ", count: max(0, 15 - amountStr.count)) + amountStr
+                return "\(paddedLabel)\(paddedAmount)\n"
+            }
+            
+            report.append(formatLine(label: "Starting Balance", amount: startBalance))
+            report.append(formatLine(label: "Total CR", amount: totalCR))
+            report.append(formatLine(label: "Total DR", amount: totalDR))
+            report.append(formatLine(label: "Net Total", amount: total))
+            report.append(formatLine(label: "Ending Balance", amount: endBalance))
+            
+            // Display report in NSTextView
             let textView = NSTextView(frame: NSRect(x: 0, y: 0, width: 595, height: 700))
-            textView.string = report
+            textView.string = report as String
             textView.font = NSFont.monospacedSystemFont(ofSize: 10, weight: .regular)
             textView.isEditable = false
             textView.sizeToFit()
             textView.isHorizontallyResizable = false
             textView.isVerticallyResizable = true
             
-            // 4. Print operation
             let printOp = NSPrintOperation(view: textView)
             printOp.showsPrintPanel = true
             printOp.showsProgressPanel = true
             printOp.run()
         }
-#endif
+        #endif
     }
-
 }

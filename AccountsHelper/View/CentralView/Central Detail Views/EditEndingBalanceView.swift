@@ -17,49 +17,68 @@ struct EditReconcilationView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(AppState.self) private var appState
     
-    // MARK: --- Local State
+    // MARK: --- State
     @State private var endingBalance: String = ""
     @State private var reconciliation: Reconciliation?
     
     // MARK: --- Body
     var body: some View {
         VStack(spacing: 20) {
-            if let _  = reconciliation {
-                Text("Edit Reconcilation")
-                    .font(.title2)
-                    .bold()
-                
-                Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 12) {
-                    GridRow {
-                        Text("Ending Balance:")
-                            .frame(width: 140, alignment: .trailing)
-                        TextField("0.00", text: $endingBalance)
-                            .textFieldStyle(.roundedBorder)
-                            .frame(width: 120)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 4)
-                                    .stroke(isEndingBalanceValid ? Color.clear : Color.red, lineWidth: 1)
-                            )
-                    }
-                }
-                
-                Divider()
-                
-                HStack {
-                    Spacer()
-                    Button("Cancel") { dismiss() }
-                    Button("Save") { saveEndingBalanceValue() }
-                        .keyboardShortcut(.defaultAction)
-                        .disabled(!isEndingBalanceValid)
-                }
-            } else {
-                Text("No reconciliation selected")
-                    .foregroundColor(.gray)
-            }
+            header
+            formGrid
+            Divider()
+            actionButtons
         }
         .padding(24)
         .frame(minWidth: 500, minHeight: 160)
         .onAppear { loadReconciliation() }
+    }
+    
+    // MARK: --- Header
+    @ViewBuilder
+    private var header: some View {
+        if reconciliation != nil {
+            Text("Edit Reconcilation")
+                .font(.title2)
+                .bold()
+        } else {
+            Text("No reconciliation selected")
+                .foregroundColor(.gray)
+        }
+    }
+    
+    // MARK: --- Form Grid
+    @ViewBuilder
+    private var formGrid: some View {
+        if reconciliation != nil {
+            Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 12) {
+                GridRow {
+                    Text("Ending Balance:")
+                        .frame(width: 140, alignment: .trailing)
+                    TextField("0.00", text: $endingBalance)
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 120)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 4)
+                                .stroke(isEndingBalanceValid ? Color.clear : Color.red, lineWidth: 1)
+                        )
+                }
+            }
+        }
+    }
+    
+    // MARK: --- Action Buttons
+    @ViewBuilder
+    private var actionButtons: some View {
+        if reconciliation != nil {
+            HStack {
+                Spacer()
+                Button("Cancel") { dismiss() }
+                Button("Save") { saveEndingBalanceValue() }
+                    .keyboardShortcut(.defaultAction)
+                    .disabled(!isEndingBalanceValid)
+            }
+        }
     }
     
     // MARK: --- Helpers
@@ -86,5 +105,13 @@ struct EditReconcilationView: View {
             print("Failed to save ending balance: \(error)")
             context.rollback()
         }
+    }
+}
+
+// MARK: --- Preview
+struct EditReconcilationView_Previews: PreviewProvider {
+    static var previews: some View {
+        EditReconcilationView()
+            .frame(width: 500, height: 200)
     }
 }

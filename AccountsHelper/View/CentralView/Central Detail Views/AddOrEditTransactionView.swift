@@ -1,5 +1,5 @@
 //
-//  EditTransactionView.swift
+//  AddOrEditTransactionView.swift
 //  AccountsHelper
 //
 //  Created by Anthony Stanners on 13/09/2025.
@@ -12,28 +12,29 @@ fileprivate let hStackSpacing: CGFloat = 12.0
 fileprivate let labelWidth: CGFloat = 120
 fileprivate let rowHeight: CGFloat = 44
 
-// Focus identifiers for amount fields
+// MARK: - Focus identifiers for amount fields
 enum AmountFieldIdentifier: Hashable {
-    case main
-    case split1
+    case mainAmountField
+    case splitAmountField
 }
 
-
-struct EditTransactionView: View {
+// MARK: - Main View
+struct AddOrEditTransactionView: View {
+    // MARK: Environment
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(AppState.self) var appState
     @Environment(\.dismiss) private var dismiss
 
+    // MARK: State
     @State private var transactionData: TransactionStruct
     @State private var splitTransaction: Bool
-
-    var existingTransaction: Transaction? // keep reference if editing
-    var onSave: ((TransactionStruct) -> Void)?
-
     @FocusState private var focusedField: AmountFieldIdentifier?
 
-    // MARK: - Init
-    
+    // MARK: External
+    var existingTransaction: Transaction?
+    var onSave: ((TransactionStruct) -> Void)?
+
+    // MARK: Init
     init(transaction: Transaction? = nil, onSave: ((TransactionStruct) -> Void)? = nil) {
         if let transaction {
             let structData = TransactionStruct(from: transaction)
@@ -47,7 +48,7 @@ struct EditTransactionView: View {
         self.onSave = onSave
     }
 
-    // MARK: - Validation
+    // MARK: Validation
     private var canSave: Bool {
         guard let txDate = transactionData.transactionDate else { return false }
         return txDate <= Date() &&
@@ -55,185 +56,154 @@ struct EditTransactionView: View {
             (transactionData.payee?.isEmpty == false) &&
             transactionData.category != .unknown &&
             (transactionData.currency == .GBP ||
-              (transactionData.exchangeRate != 0 && (transactionData.currency == .JPY ? transactionData.exchangeRate < 300 : true)))
-    }
-    
-    // MARK: --- Reset
-    func resetForm() {
-        transactionData = TransactionStruct()
-        transactionData.setDefaults()
+             (transactionData.exchangeRate != 0 && (transactionData.currency == .JPY ? transactionData.exchangeRate < 300 : true)))
     }
 
-    // MARK: - Save
-    private func saveTransaction() {
-        let tx = existingTransaction ?? Transaction(context: viewContext)
-        transactionData.apply(to: tx) // update Core Data object
-
-        do {
-            try viewContext.save()
-            print("Transaction saved!")
-        } catch {
-            print("Failed to save transaction: \(error)")
-            assert(false)
-        }
-
-        // Update the CategoryMatcher
-        let matcher = CategoryMatcher(context: viewContext)
-        if let payee = transactionData.payee {
-            matcher.teachMapping(for: payee, category: transactionData.category)
-        }
-    }
-
-    // MARK: - Body
+    // MARK: Body
     var body: some View {
         ScrollView {
             VStack(spacing: 10) {
+                header
+                mainFields
+                splitSection
+                Spacer()
+                actionButtons
+            }
+            .frame(maxWidth: 700)
+            .font(.system(size: 11))
+            .padding()
+            .onTapGesture { focusedField = nil }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
 
-                Text(existingTransaction == nil ? "Add Transaction" : "Edit Transaction")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                    .padding(.top, 16)
-                    .padding(.horizontal, 14)
-          
-                LabeledDatePicker(
-                    label: "TX Date",
-                    date: Binding(get: { transactionData.transactionDate ?? Date() },
-                                  set: { transactionData.transactionDate = $0 }),
-                    displayedComponents: [.date],
-                    isValid: transactionData.isTransactionDateValid()
-                )
-                
-                LabeledPicker(label: "Payer", selection: $transactionData.payer, isValid: transactionData.isPayerValid())
+    // MARK: Header
+    private var header: some View {
+        Text(existingTransaction == nil ? "Add Transaction" : "Edit Transaction")
+            .font(.title2)
+            .fontWeight(.semibold)
+            .padding(.top, 16)
+            .padding(.horizontal, 14)
+    }
 
-                LabeledPicker(label: "Currency", selection: $transactionData.currency, isValid: transactionData.isCurrencyValid() )
-
-                if transactionData.currency != .GBP {
-                    LabeledDecimalField(label: "Exchange Rate",
-                                        amount: $transactionData.exchangeRate,
-                                        isValid: transactionData.isExchangeRateValid())
-                }
-
-                LabeledPicker(label: "Debit/Credit", selection: $transactionData.debitCredit, isValid: transactionData.debitCredit != .unknown)
-
-                LabeledDecimalWithFX(label: "Amount",
-                                     amount: $transactionData.txAmount,
-                                     currency: $transactionData.currency,
-                                     fxRate: $transactionData.exchangeRate,
-                                     isValid: transactionData.isTXAmountValid(),
-                                     displayOnly: false)
-                    .focused($focusedField, equals: .main)
-
-                LabeledPicker(label: "Payment Method", selection: $transactionData.paymentMethod, isValid: transactionData.isPaymentMethodValid())
-                
-                LabeledTextField(
-                    label: "Payee",
-                    text: Binding(
-                        get: { transactionData.payee ?? "" },   // provide default if nil
-                        set: { transactionData.payee = $0 }
-                    ),
-                    isValid: transactionData.isPayeeValid()
-                )
+    // MARK: Main Fields
+    private var mainFields: some View {
+        VStack(spacing: 6) {
+            LabeledDatePicker(
+                label: "TX Date",
+                date: Binding(
+                    get: { transactionData.transactionDate ?? Date() },
+                    set: { transactionData.transactionDate = $0 }
+                ),
+                displayedComponents: [.date],
+                isValid: transactionData.isTransactionDateValid()
+            )
+            LabeledPicker(label: "Payer", selection: $transactionData.payer, isValid: transactionData.isPayerValid())
+            LabeledPicker(label: "Currency", selection: $transactionData.currency, isValid: transactionData.isCurrencyValid())
+            
+            if transactionData.currency != .GBP {
+                LabeledDecimalField(label: "Exchange Rate", amount: $transactionData.exchangeRate, isValid: transactionData.isExchangeRateValid())
+            }
+            
+            LabeledPicker(label: "Debit/Credit", selection: $transactionData.debitCredit, isValid: transactionData.debitCredit != .unknown)
+            LabeledDecimalWithFX(label: "Amount", amount: $transactionData.txAmount, currency: $transactionData.currency, fxRate: $transactionData.exchangeRate, isValid: transactionData.isTXAmountValid(), displayOnly: false)
+                .focused($focusedField, equals: .mainAmountField)
+            LabeledPicker(label: "Payment Method", selection: $transactionData.paymentMethod, isValid: transactionData.isPaymentMethodValid())
+            LabeledTextField(label: "Payee", text: Binding(get: { transactionData.payee ?? "" }, set: { transactionData.payee = $0 }), isValid: transactionData.isPayeeValid())
                 .onChange(of: transactionData.payee) { _, newValue in
                     guard let payee = newValue, !payee.isEmpty else { return }
                     let matcher = CategoryMatcher(context: viewContext)
                     transactionData.category = matcher.matchCategory(for: payee)
                 }
+            LabeledPicker(label: "Category", selection: $transactionData.category, isValid: transactionData.isCategoryValid())
+            LabeledTextField(label: "Explanation", text: Binding(get: { transactionData.explanation ?? "" }, set: { transactionData.explanation = $0 }), isValid: true)
+        }
+    }
 
-                LabeledPicker(label: "Category", selection: $transactionData.category, isValid: transactionData.isCategoryValid())
-
-//                LabeledTextField(label: "Explanation",
-//                                 text: Binding($transactionData.explanation, defaultValue: ""),
-//                                 isValid: true)
-
-                LabeledTextField(
-                    label: "Explanation",
-                    text: Binding(
-                        get: { transactionData.explanation ?? "" },   // provide default if nil
-                        set: { transactionData.explanation = $0 }
-                    ),
-                    isValid: true
-                )
-                
-                // MARK: --- Split Transaction
-                if !splitTransaction {
-                    Button("Split Transaction") {
-                        splitTransaction = true
-                        let half = (transactionData.txAmount / 2).rounded(scale: 2, roundingMode: .up)
-                        transactionData.splitAmount = half
-                        transactionData.splitCategory = .unknown
-                    }
-                    .buttonStyle(.borderedProminent)
-                } else {
-                    Button("Unsplit Transaction") {
-                        splitTransaction = false
-                        transactionData.splitAmount = 0
-                        transactionData.splitCategory = .unknown
-                    }
-                    .buttonStyle(.borderedProminent)
-
-                    VStack(spacing: 0) {
-                        // --- Split 1 (editable)
-                        LabeledDecimalWithFX(label: "Split",
-                                             amount: $transactionData.splitAmount,
-                                             currency: $transactionData.currency,
-                                             fxRate: $transactionData.exchangeRate,
-                                             isValid: transactionData.isSplitAmountValid())
-                            .focused($focusedField, equals: .split1)
-
-                        LabeledPicker(label: "Split Category", selection: $transactionData.splitCategory, isValid: transactionData.isSplitCategoryValid())
-
-                        // --- Split 2 (display-only)
-                        LabeledDecimalWithFX(label: "Remainder",
-                                             amount: Binding(get: { transactionData.splitRemainderAmount },
-                                                             set: { _ in }),
-                                             currency: $transactionData.currency,
-                                             fxRate: $transactionData.exchangeRate,
-                                             isValid: true,
-                                             displayOnly: true)
-
-                        LabeledPicker(label: "Remainder Category", selection: $transactionData.category, isValid: transactionData.isSplitRemainderCategoryValid())
-                    }
+    // MARK: Split Section
+    private var splitSection: some View {
+        VStack(spacing: 8) {
+            if !splitTransaction {
+                Button("Split Transaction") {
+                    splitTransaction = true
+                    let half = (transactionData.txAmount / 2).rounded(scale: 2, roundingMode: .up)
+                    transactionData.splitAmount = half
+                    transactionData.splitCategory = .unknown
                 }
-
-                Spacer()
-
-                HStack {
-                    Spacer()
-                    Button("Don't Save", role: .cancel) {
-                        appState.popCentralView()
-                        resetForm()
-#if os(iOS)
-                        dismiss()
-#endif
-                    }
-                    .padding()
-                    
-                    Button("Save") {
-                        saveTransaction()
-                        appState.popCentralView()
-                        resetForm()
-#if os(iOS)
-                        dismiss()
-#endif
-                    }
-                    .disabled(!transactionData.isValid())
-                    .buttonStyle(.borderedProminent)
-                    .padding()
-                    Spacer()
+                .buttonStyle(.borderedProminent)
+            } else {
+                Button("Unsplit Transaction") {
+                    splitTransaction = false
+                    transactionData.splitAmount = 0
+                    transactionData.splitCategory = .unknown
                 }
-            }
-            .frame(maxWidth: 700)
-            .font(.system(size: 11))
-            .padding()
-            .onTapGesture {
-                focusedField = nil
+                .buttonStyle(.borderedProminent)
+
+                VStack(spacing: 0) {
+                    LabeledDecimalWithFX(label: "Split", amount: $transactionData.splitAmount, currency: $transactionData.currency, fxRate: $transactionData.exchangeRate, isValid: transactionData.isSplitAmountValid())
+                        .focused($focusedField, equals: .splitAmountField)
+                    LabeledPicker(label: "Split Category", selection: $transactionData.splitCategory, isValid: transactionData.isSplitCategoryValid())
+                    LabeledDecimalWithFX(label: "Remainder", amount: Binding(get: { transactionData.splitRemainderAmount }, set: { _ in }), currency: $transactionData.currency, fxRate: $transactionData.exchangeRate, isValid: true, displayOnly: true)
+                    LabeledPicker(label: "Remainder Category", selection: $transactionData.category, isValid: transactionData.isSplitRemainderCategoryValid())
+                }
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    // MARK: Action Buttons
+    private var actionButtons: some View {
+        HStack {
+            Spacer()
+            Button("Don't Save", role: .cancel) {
+                appState.popCentralView()
+                resetForm()
+#if os(iOS)
+                dismiss()
+#endif
+            }
+            .padding()
+
+            Button("Save") {
+                saveTransaction()
+                appState.popCentralView()
+                resetForm()
+#if os(iOS)
+                dismiss()
+#endif
+            }
+            .disabled(!transactionData.isValid())
+            .buttonStyle(.borderedProminent)
+            .padding()
+            Spacer()
+        }
+    }
+
+    // MARK: - Helpers
+    private func resetForm() {
+        transactionData = TransactionStruct()
+        transactionData.setDefaults()
+    }
+
+    private func saveTransaction() {
+        let tx = existingTransaction ?? Transaction(context: viewContext)
+        transactionData.apply(to: tx)
+
+        do {
+            try viewContext.save()
+        } catch {
+            print("Failed to save transaction: \(error)")
+            viewContext.rollback()
+        }
+
+        if let payee = transactionData.payee {
+            let matcher = CategoryMatcher(context: viewContext)
+            matcher.teachMapping(for: payee, category: transactionData.category)
+        }
     }
 }
 
 
+// MARK: --- LabeledDatePicker
 #if os(iOS)
 struct LabeledDatePicker: View {
     let label: String
@@ -306,7 +276,7 @@ struct LabeledDatePicker: View {
 }
 #endif
 
-// MARK: --- Generic Picker Field
+// MARK: --- LabeledPicker<T>
 #if os(iOS)
 struct LabeledPicker<T: CaseIterable & Hashable & CustomStringConvertible>: View where T.AllCases: RandomAccessCollection {
     let label: String
@@ -385,7 +355,7 @@ struct LabeledPicker<T: CaseIterable & Hashable>: View where T.AllCases: RandomA
 }
 #endif
 
-// MARK: --- Generic Number Field
+// MARK: --- LabeledDecimalField
 #if os(iOS)
 struct LabeledDecimalField: View {
     let label: String
@@ -478,15 +448,15 @@ struct LabeledDecimalField: View {
         }
         .contentShape(Rectangle())
         .onTapGesture {
-#if os(iOS)
+//#if os(iOS)
             focused = true
-#endif
+//#endif
         }
     }
 }
 #endif
 
-// MARK: --- Generic Number Field with FX
+// MARK: --- LabeledDecimalWithFX
 #if os(iOS)
 struct LabeledDecimalWithFX: View {
     
@@ -601,7 +571,7 @@ struct LabeledDecimalWithFX: View {
     var displayOnly: Bool = false  // display-only mode
     
     @FocusState var focusedField: AmountFieldIdentifier?
-    var fieldID: AmountFieldIdentifier = .main
+    var fieldID: AmountFieldIdentifier = .mainAmountField
     
     @State private var text: String = ""
     
@@ -671,7 +641,7 @@ struct LabeledDecimalWithFX: View {
 #endif
 
 
-// MARK: --- Generic Text Field
+// MARK: --- LabeledTextField
 #if os(iOS)
 struct LabeledTextField: View {
     let label: String
