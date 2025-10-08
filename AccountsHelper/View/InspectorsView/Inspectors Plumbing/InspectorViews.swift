@@ -1,6 +1,6 @@
 //
 //  InspectorViews.swift
-// From SkeletonMacOSApp
+//  From SkeletonMacOSApp
 //
 //  Created by Anthony Stanners on 08/09/2025.
 //
@@ -9,14 +9,15 @@ import SwiftUI
 import CoreData
 import ItMkLibrary
 
+// MARK: --- InspectorViews
 struct InspectorViews: View {
     
+    // MARK: --- Environment
     @Environment(AppState.self) var appState
     
     // MARK: --- Body
     var body: some View {
-        
-        VStack (spacing: 0) {
+        VStack(spacing: 0) {
             
             switch appState.selectedInspectorView {
                 
@@ -27,22 +28,19 @@ struct InspectorViews: View {
                 InspectCategoryBreakdown()
                 
             case .viewReconciliation:
-                InspectReconciliation()
+                InspectorReconciliation()
                 
             case .InspectorViewThree:
                 InspectorViewThree()
                 
-//            default:
-//                Text("Select an action from the toolbar" )
-                
             case .emptyView:
-                Text("Select an action from the toolbar" )
+                Text("Select an action from the toolbar")
                     .foregroundColor(.gray)
                     .font(.headline)
-
             }
-        } .frame(maxWidth: .infinity, maxHeight: .infinity)
-          .background( Color( Color.ItMkPlatformWindowBackgroundColor ) )
-          .if( gViewCheck ) { view in view.border( .red )}
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(Color.ItMkPlatformWindowBackgroundColor))
+        .if(gViewCheck) { view in view.border(.red) }
     }
 }

@@ -9,35 +9,40 @@ import SwiftUI
 import CoreData
 import Observation
 
+// MARK: --- InspectTransaction
 struct InspectTransaction: View {
+    
+    // MARK: --- Environment
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(AppState.self) var appState
-
+    
+    // MARK: --- Selected Transaction
     var transaction: Transaction? {
         guard let id = appState.selectedTransactionID else { return nil }
         return try? viewContext.existingObject(with: id) as? Transaction
     }
-
+    
+    // MARK: --- Body
     var body: some View {
         GeometryReader { geo in
             if let transaction {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 20) {
                         
-                        // MARK: - Header
+                        // MARK: --- Header
                         Text("Transaction Details")
                             .font(.title2)
                             .bold()
                             .padding(.bottom, 10)
                         
-                        // MARK: - General Section
+                        // MARK: --- General Section
                         inspectorSection("General") {
                             transactionRow("Timestamp:", transaction.timestamp?.formatted(date: .abbreviated, time: .standard) ?? "N/A")
                             Divider()
                             transactionRow("TX Date:", transaction.transactionDate?.formatted(date: .abbreviated, time: .standard) ?? "N/A")
                         }
                         
-                        // MARK: - Categories Section (optional)
+                        // MARK: --- Categories Section
                         inspectorSection("Categories") {
                             transactionRow("Category:", transaction.category.description)
                             Divider()
@@ -46,7 +51,7 @@ struct InspectTransaction: View {
                             transactionRow("Rem Cat:", transaction.splitRemainderCategory.description)
                         }
                         
-                        // MARK: - Amounts Section
+                        // MARK: --- Amounts Section
                         inspectorSection("Amounts") {
                             transactionRow("Currency:", transaction.currency.description)
                             Divider()
@@ -65,7 +70,7 @@ struct InspectTransaction: View {
                             transactionRow("Total in GBP:", String(format: "%.2f", (transaction.totalAmountInGBP as NSDecimalNumber?)?.doubleValue ?? 0))
                         }
                         
-                        // MARK: - Parties Section
+                        // MARK: --- Parties Section
                         inspectorSection("Parties") {
                             transactionRow("Payee:", transaction.payee ?? "N/A")
                             Divider()
@@ -86,6 +91,7 @@ struct InspectTransaction: View {
                             Divider()
                             transactionRow("Explanation:", transaction.explanation ?? "N/A")
                         }
+                        
                         Spacer(minLength: 20)
                     }
                     .padding(20)
@@ -94,14 +100,16 @@ struct InspectTransaction: View {
                     .padding()
                 }
                 .id(appState.inspectorRefreshTrigger)
+                
             } else {
                 Text("No Transaction Selected")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .foregroundColor(.gray)
             }
         }
     }
-
-    // MARK: - Section Wrapper
+    
+    // MARK: --- Section Wrapper
     @ViewBuilder
     private func inspectorSection<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 5) {
@@ -117,16 +125,15 @@ struct InspectTransaction: View {
         }
         .padding(.vertical, 5)
     }
-
-    // MARK: - Row Helper
+    
+    // MARK: --- Row Helper
     @ViewBuilder
     private func transactionRow(_ label: String, _ value: String) -> some View {
         HStack(alignment: .top, spacing: 8) {
             Text(label)
                 .font(.system(.body, weight: .medium))
                 .foregroundColor(.secondary)
-                .frame(minWidth: 80, alignment: .trailing) // minimum width to avoid cropping
-                .alignmentGuide(.leading) { d in d[.leading] }
+                .frame(minWidth: 80, alignment: .trailing)
             Text(value)
                 .font(.system(.body))
                 .frame(maxWidth: .infinity, alignment: .leading)

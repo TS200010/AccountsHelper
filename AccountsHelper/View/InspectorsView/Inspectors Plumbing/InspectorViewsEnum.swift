@@ -7,6 +7,7 @@
 
 import CoreData
 
+// MARK: ---InspectorViewsEnum
 enum InspectorViewsEnum: Equatable {
     case emptyView
     case viewTransaction

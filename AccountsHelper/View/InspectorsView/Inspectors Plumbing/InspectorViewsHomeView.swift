@@ -8,6 +8,7 @@
 import SwiftUI
 import ItMkLibrary
 
+// MARK: --- InspectorViewsHomeView
 struct InspectorViewsHomeView: View {
     
     // MARK: --- Body
@@ -19,8 +20,9 @@ struct InspectorViewsHomeView: View {
             
             InspectorViews( )
             
-        }.frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background( Color( Color.ItMkPlatformTextBackgroundColor ) )
-         .if( gViewCheck ) { view in view.border( .red )}
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background( Color( Color.ItMkPlatformTextBackgroundColor ) )
+        .if( gViewCheck ) { view in view.border( .red )}
     }
 }

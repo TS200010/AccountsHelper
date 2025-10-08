@@ -1,5 +1,5 @@
 //
-//  InspectReconciliation.swift
+//  InspectorReconciliation.swift
 //  AccountsHelper
 //
 //  Created by Anthony Stanners on 03/10/2025.
@@ -8,7 +8,8 @@
 import SwiftUI
 import CoreData
 
-struct InspectReconciliation: View {
+// MARK: --- InspectorReconciliation
+struct InspectorReconciliation: View {
     
     // MARK: --- Environment
     @Environment(\.managedObjectContext) private var viewContext
@@ -22,7 +23,7 @@ struct InspectReconciliation: View {
         return df
     }()
     
-    // MARK: --- Reconciliation
+    // MARK: --- Reconciliation Accessors
     private var reconciliation: Reconciliation? {
         guard let id = appState.selectedReconciliationID else { return nil }
         return try? viewContext.existingObject(with: id) as? Reconciliation
@@ -48,10 +49,9 @@ struct InspectReconciliation: View {
                             .bold()
                             .padding(.bottom, 10)
                         
-                        // Payment Method
+                        // MARK: --- Payment Method
                         HStack {
-                            Text("Payment Method:")
-                                .bold()
+                            Text("Payment Method:").bold()
                             Text(rec.paymentMethod.description)
                             Spacer()
                         }
@@ -59,10 +59,9 @@ struct InspectReconciliation: View {
                         .background(.ultraThinMaterial)
                         .cornerRadius(12)
                         
-                        // Accounting Period
+                        // MARK: --- Accounting Period
                         HStack {
-                            Text("Accounting Period:")
-                                .bold()
+                            Text("Accounting Period:").bold()
                             Text(rec.accountingPeriod.displayStringWithOpening)
                             Spacer()
                         }
@@ -70,10 +69,9 @@ struct InspectReconciliation: View {
                         .background(.ultraThinMaterial)
                         .cornerRadius(12)
                         
-                        // Balance
+                        // MARK: --- Balance
                         HStack {
-                            Text("Balance:")
-                                .bold()
+                            Text("Balance:").bold()
                             Text("\(rec.endingBalance.formatted(.number.precision(.fractionLength(2)))) \(rec.currency.description)")
                             Spacer()
                         }
@@ -81,56 +79,40 @@ struct InspectReconciliation: View {
                         .background(.ultraThinMaterial)
                         .cornerRadius(12)
                         
-                        // Statement Date
+                        // MARK: --- Statement Date
                         HStack {
-                            Text("Statement Date:")
-                                .bold()
-                            Text(rec.statementDate != nil ? dateFormatter.string(from: rec.statementDate!) : "N/A")
+                            Text("Statement Date:").bold()
+                            Text(rec.statementDate.map { dateFormatter.string(from: $0) } ?? "N/A")
                             Spacer()
                         }
                         .padding()
                         .background(.ultraThinMaterial)
                         .cornerRadius(12)
                         
-                        // Balance Status
+                        // MARK: --- Balance Status
                         HStack {
-                            Text("Status:")
-                                .bold()
-                            VStack(alignment: .leading) {
-//                                Text(isBalanced ? "Balanced ✅" : "Unbalanced ⚠️")
-//                                    .foregroundColor(isBalanced ? .green : .red)
-                                HStack(spacing: 4) {
-                                    if isBalanced {
-                                        Text("Balanced")
-                                            .foregroundColor(.green)
-                                        Image(systemName: "checkmark.circle.fill")
-                                            .foregroundColor(.green)
-                                            .font(.title3)
-                                    } else {
-                                        Text("Unbalanced")
-                                            .foregroundColor(.red)
-                                        Image(systemName: "exclamationmark.triangle.fill")
-                                            .foregroundColor(.red)
-                                            .font(.title3)
-                                    }
+                            Text("Status:").bold()
+                            HStack(spacing: 4) {
+                                if isBalanced {
+                                    Text("Balanced").foregroundColor(.green)
+                                    Image(systemName: "checkmark.circle.fill").foregroundColor(.green).font(.title3)
+                                } else {
+                                    Text("Unbalanced").foregroundColor(.red)
+                                    Image(systemName: "exclamationmark.triangle.fill").foregroundColor(.red).font(.title3)
                                 }
-                                .font(.body)
                             }
+                            .font(.body)
                             Spacer()
                         }
                         .padding()
                         .background(.ultraThinMaterial)
                         .cornerRadius(12)
                         
-                        // Balance Status
+                        // MARK: --- Out of Balance Amount
                         if !isBalanced {
                             HStack {
-                                Text("Out of balance amount: ")
-                                    .bold()
-                                
-                                Text("\(reconciliationGap.formatted(.number.precision(.fractionLength(2)))) \(reconciliation?.currency.description ?? "")")
-                                    .foregroundColor(.primary) // black text
-                                
+                                Text("Out of balance amount:").bold()
+                                Text("\(reconciliationGap.formatted(.number.precision(.fractionLength(2)))) \(rec.currency.description)")
                                 Spacer()
                             }
                             .padding()
@@ -138,30 +120,19 @@ struct InspectReconciliation: View {
                             .cornerRadius(12)
                         }
                         
-                        // Closed Status
+                        // MARK: --- Closed Status
                         HStack {
-                            Text("Closed:")
-                                .bold()
-                            VStack(alignment: .leading) {
-//                                Text(rec.closed ? "Closed ✅" : "Not Closed ⚠️")
-//                                    .foregroundColor(rec.closed ? .blue : .red)
-                                HStack(spacing: 4) {
-                                    if rec.closed {
-                                        Text("Closed")
-                                            .foregroundColor(.blue)
-                                        Image(systemName: "checkmark.circle.fill")
-                                            .foregroundColor(.blue)
-                                            .font(.title3)
-                                    } else {
-                                        Text("Not Closed")
-                                            .foregroundColor(.red)
-                                        Image(systemName: "exclamationmark.triangle.fill")
-                                            .foregroundColor(.red)
-                                            .font(.title3)
-                                    }
+                            Text("Closed:").bold()
+                            HStack(spacing: 4) {
+                                if rec.closed {
+                                    Text("Closed").foregroundColor(.blue)
+                                    Image(systemName: "checkmark.circle.fill").foregroundColor(.blue).font(.title3)
+                                } else {
+                                    Text("Not Closed").foregroundColor(.red)
+                                    Image(systemName: "exclamationmark.triangle.fill").foregroundColor(.red).font(.title3)
                                 }
-                                .font(.body)
                             }
+                            .font(.body)
                             Spacer()
                         }
                         .padding()
@@ -173,7 +144,9 @@ struct InspectReconciliation: View {
                     .padding(20)
                 }
                 .id(appState.inspectorRefreshTrigger)
+                
             } else {
+                // No reconciliation selected
                 Text("No Reconciliation Selected")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .foregroundColor(.gray)
