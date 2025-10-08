@@ -12,29 +12,29 @@ fileprivate let hStackSpacing: CGFloat = 12.0
 fileprivate let labelWidth: CGFloat = 120
 fileprivate let rowHeight: CGFloat = 44
 
-// MARK: - Focus identifiers for amount fields
+// MARK: --- Focus identifiers for amount fields
 enum AmountFieldIdentifier: Hashable {
     case mainAmountField
     case splitAmountField
 }
 
-// MARK: - Main View
+// MARK: --- Main View
 struct AddOrEditTransactionView: View {
-    // MARK: Environment
+    // MARK: --- Environment
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(AppState.self) var appState
     @Environment(\.dismiss) private var dismiss
 
-    // MARK: State
+    // MARK: --- State
     @State private var transactionData: TransactionStruct
     @State private var splitTransaction: Bool
     @FocusState private var focusedField: AmountFieldIdentifier?
 
-    // MARK: External
+    // MARK: --- External
     var existingTransaction: Transaction?
     var onSave: ((TransactionStruct) -> Void)?
 
-    // MARK: Init
+    // MARK: --- Init
     init(transaction: Transaction? = nil, onSave: ((TransactionStruct) -> Void)? = nil) {
         if let transaction {
             let structData = TransactionStruct(from: transaction)
@@ -48,7 +48,22 @@ struct AddOrEditTransactionView: View {
         self.onSave = onSave
     }
 
-    // MARK: Validation
+    init(transactionID: NSManagedObjectID?, context: NSManagedObjectContext, onSave: ((TransactionStruct) -> Void)? = nil) {
+        if let transactionID,
+           let transaction = try? context.existingObject(with: transactionID) as? Transaction {
+            let structData = TransactionStruct(from: transaction)
+            _transactionData = State(initialValue: structData)
+            _splitTransaction = State(initialValue: structData.isSplit)
+            self.existingTransaction = transaction
+        } else {
+            _transactionData = State(initialValue: TransactionStruct())
+            _splitTransaction = State(initialValue: false)
+            self.existingTransaction = nil
+        }
+        self.onSave = onSave
+    }
+    
+    // MARK: --- Validation
     private var canSave: Bool {
         guard let txDate = transactionData.transactionDate else { return false }
         return txDate <= Date() &&
@@ -59,7 +74,7 @@ struct AddOrEditTransactionView: View {
              (transactionData.exchangeRate != 0 && (transactionData.currency == .JPY ? transactionData.exchangeRate < 300 : true)))
     }
 
-    // MARK: Body
+    // MARK: --- Body
     var body: some View {
         ScrollView {
             VStack(spacing: 10) {
@@ -77,7 +92,7 @@ struct AddOrEditTransactionView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    // MARK: Header
+    // MARK: --- Header
     private var header: some View {
         Text(existingTransaction == nil ? "Add Transaction" : "Edit Transaction")
             .font(.title2)
@@ -86,7 +101,7 @@ struct AddOrEditTransactionView: View {
             .padding(.horizontal, 14)
     }
 
-    // MARK: Main Fields
+    // MARK: --- Main Fields
     private var mainFields: some View {
         VStack(spacing: 6) {
             LabeledDatePicker(
@@ -120,7 +135,7 @@ struct AddOrEditTransactionView: View {
         }
     }
 
-    // MARK: Split Section
+    // MARK: --- Split Section
     private var splitSection: some View {
         VStack(spacing: 8) {
             if !splitTransaction {
@@ -150,7 +165,7 @@ struct AddOrEditTransactionView: View {
         }
     }
 
-    // MARK: Action Buttons
+    // MARK: --- Action Buttons
     private var actionButtons: some View {
         HStack {
             Spacer()
@@ -178,7 +193,7 @@ struct AddOrEditTransactionView: View {
         }
     }
 
-    // MARK: - Helpers
+    // MARK: --- Helpers
     private func resetForm() {
         transactionData = TransactionStruct()
         transactionData.setDefaults()

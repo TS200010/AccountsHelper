@@ -230,6 +230,16 @@ struct BrowseTransactionsView: View {
         } message: {
             Text("This action cannot be undone (unless you press Undo).")
         }
+#if os(iOS)
+        .sheet(isPresented: $showingEditTransactionView) {
+            Text("EDIT HERE\(selectedTransactionIDs.first)")
+            if selectedTransactionIDs.first != nil {
+                AddOrEditTransactionView(transactionID: selectedTransactionIDs.first, context: viewContext )
+            } else {
+                Text("No transaction selected")
+            }
+        }
+#endif
     }
 }
 
@@ -316,7 +326,12 @@ extension BrowseTransactionsView {
             TableColumn("Payee") { tableCell($0.payee, for: $0) }
                 .width(min: 50, ideal: 100, max: 300)
 #else
-            TableColumn("Transaction") { tableCell($0.iOSRowForDisplay, for: $0) }
+            TableColumn("Transaction") { row in
+                tableCell(row.iOSRowForDisplay, for: row)
+                    .onTapGesture {
+                        selectedTransactionIDs = [row.id]
+                    }
+            }
 #endif
         }
         .font(.system(.body, design: .monospaced))
@@ -337,6 +352,14 @@ extension BrowseTransactionsView {
     // MARK: --- SortContextMenu
     @ViewBuilder
     private func SortContextMenu() -> some View {
+#if os(iOS)
+        Button {
+            //            appState.selectedTransactionID = selectedTransactionIDs.first
+            showingEditTransactionView = true
+        } label: {
+            Label("Edit", systemImage: "circle.badge.xmark")
+        }
+#endif
         ForEach(SortColumn.allCases) { column in
             Button {
                 updateSortColumn(column)
