@@ -5,18 +5,24 @@ import Testing
 
 // MARK: --- Mock Importer for Testing
 struct MockImporter: TxImporter {
+    
+    @MainActor
+    static func importTransactions(fileURL: URL, context: NSManagedObjectContext, mergeHandler: @MainActor @Sendable (AccountsHelper.Transaction, AccountsHelper.Transaction) async -> AccountsHelper.Transaction) async -> [AccountsHelper.Transaction] {
+        return []
+    }
+    
     static var displayName: String = "Mock"
     static var paymentMethod: PaymentMethod = .CashGBP
     static var importType: ImportType = .csv
 
-    @MainActor
-    static func importTransactions(
-        fileURL: URL,
-        context: NSManagedObjectContext,
-        mergeHandler: (Transaction, Transaction) async -> Transaction
-    ) async -> [Transaction] {
-        return []
-    }
+//    @MainActor
+//    static func importTransactions(
+//        fileURL: URL,
+//        context: NSManagedObjectContext,
+//        mergeHandler: (Transaction, Transaction) async -> Transaction
+//    ) async -> [Transaction] {
+//        return []
+//    }
 }
 
 // Adapter to allow NSManagedObject Transaction with findMergeCandidateInSnapshot

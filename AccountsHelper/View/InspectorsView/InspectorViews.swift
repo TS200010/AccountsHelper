@@ -37,6 +37,8 @@ struct InspectorViews: View {
                 
             case .emptyView:
                 Text("Select an action from the toolbar" )
+                    .foregroundColor(.gray)
+                    .font(.headline)
 
             }
         } .frame(maxWidth: .infinity, maxHeight: .infinity)

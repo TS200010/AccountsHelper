@@ -20,7 +20,7 @@ struct InspectorViewsHomeView: View {
             InspectorViews( )
             
         }.frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background( Color( Color.ItMklatformTextBackgroundColor ) )
+            .background( Color( Color.ItMkPlatformTextBackgroundColor ) )
          .if( gViewCheck ) { view in view.border( .red )}
     }
 }

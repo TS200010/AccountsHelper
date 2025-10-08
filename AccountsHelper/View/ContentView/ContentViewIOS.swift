@@ -8,7 +8,11 @@
 import SwiftUI
 
 struct ContentViewIOS: View {
+    
+    // MARK: --- Body
     var body: some View {
+        
+        // For iOS all we show is a simple Navigator
         NavigatorMenuView()
     }
 }

@@ -44,8 +44,8 @@ struct TransactionStructTests {
     func testDefaultInitializer() async throws {
         let tx = TransactionStruct()
         #expect(tx.category == .unknown)
-        #expect(tx.currency == .unknown)
-        #expect(tx.debitCredit == .unknown)
+        #expect(tx.currency == .GBP)
+        #expect(tx.debitCredit == .DR)
         #expect(tx.exchangeRate == 1.0)
         #expect(tx.txAmount == 0)
     }
@@ -95,7 +95,7 @@ struct TransactionStructTests {
         #expect(tx.splitAmount == 0)
         #expect(tx.payee == "")
         #expect(tx.payer == .tony)
-        #expect(tx.paymentMethod == .unknown)
+        #expect(tx.paymentMethod == .AMEX)
     }
 
     // MARK: --- Apply Tests

@@ -22,6 +22,8 @@ struct NavigatorViews: View {
                 
             case .emptyView:
                 Text("Select an action from the toolbar" )
+                    .foregroundColor(.gray)
+                    .font(.headline)
                 
             case .edit:
                 NavigatorMenuView()

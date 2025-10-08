@@ -40,6 +40,6 @@ struct InspectorViewToolbar: View {
         } .frame( maxWidth: .infinity, maxHeight: gMaxToolbarHeight )
           .bottomBorder( )
           .buttonStyle( .plain )
-          .background( Color( Color.ItMklatformTextBackgroundColor ) )
+          .background( Color( Color.ItMkPlatformTextBackgroundColor ) )
     }
 }

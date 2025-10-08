@@ -17,18 +17,25 @@ struct CentralViews: View {
     // MARK: --- Body
     var body: some View {
         ZStack {
-            ForEach(Array(appState.centralViewStack.enumerated()), id: \.element) { index, viewEnum in
-                getView(for: viewEnum)
-                    .id(viewEnum) // keep SwiftUI from reusing
-                    .zIndex(Double(index))
-                    .opacity(index == appState.centralViewStack.count - 1 ? 1 : 0) // hide lower ones
-                    .allowsHitTesting(index == appState.centralViewStack.count - 1) // only top interactive
-                    .transition(
-                        .asymmetric(
-                            insertion: .move(edge: .trailing).combined(with: .opacity),
-                            removal: .move(edge: .leading).combined(with: .opacity)
+            if appState.centralViewStack.isEmpty {
+                // Show fallback text when stack is empty
+                Text("<--- Select an action from the Navigation Bar")
+                    .foregroundColor(.gray)
+                    .font(.headline)
+            } else {
+                ForEach(Array(appState.centralViewStack.enumerated()), id: \.element) { index, viewEnum in
+                    getView(for: viewEnum)
+                        .id(viewEnum) // keep SwiftUI from reusing
+                        .zIndex(Double(index))
+                        .opacity(index == appState.centralViewStack.count - 1 ? 1 : 0) // hide lower ones
+                        .allowsHitTesting(index == appState.centralViewStack.count - 1) // only top interactive
+                        .transition(
+                            .asymmetric(
+                                insertion: .move(edge: .trailing).combined(with: .opacity),
+                                removal: .move(edge: .leading).combined(with: .opacity)
+                            )
                         )
-                    )
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -42,6 +49,8 @@ struct CentralViews: View {
             
         case .emptyView:
             Text("Select an action from the toolbar")
+                .foregroundColor(.gray)
+                .font(.headline)
             
         case .addTransaction:
             AddOrEditTransactionView()

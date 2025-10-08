@@ -8,6 +8,7 @@
 import Foundation
 import SwiftUI
 import CoreData
+import ItMkLibrary
 
 // MARK: --- TransactionRow Wrapper
 fileprivate struct TransactionRow: Identifiable, Hashable {
