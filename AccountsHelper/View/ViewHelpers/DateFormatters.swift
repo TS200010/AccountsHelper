@@ -5,21 +5,19 @@
 //  Created by Anthony Stanners on 16/09/2025.
 //
 
-// MARK: - DateFormatter
-
 import SwiftUI
 
+// MARK: --- DateFormatter with date & time
 let dateFormatter: DateFormatter = {
-    let f = DateFormatter()
-    f.dateStyle = .short
-    f.timeStyle = .medium
-    return f
+    let formatter = DateFormatter()
+    formatter.dateStyle = .short
+    formatter.timeStyle = .medium
+    return formatter
 }()
 
-
+// MARK: --- DateFormatter with date only
 let dateOnlyFormatter: DateFormatter = {
     let formatter = DateFormatter()
     formatter.dateFormat = "dd-MMM-yyyy" // or "dd/MM/yyyy" etc
     return formatter
 }()
-

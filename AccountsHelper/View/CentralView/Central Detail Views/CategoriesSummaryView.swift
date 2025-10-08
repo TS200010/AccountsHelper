@@ -120,7 +120,6 @@ extension CategoriesSummaryView {
             TableColumn("Total") { Text($0.totalString) }
         }
         .onChange(of: selectedCategoryID) { _, newValue in
-            print(newValue)
             if let id = newValue,
                let row = categoryRows.first(where: { $0.id == id }) {
                 print(row)

@@ -1,6 +1,6 @@
 //
 //  NavigatorViews.swift
-// From SkeletonMacOSApp
+//  From SkeletonMacOSApp
 //
 //  Created by Anthony Stanners on 08/09/2025.
 //
@@ -8,6 +8,7 @@
 import SwiftUI
 import ItMkLibrary
 
+// MARK: --- NavigatorViews
 struct NavigatorViews: View {
     
     // MARK: --- Environment
@@ -15,13 +16,12 @@ struct NavigatorViews: View {
     
     // MARK: --- Body
     var body: some View {
-        
-        VStack (spacing: 0) {
+        VStack(spacing: 0) {
             
             switch appState.selectedNavigatorView {
                 
             case .emptyView:
-                Text("Select an action from the toolbar" )
+                Text("Select an action from the toolbar")
                     .foregroundColor(.gray)
                     .font(.headline)
                 
@@ -32,30 +32,28 @@ struct NavigatorViews: View {
                 #if os(macOS)
                 Text("Investigate why this came up.")
                 #else
-                Text("Not oniOS")
+                Text("Not on iOS")
                 #endif
                 
             case .reconcile:
-                Text("Navigator Reconcile View" )
+                Text("Navigator Reconcile View")
                 
             case .browse:
                 NavigatorBrowseView()
                 
             case .report:
-                Text("Navigator Report View" )
-
+                Text("Navigator Report View")
+                
             case .navigatorViewTwo:
                 NavigatorViewTwo()
-            
+                
             case .navigatorViewThree:
                 NavigatorViewThree()
-                
-
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity )
-        .background( Color( Color.ItMkPlatformWindowBackgroundColor ) ) .if( gViewCheck ) { view in view.background( .yellow )}
-        .if( gViewCheck ) { view in view.border( .yellow )}
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(Color.ItMkPlatformWindowBackgroundColor))
+        .if(gViewCheck) { view in view.background(.yellow) }
+        .if(gViewCheck) { view in view.border(.yellow) }
     }
 }
-

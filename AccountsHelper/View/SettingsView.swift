@@ -5,17 +5,13 @@
 //  Created by Anthony Stanners on 08/09/2025.
 //
 
-import Foundation
 import SwiftUI
-
-import SwiftUI
-
-// This was (mostly) created by CoPilot
 
 struct SettingsView: View {
     
     @Environment(\.dismiss) private var dismiss
     
+    // MARK: --- Sections
     enum SettingsSection: String, CaseIterable, Identifiable {
         case general = "General"
         case account = "Account"
@@ -47,21 +43,25 @@ struct SettingsView: View {
         }
     }
     
+    // MARK: --- Body
     var body: some View {
         NavigationSplitView {
             VStack(spacing: 8) {
                 TextField("Search Settings", text: $searchText)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .padding([.top, .horizontal])
+                
                 List(filteredSections, selection: $selectedSection) { section in
                     Label(section.rawValue, systemImage: iconName(for: section))
                         .tag(section)
                 }
                 .listStyle(SidebarListStyle())
+                
                 Button("OK") {
                     dismiss()
                 }
                 .buttonStyle(.borderedProminent)
+                
                 Spacer()
             }
             .frame(minWidth: 150)
@@ -94,7 +94,7 @@ struct SettingsView: View {
     }
 }
 
-// MARK: - Section Views
+// MARK: --- Section Views
 
 struct GeneralSettingsView: View {
     static let controlLabels: [String] = ["Enable Feature", "Refresh Interval"]
@@ -106,6 +106,7 @@ struct GeneralSettingsView: View {
             Section(header: Text("General Settings")) {
                 Toggle("Enable Feature", isOn: $enableFeature)
                     .accessibilityLabel("Enable Feature")
+                
                 HStack {
                     Text("Refresh Interval (seconds)")
                     Slider(value: $refreshInterval, in: 1...60, step: 1)
@@ -130,6 +131,7 @@ struct AccountSettingsView: View {
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .frame(width: 300)
                     .accessibilityLabel("Username")
+                
                 TextField("Email", text: $email)
                     .textFieldStyle(RoundedBorderTextFieldStyle())
                     .frame(width: 300)

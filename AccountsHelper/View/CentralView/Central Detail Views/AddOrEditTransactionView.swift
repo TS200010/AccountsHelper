@@ -387,7 +387,7 @@ struct LabeledDecimalField: View {
                 .focused($focused)
                 .submitLabel(.done)
                 .onAppear { text = formatDecimal(amount) }
-                .onChange(of: focused) { new in if !new { commit() } }
+                .onChange(of: focused) { _, new in if !new { commit() } }
                 .onSubmit { commit() }
                 .toolbar {
                     if focused {
@@ -468,7 +468,7 @@ struct LabeledDecimalWithFX: View {
     var displayOnly: Bool = false  // display-only mode
     
     @FocusState var focusedField: AmountFieldIdentifier?
-    var fieldID: AmountFieldIdentifier = .main
+    var fieldID: AmountFieldIdentifier = .mainAmountField
     
     @State private var text: String = ""
     
@@ -506,13 +506,13 @@ struct LabeledDecimalWithFX: View {
                         focusedField = nil
                         commitText()
                     }
-                    .onChange(of: focusedField) { newFocused in
+                    .onChange(of: focusedField) { _, newFocused in
                         if newFocused != fieldID {
                             commitText()
                         }
                     }
                     .onAppear { text = formatDecimal(amount) }
-                    .onChange(of: amount) { newAmount in
+                    .onChange(of: amount) { _, newAmount in
                         let formatted = formatDecimal(newAmount)
                         if formatted != text {
                             text = formatted
