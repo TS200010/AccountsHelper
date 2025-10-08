@@ -10,8 +10,11 @@ import CoreData
 
 // MARK: --- Row Helper
 struct ReconciliationRow: Identifiable, Hashable {
+    // MARK: --- Properties
     let rec: Reconciliation
     let gap: Decimal
+    
+    // MARK: --- ID
     var id: NSManagedObjectID { rec.objectID }
 }
 
@@ -25,7 +28,6 @@ struct ReconcilliationListView: View {
     
     // MARK: --- Local State
     @State private var reconciliationRows: [ReconciliationRow] = []
-//    @State private var selectedReconciliation: NSManagedObjectID? = nil
     @State private var showingDeleteConfirmation = false
     @State private var showingNewReconciliation = false
     @State private var showingCloseAccountingPeriod = false
@@ -41,148 +43,190 @@ struct ReconcilliationListView: View {
     
     // MARK: --- Body
     var body: some View {
-
-        ReconciliationListViewContent
-        .onAppear { refreshRows() }
-        .toolbar {
-            ToolbarItem(placement: .principal) {
-                Button("New") { showingNewReconciliation = true }
-                    .keyboardShortcut("N", modifiers: [.command])
+        // MARK: --- ReconciliationListContent
+        reconciliationListContent
+            .onAppear { refreshRows() }
+            .toolbar { toolbarContent }
+            .sheet(isPresented: $showingNewReconciliation, onDismiss: { refreshRows() }) { newReconciliationSheet }
+            .sheet(isPresented: $showingEditReconciliation, onDismiss: { refreshRows() }) { editReconciliationSheet }
+            .confirmationDialog(
+                "Are you sure you want to delete this Reconciliation?",
+                isPresented: $showingDeleteConfirmation,
+                titleVisibility: .visible
+            ) { deleteConfirmationDialog } message: { deleteConfirmationMessage }
+            .confirmationDialog(
+                "Are you sure you want to close this Reconciliation?",
+                isPresented: $showingCloseAccountingPeriod,
+                titleVisibility: .visible
+            ) { closeConfirmationDialog }
+            .confirmationDialog(
+                "Category totals copied to clipboard.",
+                isPresented: $showingXLSConfirmation,
+                titleVisibility: .visible
+            ) { xlsConfirmationDialog }
+            .onReceive(NotificationCenter.default.publisher(for: .NSManagedObjectContextDidSave, object: context)) { _ in
+                refreshRows()
             }
-        }
-        .sheet(isPresented: $showingNewReconciliation, onDismiss: { refreshRows() }) {
-            NavigationStack {
-                NewReconciliationView()
-                    .environment(\.managedObjectContext, context)
-            }
-            .frame(minWidth: 400, minHeight: 300)
-        }
-        .sheet(isPresented: $showingEditReconciliation, onDismiss: { refreshRows() }) {
-            NavigationStack {
-                EditReconcilationView()
-            }
-            .frame(minWidth: 400, minHeight: 300)
-        }
-        .confirmationDialog(
-            "Are you sure you want to delete this Reconciliation?",
-            isPresented: $showingDeleteConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button("Delete", role: .destructive) {
-                if let objectID = appState.selectedReconciliationID {
-                    deleteReconciliation(objectID)
-                    appState.selectedReconciliationID = nil
-                }
-            }
-        } message: {
-            Text("This action cannot be undone.")
-        }
-        .confirmationDialog(
-            "Are you sure you want to close this Reconciliation?",
-            isPresented: $showingCloseAccountingPeriod,
-            titleVisibility: .visible
-        ) {
-            Button("Close", role: .destructive) {
-                if let objectID = appState.selectedReconciliationID {
-                    closeReconciliation(objectID)
-                }
-            }
-        }
-        .confirmationDialog(
-            "Category totals copied to clipboard.",
-            isPresented: $showingXLSConfirmation,
-            titleVisibility: .visible
-        ) {
-            Button("OK", role: .cancel) { }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .NSManagedObjectContextDidSave, object: context)) { _ in
-            refreshRows()
-        } // Belt and braces to ensure the view stays updated
     }
 }
 
-// MARK: --- CONTENT VIEW
+// MARK: --- TOOLBAR CONTENT
 extension ReconcilliationListView {
-    
-    private var ReconciliationListViewContent: some View {
-        
+    // MARK: --- toolbarContent
+    private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .principal) {
+            Button("New") { showingNewReconciliation = true }
+                .keyboardShortcut("N", modifiers: [.command])
+        }
+    }
+}
+
+// MARK: --- SHEET VIEWS
+extension ReconcilliationListView {
+    // MARK: --- newReconciliationSheet
+    private var newReconciliationSheet: some View {
         NavigationStack {
-            if reconciliations.isEmpty {
-                VStack(spacing: 10) {
-                    Text("No reconciliations yet")
-                        .font(.headline)
-                        .foregroundColor(.gray)
-                    Button("Create First Reconciliation") {
-                        showingNewReconciliation = true
-                    }
-                    .keyboardShortcut("N", modifiers: [.command])
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                VStack(alignment: .leading) {
-                    ForEach(groupedReconciliationRows, id: \.period) { period, rows in
-                        Text(period.displayStringWithOpening)
-                            .font(.headline)
-                            .padding(.top, 4)
-                        
-                        Table(rows, selection: Binding(get: {
-                            appState.selectedReconciliationID.map { Set([$0]) } ?? Set()
-                        }, set: { newSelection in
-                            if let selectedID = newSelection.first {
-                                appState.selectedReconciliationID = selectedID
-                                appState.replaceInspectorView( with: .viewReconciliation)
-                            }
-                        })) {
-                            TableColumn("Payment Method") { row in
-                                    Text(row.rec.paymentMethod.description)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                        .foregroundColor(row.rec.closed ? .blue : (hasInvalidTransactions(row) ? .red : .primary))
-                                        .contentShape(Rectangle())
-                                        .contextMenu { rowContextMenu(row) }
-                                }
-                                
-                                TableColumn("Ending Balance") { row in
-                                    Text("\(row.rec.endingBalance.formatted(.number.precision(.fractionLength(2)))) \(row.rec.currency.description)")
-                                        .frame(maxWidth: .infinity, alignment: .trailing)
-                                        .foregroundColor(row.rec.closed ? .blue : (hasInvalidTransactions(row) ? .red : .primary))
-                                        .contentShape(Rectangle())
-                                        .contextMenu { rowContextMenu(row) }
-                                }
-                                
-                                TableColumn("Statement Date") { row in
-                                    if let date = row.rec.statementDate {
-                                        Text(date, style: .date)
-                                            .foregroundColor(row.rec.closed ? .blue : .gray)
-                                            .frame(maxWidth: .infinity, alignment: .leading)
-                                            .contentShape(Rectangle())
-                                            .contextMenu { rowContextMenu(row) }
-                                    }
-                                }
-                                
-                                TableColumn("Gap") { row in
-                                    if row.gap != 0 {
-                                        Text("\(row.gap.formatted(.number.precision(.fractionLength(2))))")
-                                            .foregroundColor(row.rec.closed ? .blue : .red)
-                                            .frame(maxWidth: .infinity, alignment: .trailing)
-                                            .contentShape(Rectangle())
-                                            .contextMenu { rowContextMenu(row) }
-                                    }
-                                }
-                        }
-                        .tableStyle(.inset)
-                        .frame(minHeight: CGFloat(rows.count) * 28)
-                    }
-                }
-                .padding(.horizontal)
+            NewReconciliationView()
+                .environment(\.managedObjectContext, context)
+        }
+        .frame(minWidth: 400, minHeight: 300)
+    }
+    
+    // MARK: --- editReconciliationSheet
+    private var editReconciliationSheet: some View {
+        NavigationStack {
+            EditReconcilationView()
+        }
+        .frame(minWidth: 400, minHeight: 300)
+    }
+}
+
+// MARK: --- CONFIRMATION DIALOGS
+extension ReconcilliationListView {
+    // MARK: --- deleteConfirmationDialog
+    @ViewBuilder
+    private var deleteConfirmationDialog: some View {
+        Button("Delete", role: .destructive) {
+            if let objectID = appState.selectedReconciliationID {
+                deleteReconciliation(objectID)
+                appState.selectedReconciliationID = nil
             }
         }
+    }
+    
+    // MARK: --- deleteConfirmationMessage
+    private var deleteConfirmationMessage: some View {
+        Text("This action cannot be undone.")
+    }
+    
+    // MARK: --- closeConfirmationDialog
+    @ViewBuilder
+    private var closeConfirmationDialog: some View {
+        Button("Close", role: .destructive) {
+            if let objectID = appState.selectedReconciliationID {
+                closeReconciliation(objectID)
+            }
+        }
+    }
+    
+    // MARK: --- xlsConfirmationDialog
+    @ViewBuilder
+    private var xlsConfirmationDialog: some View {
+        Button("OK", role: .cancel) { }
+    }
+}
+// MARK: --- CONTENT VIEW
+extension ReconcilliationListView {
+    // MARK: --- reconciliationListContent
+    private var reconciliationListContent: some View {
+        NavigationStack {
+            if reconciliations.isEmpty {
+                emptyStateView
+            } else {
+                reconciliationTableView
+            }
+        }
+    }
+    
+    // MARK: --- emptyStateView
+    private var emptyStateView: some View {
+        VStack(spacing: 10) {
+            Text("No reconciliations yet")
+                .font(.headline)
+                .foregroundColor(.gray)
+            Button("Create First Reconciliation") {
+                showingNewReconciliation = true
+            }
+            .keyboardShortcut("N", modifiers: [.command])
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+    
+    // MARK: --- reconciliationTableView
+    private var reconciliationTableView: some View {
+        VStack(alignment: .leading) {
+            ForEach(groupedReconciliationRows, id: \.period) { period, rows in
+                Text(period.displayStringWithOpening)
+                    .font(.headline)
+                    .padding(.top, 4)
+                
+                Table(rows, selection: Binding(get: {
+                    appState.selectedReconciliationID.map { Set([$0]) } ?? Set()
+                }, set: { newSelection in
+                    if let selectedID = newSelection.first {
+                        appState.selectedReconciliationID = selectedID
+                        appState.replaceInspectorView(with: .viewReconciliation)
+                    }
+                })) {
+                    TableColumn("Payment Method") { row in
+                        Text(row.rec.paymentMethod.description)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .foregroundColor(row.rec.closed ? .blue : (hasInvalidTransactions(row) ? .red : .primary))
+                            .contentShape(Rectangle())
+                            .contextMenu { rowContextMenu(row) }
+                    }
+                    
+                    TableColumn("Ending Balance") { row in
+                        Text("\(row.rec.endingBalance.formatted(.number.precision(.fractionLength(2)))) \(row.rec.currency.description)")
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                            .foregroundColor(row.rec.closed ? .blue : (hasInvalidTransactions(row) ? .red : .primary))
+                            .contentShape(Rectangle())
+                            .contextMenu { rowContextMenu(row) }
+                    }
+                    
+                    TableColumn("Statement Date") { row in
+                        if let date = row.rec.statementDate {
+                            Text(date, style: .date)
+                                .foregroundColor(row.rec.closed ? .blue : .gray)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .contentShape(Rectangle())
+                                .contextMenu { rowContextMenu(row) }
+                        }
+                    }
+                    
+                    TableColumn("Gap") { row in
+                        if row.gap != 0 {
+                            Text("\(row.gap.formatted(.number.precision(.fractionLength(2))))")
+                                .foregroundColor(row.rec.closed ? .blue : .red)
+                                .frame(maxWidth: .infinity, alignment: .trailing)
+                                .contentShape(Rectangle())
+                                .contextMenu { rowContextMenu(row) }
+                        }
+                    }
+                }
+                .tableStyle(.inset)
+                .frame(minHeight: CGFloat(rows.count) * 28)
+
+            }
+        }
+        .padding(.horizontal)
     }
 }
 
 
 // MARK: --- FETCH HELPERS
 extension ReconcilliationListView {
-    
+    // MARK: --- refreshRows
     private func refreshRows() {
         do {
             let request: NSFetchRequest<Reconciliation> = Reconciliation.fetchRequest()
@@ -193,12 +237,12 @@ extension ReconcilliationListView {
                 let gap = rec.reconciliationGap(in: context)
                 return ReconciliationRow(rec: rec, gap: gap)
             }
-            
         } catch {
             print("Failed to refresh rows: \(error)")
         }
     }
     
+    // MARK: --- GroupedReconciliationRows
     private var groupedReconciliationRows: [(period: AccountingPeriod, rows: [ReconciliationRow])] {
         let dict = Dictionary(grouping: reconciliationRows) { $0.rec.accountingPeriod }
         return dict.map { (period: $0.key, rows: $0.value) }
@@ -208,27 +252,26 @@ extension ReconcilliationListView {
             }
     }
     
+    // MARK: --- HasInvalidTransactions
     private func hasInvalidTransactions(_ row: ReconciliationRow) -> Bool {
         !(row.rec.isValid(in: context))
     }
     
+    // MARK: --- DeleteReconciliation
     private func deleteReconciliation(_ objectID: NSManagedObjectID) {
         context.perform {
             do {
                 guard let rec = try context.existingObject(with: objectID) as? Reconciliation else { return }
 
-                // Save data for undo
                 let keys = Array(rec.entity.attributesByName.keys)
                 let savedData = rec.dictionaryWithValues(forKeys: keys)
 
-                // Delete object
                 context.delete(rec)
                 try context.save()
                 refreshRows()
                 appState.refreshInspector()
 
-                // Register undo
-                undoManager?.registerUndo(withTarget: context) { ctx in
+                undoManager?.registerUndo(withTarget: context) {  ctx in
                     let restored = Reconciliation(context: ctx)
                     for (key, value) in savedData {
                         restored.setValue(value, forKey: key)
@@ -250,11 +293,9 @@ extension ReconcilliationListView {
             do {
                 guard let rec = try context.existingObject(with: objectID) as? Reconciliation else { return }
 
-                // Save data for undo
                 let keys = Array(rec.entity.attributesByName.keys)
                 let savedData = rec.dictionaryWithValues(forKeys: keys)
 
-                // Close Reconciliation
                 try rec.close(in: context)
                 try context.save()
                 DispatchQueue.main.async {
@@ -262,7 +303,6 @@ extension ReconcilliationListView {
                     appState.refreshInspector()
                 }
 
-                // Register undo
                 undoManager?.registerUndo(withTarget: context) { ctx in
                     let restored = Reconciliation(context: ctx)
                     for (key, value) in savedData {
@@ -286,8 +326,8 @@ extension ReconcilliationListView {
     private func addBalancingTransaction(for row: ReconciliationRow, in context: NSManagedObjectContext) {
         do {
             var gap = row.rec.reconciliationGap(in: context)
-            if !gap.isFinite { gap = 0 } // Clamp NaN or infinite values to zero
-            if abs(gap) < 0.01 {  gap = 0 }
+            if !gap.isFinite { gap = 0 }
+            if abs(gap) < 0.01 { gap = 0 }
             guard gap != 0 else { return }
             
             let newTx = Transaction(context: context)
@@ -299,11 +339,9 @@ extension ReconcilliationListView {
             newTx.transactionDate = row.rec.statementDate ?? Date()
             newTx.timestamp = Date()
             newTx.category = .ToBalance
-            
             newTx.txAmount = -gap
-            newTx.debitCredit = .DR // Could be .CR does not matter
+            newTx.debitCredit = .DR
             
-            // Log transaction for verification
             print("""
                 Adding balancing transaction:
                 txAmount: \(newTx.txAmount)
@@ -313,18 +351,14 @@ extension ReconcilliationListView {
                 """)
             
             try context.save()
-            print("Balancing transaction saved successfully")
             refreshRows()
             appState.refreshInspector()
-            
         } catch {
             print("Failed to add balancing transaction: \(error)")
         }
     }
     
     // MARK: --- CategoryTotals
-    // Fetch transactions for the given reconciliation row and sum totals by category
-    // ... (including splits in GBP)
     fileprivate func categoryTotals(for row: ReconciliationRow) -> [Category: Decimal] {
         do {
             let predicate = NSPredicate(
@@ -345,32 +379,27 @@ extension ReconcilliationListView {
         }
     }
     
-    // MARK: --- XLS Summary Export (synchronous)
+    // MARK: --- ExportXLSSummary
     private func exportXLSSummary(for row: ReconciliationRow) {
         #if os(macOS)
-        let totals = categoryTotals(for: row) // Use shared helper
+        let totals = categoryTotals(for: row)
 
-        // Build tab-separated text including zeros
         let text = Category.allCases.map { category in
             let total = totals[category] ?? 0
             return "\(category.description)\t\(total.string2f)"
         }.joined(separator: "\n")
 
-        // Copy to clipboard
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)
 
-        // Show confirmation dialog
         showingXLSConfirmation = true
         #endif
     }
 }
 
-
 // MARK: --- VIEW CONTEXT MENU
 extension ReconcilliationListView {
-
     
     // MARK: --- RowContextMenu
     @ViewBuilder
@@ -381,12 +410,12 @@ extension ReconcilliationListView {
         }
         
         var canAddEndingBalance: Bool {
-            row.rec.closed 
+            row.rec.closed
         }
         
         Button {
             appState.selectedReconciliationID = row.id
-            appState.replaceInspectorView( with: .viewReconciliation)
+            appState.replaceInspectorView(with: .viewReconciliation)
             let predicate = NSPredicate(
                 format: "paymentMethodCD == %d AND transactionDate >= %@ AND transactionDate <= %@",
                 row.rec.paymentMethod.rawValue,
@@ -410,26 +439,22 @@ extension ReconcilliationListView {
             Label("Summary", systemImage: "doc.text.magnifyingglass")
         }
         
-        Button {
-            exportXLSSummary(for: row)
-        } label: {
+        Button { exportXLSSummary(for: row) } label: {
             Label("XLS Summary", systemImage: "doc.on.doc")
         }
 
-        Button {
-            addBalancingTransaction(for: row, in: context)
-        } label: {
+        Button { addBalancingTransaction(for: row, in: context) } label: {
             Label("Add Balancing Tx", systemImage: "plus.circle.fill")
         }
-        .disabled( canAddBalancingTransaction )
+        .disabled(canAddBalancingTransaction)
         
         Button {
             appState.selectedReconciliationID = row.id
-            showingEditReconciliation = true // Trigger modal sheet
+            showingEditReconciliation = true
         } label: {
             Label("Edit Ending Balance", systemImage: "pencil.circle")
         }
-        .disabled( canAddEndingBalance )
+        .disabled(canAddEndingBalance)
         
         Button {
             appState.selectedReconciliationID = row.id
@@ -437,7 +462,7 @@ extension ReconcilliationListView {
         } label: {
             Label("Close Period", systemImage: "checkmark.square.fill")
         }
-        .disabled(!row.rec.canCloseAccountingPeriod(in: context) || row.rec.closed )
+        .disabled(!row.rec.canCloseAccountingPeriod(in: context) || row.rec.closed)
         
         Button {
             appState.selectedReconciliationID = row.id
@@ -453,7 +478,6 @@ extension ReconcilliationListView {
         }
         .disabled(!row.rec.isClosed || !row.rec.canReopenAccountingPeriod(in: context))
         
-        
         Divider()
         
         Button(role: .destructive) {
@@ -463,6 +487,5 @@ extension ReconcilliationListView {
             Label("Delete", systemImage: "trash")
         }
         .disabled(!row.rec.canDelete(in: context))
-//        .disabled(row.rec.closed)
     }
 }

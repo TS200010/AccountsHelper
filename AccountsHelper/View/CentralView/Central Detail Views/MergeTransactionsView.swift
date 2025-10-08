@@ -4,10 +4,11 @@
 //
 //  Created by Anthony Stanners on 28/09/2025.
 //
+
 import SwiftUI
 import CoreData
 
-// MARK: - Mergeable Fields
+// MARK: --- Mergeable Fields
 enum MergeField: String, CaseIterable, Identifiable {
     case accountingPeriod, accountNumber, address, category, commissionAmount,
          currency, debitCredit, exchangeRate, explanation, extendedDetails,
@@ -17,7 +18,7 @@ enum MergeField: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
-// MARK: - Field Metadata
+// MARK: --- Field Metadata
 struct MergeFieldInfo {
     let displayName: String
     let getter: (Transaction) -> String
@@ -25,6 +26,7 @@ struct MergeFieldInfo {
     let setter: (Transaction, Transaction) -> Void
 }
 
+// MARK: --- MergeField
 extension MergeField {
     static let all: [MergeField: MergeFieldInfo] = [
         .txAmount: MergeFieldInfo(
@@ -35,7 +37,7 @@ extension MergeField {
         ),
         .splitAmount: MergeFieldInfo(
             displayName: "Split Amount",
-            getter: { $0.splitAmountAsString() },
+            getter: { $0.splitAmountAsString() ?? "" },
             hasValue: { $0.splitAmount != 0 },
             setter: { $0.splitAmount = $1.splitAmount }
         ),
@@ -144,20 +146,26 @@ extension MergeField {
     ]
 }
 
-// MARK: - Merge Transactions View
+// MARK: --- MergeTransactionsView
 struct MergeTransactionsView: View {
+    
+    // MARK: --- Environment
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(AppState.self) var appState
-
-    @State private var selectedSide: [MergeField: Bool] = [:]
-    @State private var autoPicked: [MergeField: Bool] = [:]   // track autopicks
-
+    
+    // MARK: --- Injected
     let transactions: [Transaction]
     var onComplete: (() -> Void)? = nil
-    
+
+    // MARK: --- State
+    @State private var selectedSide: [MergeField: Bool] = [:]
+    @State private var autoPicked: [MergeField: Bool] = [:]
+
+    // MARK: --- Local Variables
     private var leftTransaction: Transaction { transactions[0] }
     private var rightTransaction: Transaction { transactions[1] }
 
+    // MARK: --- View Body
     var body: some View {
         VStack {
             Text("Merge Transactions")
@@ -169,33 +177,29 @@ struct MergeTransactionsView: View {
                     ForEach(MergeField.allCases) { field in
                         if let info = MergeField.all[field] {
                             HStack {
-                                // Field label
                                 Text(info.displayName)
                                     .frame(width: 150, alignment: .leading)
                                     .font(.subheadline)
                                     .foregroundColor(.secondary)
 
-                                // Left transaction value
                                 Text(info.getter(leftTransaction))
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .padding(6)
                                     .background(background(for: field, isLeft: true))
                                     .cornerRadius(4)
 
-                                // Slider
                                 Slider(
                                     value: Binding(
                                         get: { (selectedSide[field] ?? true) ? 0.0 : 1.0 },
                                         set: { newValue in
                                             selectedSide[field] = (newValue < 0.5)
-                                            autoPicked[field] = false // user moved it → no longer autopicked
+                                            autoPicked[field] = false
                                         }
                                     ),
                                     in: 0...1
                                 )
                                 .frame(width: 80)
 
-                                // Right transaction value
                                 Text(info.getter(rightTransaction))
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .padding(6)
@@ -232,33 +236,29 @@ struct MergeTransactionsView: View {
         .frame(minWidth: 600, minHeight: 400)
     }
 
-    // MARK: - Helpers
-    
+    // MARK: --- HELPERS
+    // MARK: --- Background
     private func background(for field: MergeField, isLeft: Bool) -> Color {
         guard let pickedLeft = selectedSide[field] else { return .clear }
-        
         let info = MergeField.all[field]!
         let leftValue = info.getter(leftTransaction)
         let rightValue = info.getter(rightTransaction)
-        
-        // If values are equal and non-empty, color green
+
         if !leftValue.isEmpty && leftValue == rightValue {
             return Color.green.opacity(0.3)
         }
-        
-        // If both values are empty, also color green
         if leftValue.isEmpty && rightValue.isEmpty {
             return Color.green.opacity(0.3)
         }
-        
-        // Otherwise use selection/auto-picked coloring
+
         let isSelected = (isLeft && pickedLeft) || (!isLeft && !pickedLeft)
         if isSelected {
             return (autoPicked[field] ?? false) ? Color.green.opacity(0.3) : Color.accentColor.opacity(0.2)
         }
         return .clear
     }
-    
+
+    // MARK: --- PreloadSelections
     private func preloadSelections() {
         for field in MergeField.allCases {
             guard let info = MergeField.all[field] else { continue }
@@ -272,18 +272,16 @@ struct MergeTransactionsView: View {
                 selectedSide[field] = false
                 autoPicked[field] = true
             } else if !leftHas && !rightHas {
-                // Both empty → pick left by default
                 selectedSide[field] = true
                 autoPicked[field] = true
             } else {
-                selectedSide[field] = true // default to left
+                selectedSide[field] = true
                 autoPicked[field] = false
             }
         }
     }
 
-
-    // MARK: - Merge Logic
+    // MARK: --- MergeTransactions
     private func mergeTransactions() {
         viewContext.performAndWait {
             for field in MergeField.allCases {
@@ -296,7 +294,7 @@ struct MergeTransactionsView: View {
             do {
                 try viewContext.save()
                 DispatchQueue.main.async {
-                    appState.refreshInspector() // AFTER the save
+                    appState.refreshInspector()
                 }
             } catch {
                 print("Failed to merge transactions: \(error)")
@@ -306,13 +304,4 @@ struct MergeTransactionsView: View {
     }
 }
 
-// MARK: - Split Amount Display
-extension Transaction {
-    func splitAmountAsString() -> String {
-        let amountNumber = NSDecimalNumber(decimal: splitAmount)
-        switch currency {
-        case .JPY: return String(format: "%.0f", amountNumber.doubleValue)
-        default: return String(format: "%.2f", amountNumber.doubleValue)
-        }
-    }
-}
+

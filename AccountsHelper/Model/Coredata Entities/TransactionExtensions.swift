@@ -167,6 +167,15 @@ extension Transaction {
             return String(format: "%.2f", amountNumber.doubleValue)
         }
     }
+
+    func splitAmountAsString() -> String? {
+        let amountNumber = NSDecimalNumber(decimal: splitAmount)
+        switch currency {
+        case .JPY: return String(format: "%.0f", amountNumber.doubleValue)
+        default: return String(format: "%.2f", amountNumber.doubleValue)
+        }
+    }
+    
 }
 
 // MARK: --- GenerateRandomTransactions

@@ -52,7 +52,7 @@ struct NavigatorViews: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity )
-        .background( Color( Color.platformWindowBackgroundColor ) ) .if( gViewCheck ) { view in view.background( .yellow )}
+        .background( Color( Color.ItMkPlatformWindowBackgroundColor ) ) .if( gViewCheck ) { view in view.background( .yellow )}
         .if( gViewCheck ) { view in view.border( .yellow )}
     }
 }

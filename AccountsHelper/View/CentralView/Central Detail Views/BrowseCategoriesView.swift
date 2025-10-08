@@ -98,7 +98,7 @@ struct BrowseCategoriesView: View {
                  : "Selected: \(selectedMappingIDs.count)")
         }
         .padding(8)
-        .background(Color.platformWindowBackgroundColor)
+        .background(Color.ItMkPlatformWindowBackgroundColor)
     }
 
     // MARK: --- Actions

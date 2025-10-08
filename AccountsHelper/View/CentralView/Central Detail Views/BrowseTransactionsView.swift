@@ -354,7 +354,7 @@ extension BrowseTransactionsView {
                  : "Selected: \(selectedTransactionIDs.count)")
         }
         .padding(8)
-        .background(Color.platformWindowBackgroundColor)
+        .background(Color.ItMkPlatformWindowBackgroundColor)
     }
 
     // MARK: --- ToolbarItems

@@ -6,10 +6,13 @@
 //
 
 import SwiftUI
+
+// MARK: --- CentralViewsEnum
 enum CentralViewsEnum: Hashable {
     
+    // MARK: --- Cases
     case emptyView
-    case editTransaction( existingTransaction: Transaction? )
+    case editTransaction(existingTransaction: Transaction?)
     case editCurrency
     case editPayee
     case editPayer
@@ -18,7 +21,7 @@ enum CentralViewsEnum: Hashable {
     case BofSCSVImport
     case VISAPNGImport
     case reconcilliationListView
-    case reconciliationTransactionDetail( NSPredicate? )
+    case reconciliationTransactionDetail(NSPredicate?)
     case browseTransactions(NSPredicate?)   // optional predicate
     case transactionMergeView([Transaction], onComplete: (() -> Void)? = nil)
     case transactionSummary(NSPredicate?)
@@ -26,9 +29,9 @@ enum CentralViewsEnum: Hashable {
     case browseCurrencies
     case browsePayees
     case browsePayers
-
     case reports
 
+    // MARK: --- Hashable
     func hash(into hasher: inout Hasher) {
         switch self {
         case .browseTransactions(let predicate):
@@ -41,6 +44,7 @@ enum CentralViewsEnum: Hashable {
         }
     }
 
+    // MARK: --- Equatable
     static func == (lhs: CentralViewsEnum, rhs: CentralViewsEnum) -> Bool {
         switch (lhs, rhs) {
         case (.browseTransactions(let lp), .browseTransactions(let rp)):
@@ -50,6 +54,7 @@ enum CentralViewsEnum: Hashable {
         }
     }
 
+    // MARK: --- Description
     var asString: String {
         switch self {
         case .emptyView: return " "

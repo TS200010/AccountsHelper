@@ -47,7 +47,7 @@ struct NavigatorViewToolbar: View {
             
         } .frame( maxWidth: .infinity, maxHeight: gMaxToolbarHeight )
           .buttonStyle( .plain )
-          .background( Color( Color.platformWindowBackgroundColor ) )
+          .background( Color( Color.ItMkPlatformWindowBackgroundColor ) )
           .topBorder( )
           .bottomBorder( )
           .if( gViewCheck ) { view in view.background( .green )}

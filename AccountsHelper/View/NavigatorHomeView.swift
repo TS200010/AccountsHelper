@@ -20,7 +20,7 @@ struct NavigatorHomeView: View {
             NavigatorViews( )
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background( Color( Color.platformWindowBackgroundColor ) )
+        .background( Color( Color.ItMkPlatformWindowBackgroundColor ) )
         .if( gViewCheck ) { view in view.border( Color.cyan )}
     }
 }

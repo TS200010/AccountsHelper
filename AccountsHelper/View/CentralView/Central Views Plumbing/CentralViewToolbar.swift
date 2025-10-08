@@ -10,6 +10,7 @@ import ItMkLibrary
 
 struct CentralViewToolbar: View {
     
+    // MARK: --- Environment
     @Environment(AppState.self) var appState
     
     // MARK: --- Body
@@ -40,6 +41,6 @@ struct CentralViewToolbar: View {
         } .frame( maxWidth: .infinity, minHeight: gMinToolbarHeight, maxHeight: gMaxToolbarHeight)
           .bottomBorder()
           .buttonStyle(.plain)
-          .background( Color( Color.platformTextBackgroundColor ) )
+          .background( Color( Color.ItMkPlatformTextBackgroundColor ) )
     }
 }

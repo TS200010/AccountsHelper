@@ -1,41 +1,58 @@
+//
+//  TxImportView.swift
+//  AccountsHelper
+//
+//  Created by Anthony Stanners on 26/09/2025.
+//
+
 #if os(macOS)
 import SwiftUI
 import CoreData
 import AppKit
 import UniformTypeIdentifiers
 
+// MARK: --- Tx Import View
 struct TxImportView<Importer: TxImporter>: View {
+    
+    // MARK: --- Environment
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(AppState.self) var appState
-
-    // Live fetch ensures view stays in sync with Core Data
+    
+    // MARK: --- Fetch Request
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Transaction.transactionDate, ascending: true)],
         animation: .default
     )
     private var transactions: FetchedResults<Transaction>
-
+    
+    // MARK: --- Local State
     @State private var statusMessage = "Select a file to start import."
     @State private var importedCount = 0
-
+    
+    // MARK: --- Body
     var body: some View {
         VStack(spacing: 20) {
+            
+            // MARK: --- Header
             Text("\(Importer.displayName) Importer")
                 .font(.title)
-
+            
             Text(statusMessage)
                 .font(.headline)
-
+            
+            // MARK: --- Imported Count
             HStack {
                 Text("Imported: \(importedCount)")
             }
-
+            
+            // MARK: --- Select File Button
             Button("Select File") {
                 selectFile()
             }
             .padding()
-
+            
             /*
+            // MARK: --- Optional: Imported Transactions List
             // 🚧 Optional: show imported transactions directly
             List(transactions) { tx in
                 VStack(alignment: .leading) {
@@ -45,16 +62,17 @@ struct TxImportView<Importer: TxImporter>: View {
                 }
             }
             */
+            
         }
         .frame(width: 500, height: 250)
     }
-
-    // MARK: - File Selection
+    
+    // MARK: --- File Selection
     private func selectFile() {
         let panel = NSOpenPanel()
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
-
+        
         // Dynamic allowed file types based on Importer
         switch Importer.importType {
         case .csv:
@@ -64,16 +82,16 @@ struct TxImportView<Importer: TxImporter>: View {
             panel.allowedContentTypes = [.png]
             panel.title = "Select a \(Importer.displayName) PNG file"
         }
-
+        
         if panel.runModal() == .OK, let url = panel.url {
             startImport(url: url)
         }
     }
-
-    // MARK: - Start Import
+    
+    // MARK: --- Start Import
     private func startImport(url: URL) {
         statusMessage = "Parsing file..."
-
+        
         Task { @MainActor in
             let imported = await Importer.importTransactions(
                 fileURL: url,
@@ -89,7 +107,7 @@ struct TxImportView<Importer: TxImporter>: View {
                     }
                 }
             )
-
+            
             importedCount = imported.count
             statusMessage = "Import complete! Imported \(importedCount)"
         }
