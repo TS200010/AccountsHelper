@@ -24,7 +24,7 @@ struct InspectorViews: View {
                 InspectTransaction()
                 
             case .viewCategoryBreakdown:
-                InspectorCategoryBreakdown( )
+                InspectCategoryBreakdown()
                 
             case .viewReconciliation:
                 InspectReconciliation()

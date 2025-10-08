@@ -25,7 +25,7 @@ struct InspectorViewToolbar: View {
                     name: "star.hexagon.fill",
                     isSelected: appState.selectedInspectorView == .viewTransaction )
                 
-                // MARK: --- InspectorCategoryBreakdown Button
+                // MARK: --- InspectCategoryBreakdown Button
                 ItMkToolBarButton(
                     action: { appState.selectedInspectorView = .viewCategoryBreakdown  },
                     name: "xmark.seal",
