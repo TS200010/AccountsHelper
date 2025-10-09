@@ -191,16 +191,39 @@ struct BrowseTransactionsView: View {
     // Filter State
     @State private var selectedAccountingPeriod: AccountingPeriod? = nil
     @State private var selectedPaymentMethod: PaymentMethod? = nil
+    
 
     // MARK: --- Injected Properties
     @FetchRequest private var transactions: FetchedResults<Transaction>
 
+    // MARK: --- CoreData
     init(predicate: NSPredicate? = nil) {
         _transactions = FetchRequest(
             sortDescriptors: [NSSortDescriptor(keyPath: \Transaction.timestamp, ascending: true)],
             predicate: predicate
         )
     }
+    
+    @FetchRequest(
+        sortDescriptors: [
+            NSSortDescriptor(keyPath: \Reconciliation.periodYear, ascending: false),
+            NSSortDescriptor(keyPath: \Reconciliation.periodMonth, ascending: false)
+        ],
+        animation: .default
+    )
+    
+    private var reconciliations: FetchedResults<Reconciliation>
+    
+    private var accountingPeriods: [AccountingPeriod] {
+        var uniquePeriods = Set<AccountingPeriod>()
+        for rec in reconciliations {
+            uniquePeriods.insert(rec.accountingPeriod)
+        }
+        return Array(uniquePeriods).sorted(by: {
+            ($0.year, $0.month) > ($1.year, $1.month)
+        })
+    }
+    
 
     // MARK: --- Derived Rows
     private var transactionRows: [TransactionRow] {
@@ -496,52 +519,56 @@ extension BrowseTransactionsView {
     private func buildPredicate() -> NSPredicate? {
         var predicates: [NSPredicate] = []
 
-        // --- Accounting Period Filter
-        if let period = selectedAccountingPeriod {
-            // Safely compute start and end dates
-            if let startDate = Calendar.current.date(from: DateComponents(year: period.year, month: period.month, day: 1)),
-               let range = Calendar.current.range(of: .day, in: .month, for: startDate),
-               let endDate = Calendar.current.date(from: DateComponents(year: period.year, month: period.month, day: range.count)) {
-                predicates.append(NSPredicate(format: "transactionDate >= %@ AND transactionDate <= %@", startDate as NSDate, endDate as NSDate))
-            }
-        }
-
         // --- Payment Method Filter
         if let method = selectedPaymentMethod {
-            // Only add predicate if method is selected (nil = All)
             predicates.append(NSPredicate(format: "paymentMethodCD == %@", NSNumber(value: method.rawValue)))
+        }
+
+        // --- Accounting Period / Date Filter
+        if let method = selectedPaymentMethod, let period = selectedAccountingPeriod {
+            if let reconciliation = try? Reconciliation.fetchOne(for: period, paymentMethod: method, context: viewContext) {
+                let start = reconciliation.transactionStartDate as NSDate
+                let end = reconciliation.transactionEndDate as NSDate
+                predicates.append(NSPredicate(format: "transactionDate >= %@ AND transactionDate <= %@", start, end))
+            }
         }
 
         guard !predicates.isEmpty else { return nil }
         return NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
     }
+
     
     // MARK: --- RefreshFetchRequest
     private func refreshFetchRequest() {
-        transactions.nsPredicate = buildPredicate( )
+        transactions.nsPredicate = buildPredicate()
     }
 
         // MARK: --- FilterBar
+    // MARK: --- FilterBar
     private var filterBar: some View {
         HStack(spacing: 16) {
-            // Accounting Period Picker
-            Picker("Period", selection: $selectedAccountingPeriod) {
-                Text("All").tag(AccountingPeriod?.none)
-                ForEach(uniqueAccountingPeriods, id: \.self) { period in
-                    Text(period.displayStringWithOpening).tag(AccountingPeriod?.some(period))
-                }
-            }
-            .pickerStyle(MenuPickerStyle())
-            
-            // Payment Method Picker
+            // --- Payment Method Picker
             Picker("Payment Method", selection: $selectedPaymentMethod) {
                 Text("All").tag(nil as PaymentMethod?)
-                ForEach(PaymentMethod.allCases, id: \.self) { method in
+                ForEach(PaymentMethod.allCases.filter { $0 != .unknown }, id: \.self) { method in
                     Text(method.description).tag(method as PaymentMethod?)
                 }
             }
             .pickerStyle(MenuPickerStyle())
-            
+
+            // --- Accounting Period Picker (only show if a payment method is selected)
+            if let method = selectedPaymentMethod {
+                Picker("Period", selection: $selectedAccountingPeriod) {
+                    Text("All").tag(nil as AccountingPeriod?)
+                    
+                    // Only show periods that have reconciliations for this method
+                    ForEach(accountingPeriodsForPaymentMethod(method), id: \.self) { period in
+                        Text(period.displayStringWithOpening).tag(Optional(period))
+                    }
+                }
+                .pickerStyle(MenuPickerStyle())
+            }
+
             Spacer()
         }
         .padding(.horizontal)
@@ -549,7 +576,7 @@ extension BrowseTransactionsView {
         .background(Color.ItMkPlatformWindowBackgroundColor)
     }
 
-        // MARK: --- Unique Accounting Periods
+    // MARK: --- Unique Accounting Periods
     private var uniqueAccountingPeriods: [AccountingPeriod] {
         let periods = transactions.compactMap { transaction -> AccountingPeriod? in
             guard let date = transaction.transactionDate else { return nil }
@@ -563,6 +590,16 @@ extension BrowseTransactionsView {
         }
     }
     
+    // MARK: --- Accounting periods per payment method
+    private func accountingPeriodsForPaymentMethod(_ method: PaymentMethod) -> [AccountingPeriod] {
+        let periods = reconciliations
+            .filter { $0.paymentMethod == method }
+            .map { $0.accountingPeriod }
+        return Array(Set(periods))
+            .sorted { ($0.year, $0.month) > ($1.year, $1.month) }
+    }
+    
+    // MARK: --- FilteredTransactionRows
     private var filteredTransactionRows: [TransactionRow] {
         let predicate = buildPredicate()
         

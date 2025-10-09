@@ -5,16 +5,24 @@
 //  Created by Anthony Stanners on 25/09/2025.
 //
 
+//struct AccountingPeriod: Hashable, Equatable, CustomStringConvertible {
+//    let year: Int
+//    let month: Int
+//    
+//    var description: String { "\(year)-\(String(format: "%02d", month))" }
+//}
 import Foundation
 
 /// Represents a specific accounting period identified by year and month.
-struct AccountingPeriod: Hashable {
+struct AccountingPeriod: Hashable, Equatable, CustomStringConvertible {
     
     // MARK: --- Properties
     let year: Int
     let month: Int
 
     // MARK: --- Display Strings
+    
+    var description: String { displayString }
 
     /// Returns a localized display string for the period, e.g., "September 2025"
     var displayString: String {
