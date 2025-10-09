@@ -19,9 +19,9 @@ struct CentralViews: View {
         ZStack {
             if appState.centralViewStack.isEmpty {
                 // Show fallback text when stack is empty
-                Text("<--- Select an action from the Navigation Bar")
+                Text("Select an action from the Navigation View")
                     .foregroundColor(.gray)
-                    .font(.headline)
+//                    .font(.headline)
             } else {
                 ForEach(Array(appState.centralViewStack.enumerated()), id: \.element) { index, viewEnum in
                     getView(for: viewEnum)
@@ -48,9 +48,9 @@ struct CentralViews: View {
         switch viewEnum {
             
         case .emptyView:
-            Text("Select an action from the toolbar")
+            Text("Select an action from the Toolbar")
                 .foregroundColor(.gray)
-                .font(.headline)
+//                .font(.headline)
             
         case .addTransaction:
             AddOrEditTransactionView()
@@ -121,6 +121,14 @@ struct CentralViews: View {
             
         case .transactionSummary(let predicate):
             CategoriesSummaryView(predicate: predicate)
+            
+        case .exportCD:
+            ExportCD()
+            
+        case .importCD:
+            ImportCD()
         }
+        
+        
     }
 }

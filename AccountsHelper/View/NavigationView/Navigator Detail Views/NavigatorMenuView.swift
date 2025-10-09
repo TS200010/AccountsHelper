@@ -80,16 +80,6 @@ struct NavigatorMenuView: View {
     var body: some View {
         VStack(spacing: 4) {
             
-            if gUseLiveStore {
-                Text("Using LIVE Store")
-                    .foregroundColor(.green)
-            } else {
-                Text("Using TEST Store")
-                    .foregroundColor(.red)
-            }
-            
-            Divider()
-            
             SidebarButton(title: "Add Transaction",
                           systemImage: "plus.circle",
                           view: .addTransaction,
@@ -136,6 +126,22 @@ struct NavigatorMenuView: View {
                           systemImage: "checkmark.seal",
                           view: .reconcilliationListView,
                           color: .teal,
+                          optionalSheetBinding: .constant(false))
+            
+            Divider()
+            
+            SidebarButton(title: "Export Transactions",
+                          systemImage: "square.and.arrow.up",
+                          view: .exportCD,
+                          color: .black,
+                          optionalSheetBinding: .constant(false))
+            
+            Divider()
+            
+            SidebarButton(title: "Import Transactions",
+                          systemImage: "square.and.arrow.down",
+                          view: .importCD,
+                          color: .black,
                           optionalSheetBinding: .constant(false))
             
             Divider()

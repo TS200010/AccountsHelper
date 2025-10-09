@@ -15,10 +15,10 @@ import SwiftUI
 // MARK: --- Which CoreData DEVELOPMENT Store to use. This is not Apple's Production yet
 #if os(iOS)
 // MARK: --- iOS
-let gUseLiveStore = true
+var gUseLiveStore = true
 #else
 // MARK: --- macOS
-let gUseLiveStore = false
+var gUseLiveStore = false
 #endif
 
 // MARK: --- To force upload the Schema (do this on iOS - seems to be more reliable there)

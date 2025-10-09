@@ -16,6 +16,8 @@ enum CentralViewsEnum: Hashable {
     case editCurrency
     case editPayee
     case editPayer
+    case exportCD
+    case importCD
     case addTransaction
     case AMEXCSVImport
     case BofSCSVImport
@@ -76,6 +78,8 @@ enum CentralViewsEnum: Hashable {
         case .reports: return "Reports"
         case .transactionMergeView: return "Transactions Merge"
         case .transactionSummary: return "Transactions Summary"
+        case .exportCD: return "Export Transactions"
+        case .importCD: return "Import Transactions"
         }
     }
 }

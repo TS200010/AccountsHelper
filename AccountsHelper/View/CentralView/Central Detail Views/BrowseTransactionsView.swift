@@ -39,7 +39,7 @@ fileprivate struct TransactionRow: Identifiable, Hashable {
         } else {
             formattedAmount = String(format: "%.2f", txAmount)
         }
-        var result = "\(currency) \(formattedAmount) \(transaction.debitCredit == .DR ? debitCredit : "")"
+        var result = "\(currency) \(formattedAmount) \(transaction.debitCredit == .DR ? "" : debitCredit )"
         if transaction.currency == .GBP {
             return result
         } else {
@@ -105,7 +105,7 @@ fileprivate struct TransactionRow: Identifiable, Hashable {
     var txAmount: String { transaction.txAmountAsString() ?? "" }
 
     // MARK: --- ExchangeRate
-    var exchangeRate: String { transaction.exchangeRateAsString() ?? "" }
+    var exchangeRate: String { transaction.currency == .GBP ? "" : (transaction.exchangeRateAsString() ?? "") }
 
     static func == (lhs: TransactionRow, rhs: TransactionRow) -> Bool { lhs.id == rhs.id }
     func hash(into hasher: inout Hasher) { hasher.combine(id) }

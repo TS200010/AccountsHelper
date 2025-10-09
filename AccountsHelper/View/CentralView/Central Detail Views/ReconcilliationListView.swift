@@ -67,6 +67,7 @@ struct ReconcilliationListView: View {
             .onReceive(NotificationCenter.default.publisher(for: .NSManagedObjectContextDidSave, object: context)) { _ in
                 refreshRows()
             }
+        
     }
 }
 
@@ -74,7 +75,7 @@ struct ReconcilliationListView: View {
 extension ReconcilliationListView {
     // MARK: --- toolbarContent
     private var toolbarContent: some ToolbarContent {
-        ToolbarItem(placement: .principal) {
+        ToolbarItem(placement: .navigation) {
             Button("New") { showingNewReconciliation = true }
                 .keyboardShortcut("N", modifiers: [.command])
         }

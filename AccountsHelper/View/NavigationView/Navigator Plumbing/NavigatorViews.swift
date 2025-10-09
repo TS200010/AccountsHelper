@@ -21,9 +21,9 @@ struct NavigatorViews: View {
             switch appState.selectedNavigatorView {
                 
             case .emptyView:
-                Text("Select an action from the toolbar")
+                Text("Select an action from the Toolbar")
                     .foregroundColor(.gray)
-                    .font(.headline)
+//                    .font(.headline)
                 
             case .edit:
                 NavigatorMenuView()

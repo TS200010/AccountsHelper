@@ -8,6 +8,27 @@
 import Foundation
 import CoreData
 
+/*
+ @NSManaged public var accountNumber: String?
+ @NSManaged public var address: String?
+ @NSManaged public var categoryCD: Int32
+ @NSManaged public var closed: Bool
+ @NSManaged public var commissionAmountCD: Int32
+ @NSManaged public var currencyCD: Int32
+ @NSManaged public var debitCreditCD: Int32
+ @NSManaged public var exchangeRateCD: Int32
+ @NSManaged public var explanation: String?
+ @NSManaged public var extendedDetails: String?
+ @NSManaged public var payee: String?
+ @NSManaged public var payerCD: Int32
+ @NSManaged public var paymentMethodCD: Int32
+ @NSManaged public var reference: String?
+ @NSManaged public var splitAmountCD: Int32
+ @NSManaged public var splitCategoryCD: Int32
+ @NSManaged public var timestamp: Date?
+ @NSManaged public var transactionDate: Date?
+ @NSManaged public var txAmountCD: Int32
+ */
 
 // MARK: --- CentsConvertible conformance
 extension Transaction: CentsConvertible {}

@@ -11,7 +11,7 @@ import ItMkLibrary
 // MARK: --- StatusBar View
 struct StatusBarView: View {
     
-    var status: String
+    var status: String = ""
     
     @Environment(\.managedObjectContext) private var viewContext
     
@@ -28,9 +28,9 @@ struct StatusBarView: View {
                 .padding(8)
                 .foregroundColor(.secondary)
             
-            Spacer()
+//            Spacer()
             
-            Text(status)
+//            Text(status)
         }
         .frame(maxWidth: .infinity, minHeight: 30, maxHeight: 30)
         .topBorder()

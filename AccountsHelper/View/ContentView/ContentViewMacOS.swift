@@ -26,7 +26,7 @@ struct ContentViewMacOS: View {
         VStack(spacing: 0) {
             navigationSplitViewSection
             if showingStatusbar {
-                StatusBarView(status: "To Implement ... Status Bar")
+                StatusBarView()
             }
         }
     }
@@ -66,6 +66,28 @@ extension ContentViewMacOS {
 // MARK: --- TOOLBARS
 extension ContentViewMacOS {
     
+    struct FullWidthToolbarLozenge: View {
+
+        let text: String
+        let color: Color
+        private let height: CGFloat = 28
+        private let cornerRadius: CGFloat = 14
+
+        var body: some View {
+            ZStack {
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .fill(Color(NSColor.windowBackgroundColor).opacity(0.2)) // subtle lozenge
+                Text(text)
+                    .foregroundColor(color)
+                    .font(.headline)
+            }
+            .frame(height: height)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 8)
+        }
+    }
+
+    
     // MARK: --- ToolbarSection
     private var toolbarSection: some ToolbarContent {
         Group {
@@ -96,15 +118,29 @@ extension ContentViewMacOS {
                 }
                 .disabled(appState.centralViewStack.isEmpty)
             }
-            
-            // Principal Action Button (placeholder)
+
             ToolbarItem(placement: .principal) {
-                Button {
-                    withAnimation { /* Action here */ }
-                } label: {
-                    Image(systemName: "trash.slash.circle.fill")
+                HStack {
+                    Text(gUseLiveStore ? "          Using LIVE Store          " : "          Using TEST Store          ")
+                        .foregroundColor(gUseLiveStore ? .green : .red)
+//                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 2)
+                        .padding(.horizontal, 8)
+                        .background(Color(NSColor.controlBackgroundColor).opacity(0.2))
+                        .cornerRadius(6)
                 }
             }
+            
+            
+//            // Principal Action Button (placeholder)
+//            ToolbarItem(placement: .principal) {
+//                Button {
+//                    withAnimation { /* Action here */ }
+//                } label: {
+//                    Image(systemName: "trash.slash.circle.fill")
+//                }
+//            }
         }
     }
 }
