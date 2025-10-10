@@ -44,7 +44,7 @@ struct ImportCD: View {
             Button("Copy Now", role: .destructive) {
                 isCopying = true
                 DispatchQueue.global(qos: .userInitiated).async {
-                    PersistenceController.shared.importTransactionsFromCSV()
+                    _ = PersistenceController.shared.importTransactionsFromCSV()
                     DispatchQueue.main.async {
                         isCopying = false
                     }

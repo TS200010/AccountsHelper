@@ -138,6 +138,11 @@ extension ReconcilliationListView {
 }
 // MARK: --- CONTENT VIEW
 extension ReconcilliationListView {
+    
+//    private func formattedCurrency(_ amount: Decimal, currency: Currency) -> String {
+//        amount.formatted(.currency(code: currency.code).locale)
+//    }
+    
     // MARK: --- reconciliationListContent
     private var reconciliationListContent: some View {
         NavigationStack {
@@ -187,9 +192,26 @@ extension ReconcilliationListView {
                             .contextMenu { rowContextMenu(row) }
                     }
                     
+                    TableColumn("Opening Balance") { row in
+                        Text(row.rec.previousEndingBalance.formattedAsCurrency(row.rec.currency))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .foregroundColor(row.rec.closed ? .blue : (hasInvalidTransactions(row) ? .red : .primary))
+                            .contentShape(Rectangle())
+                            .contextMenu { rowContextMenu(row) }
+                    }
+                    
+
+                    TableColumn("Net Transactions") { row in
+                        Text(row.rec.totalTransactionsInGBP.formattedAsCurrency(row.rec.currency))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .foregroundColor(row.rec.closed ? .blue : (hasInvalidTransactions(row) ? .red : .primary))
+                            .contentShape(Rectangle())
+                            .contextMenu { rowContextMenu(row) }
+                    }
+                    
                     TableColumn("Ending Balance") { row in
-                        Text("\(row.rec.endingBalance.formatted(.number.precision(.fractionLength(2)))) \(row.rec.currency.description)")
-                            .frame(maxWidth: .infinity, alignment: .trailing)
+                        Text(row.rec.endingBalance.formattedAsCurrency(row.rec.currency))
+                            .frame(maxWidth: .infinity, alignment: .leading)
                             .foregroundColor(row.rec.closed ? .blue : (hasInvalidTransactions(row) ? .red : .primary))
                             .contentShape(Rectangle())
                             .contextMenu { rowContextMenu(row) }
@@ -207,9 +229,9 @@ extension ReconcilliationListView {
                     
                     TableColumn("Gap") { row in
                         if row.gap != 0 {
-                            Text("\(row.gap.formatted(.number.precision(.fractionLength(2))))")
+                            Text(row.gap.formattedAsCurrency(row.rec.currency))
                                 .foregroundColor(row.rec.closed ? .blue : .red)
-                                .frame(maxWidth: .infinity, alignment: .trailing)
+                                .frame(maxWidth: .infinity, alignment: .leading)
                                 .contentShape(Rectangle())
                                 .contextMenu { rowContextMenu(row) }
                         }

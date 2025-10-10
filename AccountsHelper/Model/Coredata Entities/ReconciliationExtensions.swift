@@ -62,12 +62,6 @@ extension Reconciliation {
         set { endingBalanceCD = decimalToCents(newValue) }
     }
 
-    // MARK: --- EndingBalanceInGBP
-    var endingBalanceInGBP: Decimal { endingBalance }
-
-    // MARK: --- NewBalanceInGBP
-    var newBalanceInGBP: Decimal { endingBalance }
-
     // MARK: --- IsClosed
     var isClosed: Bool { closed }
 
@@ -82,8 +76,8 @@ extension Reconciliation {
     // MARK: --- PaymentMethod
     var paymentMethod: PaymentMethod { PaymentMethod(rawValue: paymentMethodCD) ?? .unknown }
 
-    // MARK: --- PreviousBalanceInGBP
-    var previousBalanceInGBP: Decimal {
+    // MARK: --- PreviousEndingBalance
+    var previousEndingBalance: Decimal {
         if let context = self.managedObjectContext,
            let previous = try? Reconciliation.fetchPrevious(for: self.paymentMethod, before: self.statementDate ?? Date.distantPast, context: context) {
             return previous.endingBalance
@@ -145,7 +139,7 @@ extension Reconciliation {
     // MARK: --- CanDelete
     func canDelete(in context: NSManagedObjectContext) -> Bool {
         guard !closed else { return false }
-        if previousBalanceInGBP == 0 && hasLaterReconciliation(in: context) {
+        if previousEndingBalance == 0 && hasLaterReconciliation(in: context) {
             return false
         }
         return true
@@ -217,7 +211,9 @@ extension Reconciliation {
 
     // MARK: --- ReconciliationGap
     func reconciliationGap(in context: NSManagedObjectContext) -> Decimal {
+
         if isAnOpeningBalance { return 0 }
+        
         do {
             let txs = try fetchTransactions(in: context)
             let sumInGBP = txs.reduce(Decimal(0)) { $0 + $1.totalAmountInGBP }

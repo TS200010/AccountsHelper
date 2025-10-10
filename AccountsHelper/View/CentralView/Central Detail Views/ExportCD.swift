@@ -44,7 +44,7 @@ struct ExportCD: View {
             Button("Copy Now", role: .destructive) {
                 isCopying = true
                 DispatchQueue.global(qos: .userInitiated).async {
-                    PersistenceController.shared.exportTransactionsToCSV()
+                    _ = PersistenceController.shared.exportTransactionsToCSV()
                     DispatchQueue.main.async {
                         isCopying = false
                     }

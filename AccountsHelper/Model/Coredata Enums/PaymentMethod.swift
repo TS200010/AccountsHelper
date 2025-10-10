@@ -89,7 +89,23 @@ import ItMkLibrary
         }
     }
 
+    // MARK: --- FromInt32
     static func fromInt32(_ i: Int32) -> PaymentMethod {
         return PaymentMethod.fromInt(Int(i))
+    }
+    
+    // MARK: --- CurrencyCODE
+    var currencyCode: String {
+        switch self {
+        case .CashGBP: return "GBP"
+        case .CashUSD: return "USD"
+        case .CashEUR: return "EUR"
+        case .CashYEN: return "YEN"
+        case .AMEX:    return "GBP"
+        case .VISA:    return "GBP"
+        case .BofSPV:  return "GBP"
+        case .BofSCA:  return "GBP"
+        case .unknown: return "GBP"
+        }
     }
 }
