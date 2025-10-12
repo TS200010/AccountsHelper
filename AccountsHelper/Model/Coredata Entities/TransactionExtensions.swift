@@ -128,6 +128,13 @@ extension Transaction {
         get { Decimal(txAmountCD) / 100 }
         set { txAmountCD = decimalToCents(newValue) }
     }
+    
+    var txAmountInGBP: Decimal {
+        assert(exchangeRate != 0)
+        let value = txAmount / exchangeRate
+        if value.isNaN { return Decimal(0) }
+        return value
+    }
 
     var totalAmountInGBP: Decimal {
         let total = splitAmountInGBP + splitRemainderAmountInGBP

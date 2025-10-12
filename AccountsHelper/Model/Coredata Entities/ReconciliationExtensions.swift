@@ -90,6 +90,12 @@ extension Reconciliation {
         guard let context = self.managedObjectContext else { return 0 }
         return (try? fetchTransactions(in: context).reduce(Decimal(0)) { $0 + $1.totalAmountInGBP }) ?? 0
     }
+    
+    // MARK: --- TotalTransactions
+    var totalTransactions: Decimal {
+        guard let context = self.managedObjectContext else { return 0 }
+        return (try? fetchTransactions(in: context).reduce(Decimal(0)) { $0 + $1.txAmount }) ?? 0
+    }
 
     // MARK: --- TransactionEndDate
     var transactionEndDate: Date { self.statementDate ?? Date.distantPast }
@@ -209,8 +215,8 @@ extension Reconciliation {
         }
     }
 
-    // MARK: --- ReconciliationGap
-    func reconciliationGap(in context: NSManagedObjectContext) -> Decimal {
+    // MARK: --- ReconciliationGapInGBP
+    func reconciliationGapInGBP(in context: NSManagedObjectContext) -> Decimal {
 
         if isAnOpeningBalance { return 0 }
         
@@ -224,6 +230,27 @@ extension Reconciliation {
             } else { previousBalance = 0 }
 
             return (previousBalance + sumInGBP) - self.endingBalance
+        } catch {
+            print("Failed to compute reconciliation gap: \(error)")
+            return 0
+        }
+    }
+    
+    // MARK: --- ReconciliationGap
+    func reconciliationGap(in context: NSManagedObjectContext) -> Decimal {
+
+        if isAnOpeningBalance { return 0 }
+        
+        do {
+            let txs = try fetchTransactions(in: context)
+            let sum = txs.reduce(Decimal(0)) { $0 + $1.txAmount }
+
+            let previousBalance: Decimal
+            if let prev = try? Reconciliation.fetchPrevious(for: self.paymentMethod, before: self.transactionEndDate, context: context) {
+                previousBalance = prev.endingBalance
+            } else { previousBalance = 0 }
+
+            return (previousBalance + sum) - self.endingBalance
         } catch {
             print("Failed to compute reconciliation gap: \(error)")
             return 0

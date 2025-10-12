@@ -36,10 +36,15 @@ struct InspectTransaction: View {
                             .padding(.bottom, 10)
                         
                         // MARK: --- General Section
+//                        inspectorSection("General") {
+//                            transactionRow("Timestamp:", transaction.timestamp?.formatted(date: .abbreviated, time: .standard) ?? "N/A")
+//                            Divider()
+//                            transactionRow("TX Date:", transaction.transactionDate?.formatted(date: .abbreviated, time: .standard) ?? "N/A")
+//                        }
                         inspectorSection("General") {
-                            transactionRow("Timestamp:", transaction.timestamp?.formatted(date: .abbreviated, time: .standard) ?? "N/A")
+                            transactionRow("Timestamp:", transaction.timestamp.map { dateOnlyFormatter.string(from: $0) } ?? "N/A")
                             Divider()
-                            transactionRow("TX Date:", transaction.transactionDate?.formatted(date: .abbreviated, time: .standard) ?? "N/A")
+                            transactionRow("TX Date:", transaction.transactionDate.map { dateOnlyFormatter.string(from: $0) } ?? "N/A")
                         }
                         
                         // MARK: --- Categories Section

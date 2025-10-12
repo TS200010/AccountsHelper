@@ -202,7 +202,7 @@ extension ReconcilliationListView {
                     
 
                     TableColumn("Net Transactions") { row in
-                        Text(row.rec.totalTransactionsInGBP.formattedAsCurrency(row.rec.currency))
+                        Text(row.rec.totalTransactions.formattedAsCurrency(row.rec.currency))
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .foregroundColor(row.rec.closed ? .blue : (hasInvalidTransactions(row) ? .red : .primary))
                             .contentShape(Rectangle())
@@ -457,7 +457,7 @@ extension ReconcilliationListView {
                 row.rec.transactionStartDate as NSDate,
                 row.rec.transactionEndDate as NSDate
             )
-            appState.pushCentralView(.transactionSummary(predicate))
+            appState.pushCentralView(.categoriesSummary(predicate))
         } label: {
             Label("Summary", systemImage: "doc.text.magnifyingglass")
         }

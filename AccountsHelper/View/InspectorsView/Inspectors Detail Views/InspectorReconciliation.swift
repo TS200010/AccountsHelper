@@ -72,7 +72,8 @@ struct InspectorReconciliation: View {
                         // MARK: --- Balance
                         HStack {
                             Text("Balance:").bold()
-                            Text("\(rec.endingBalance.formatted(.number.precision(.fractionLength(2)))) \(rec.currency.description)")
+                            Text("\(rec.endingBalance.formattedAsCurrency(rec.currency))")
+//                            Text("\(rec.endingBalance.formatted(.number.precision(.fractionLength(2)))) \(rec.currency.description)")
                             Spacer()
                         }
                         .padding()
@@ -112,7 +113,8 @@ struct InspectorReconciliation: View {
                         if !isBalanced {
                             HStack {
                                 Text("Out of balance amount:").bold()
-                                Text("\(reconciliationGap.formatted(.number.precision(.fractionLength(2)))) \(rec.currency.description)")
+                                Text("\(reconciliationGap.formattedAsCurrency(rec.currency))")
+//                                Text("\(reconciliationGap.formatted(.number.precision(.fractionLength(2)))) \(rec.currency.description)")
                                 Spacer()
                             }
                             .padding()

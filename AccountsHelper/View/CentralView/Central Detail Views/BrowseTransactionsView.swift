@@ -26,43 +26,71 @@ fileprivate struct TransactionRow: Identifiable, Hashable {
     var debitCredit: String { transaction.debitCredit.description }
 
     // MARK: --- DisplayAmount
+//    var displayAmountOld: String {
+//        let rawAmount = NSDecimalNumber(decimal: transaction.txAmount)
+//        let rawFx = NSDecimalNumber(decimal: transaction.exchangeRate)
+//        let txAmount: Double = rawAmount.doubleValue
+//        let exchangeRate: Double = rawFx.doubleValue
+////        let txAmountGBP: Double = txAmount / (exchangeRate == 0 ? 1 : exchangeRate)
+//        let txAmountGBP: Double = txAmount / (exchangeRate == 0 ? 1 : exchangeRate)
+//        let formattedAmount: String
+//        let formattedAmountGBP = String(format: "%.2f", txAmountGBP)
+//        if transaction.currency == .JPY {
+//            formattedAmount = String(format: "%.0f", txAmount)
+//        } else {
+//            formattedAmount = String(format: "%.2f", txAmount)
+//        }
+//        var result = "\(currency) \(formattedAmount) \(transaction.debitCredit == .DR ? "" : debitCredit )"
+//        if transaction.currency == .GBP {
+//            return result
+//        } else {
+//            #if os(macOS)
+//            return result + "\nGBP \(formattedAmountGBP)"
+//            #else
+//            return result + " GBP \(formattedAmountGBP)"
+//            #endif
+//        }
+//    }
+    
     var displayAmount: String {
-        let rawAmount = NSDecimalNumber(decimal: transaction.txAmount)
-        let rawFx = NSDecimalNumber(decimal: transaction.exchangeRate)
-        let txAmount: Double = rawAmount.doubleValue
-        let exchangeRate: Double = rawFx.doubleValue
-        let txAmountGBP: Double = txAmount / (exchangeRate == 0 ? 1 : exchangeRate)
-        let formattedAmount: String
-        let formattedAmountGBP = String(format: "%.2f", txAmountGBP)
-        if transaction.currency == .JPY {
-            formattedAmount = String(format: "%.0f", txAmount)
-        } else {
-            formattedAmount = String(format: "%.2f", txAmount)
-        }
-        var result = "\(currency) \(formattedAmount) \(transaction.debitCredit == .DR ? "" : debitCredit )"
+        var wip: String = transaction.txAmount.formattedAsCurrency( transaction.currency )
         if transaction.currency == .GBP {
-            return result
+            return wip
         } else {
-            #if os(macOS)
-            return result + "\nGBP \(formattedAmountGBP)"
-            #else
-            return result + " GBP \(formattedAmountGBP)"
-            #endif
+#if os(macOS)
+            return wip + "\n" + transaction.txAmountInGBP.formattedAsCurrency( .GBP )
+#else
+            return wip + transaction.txAmountInGBP.formattedAsCurrency( .GBP )
+#endif
         }
     }
 
     // MARK: --- DisplaySplitAmount
+//    var displaySplitAmountOld: String {
+//        if transaction.splitAmount == Decimal(0) { return "" }
+//        let rawSplit = NSDecimalNumber(decimal: transaction.splitAmount).doubleValue
+//        let rawRemainder = NSDecimalNumber(decimal: transaction.splitRemainderAmount).doubleValue
+//        let formattedSplit = transaction.currency == .JPY ? String(format: "%.0f", rawSplit) : String(format: "%.2f", rawSplit)
+//        let formattedRemainder = transaction.currency == .JPY ? String(format: "%.0f", rawRemainder) : String(format: "%.2f", rawRemainder)
+//        let splitPad = String(repeating: " ", count: max(0, 5 - formattedSplit.count))
+//        let remainderPad = String(repeating: " ", count: max(0, 5 - formattedRemainder.count))
+//        var result = "\(currency) \(formattedSplit)" + splitPad + " \(splitCategory)"
+//        result += "\n\(currency) \(formattedRemainder)" + remainderPad + " \(splitRemainderCategory)"
+//        return result
+//    }
+    
     var displaySplitAmount: String {
         if transaction.splitAmount == Decimal(0) { return "" }
-        let rawSplit = NSDecimalNumber(decimal: transaction.splitAmount).doubleValue
-        let rawRemainder = NSDecimalNumber(decimal: transaction.splitRemainderAmount).doubleValue
-        let formattedSplit = transaction.currency == .JPY ? String(format: "%.0f", rawSplit) : String(format: "%.2f", rawSplit)
-        let formattedRemainder = transaction.currency == .JPY ? String(format: "%.0f", rawRemainder) : String(format: "%.2f", rawRemainder)
-        let splitPad = String(repeating: " ", count: max(0, 5 - formattedSplit.count))
-        let remainderPad = String(repeating: " ", count: max(0, 5 - formattedRemainder.count))
-        var result = "\(currency) \(formattedSplit)" + splitPad + " \(splitCategory)"
-        result += "\n\(currency) \(formattedRemainder)" + remainderPad + " \(splitRemainderCategory)"
-        return result
+
+        var splitPart = transaction.splitAmount.formattedAsCurrency(transaction.currency) + " " + transaction.splitCategory.description
+        var remainderPart = transaction.splitRemainderAmount.formattedAsCurrency(transaction.currency) + " " + transaction.splitRemainderCategory.description
+
+    #if os(macOS)
+            return splitPart + "\n" + remainderPart
+    #else
+            return splitPart + remainderPart
+    #endif
+
     }
 
     // MARK: --- Explanation

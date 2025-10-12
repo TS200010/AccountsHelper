@@ -14,6 +14,14 @@ struct CategoriesSummaryView: View {
     // MARK: --- State
     @State private var selectedCategoryID: Int32?
     
+
+    // MARK: --- Local Variables
+    private var currency: Currency? {
+        // The Currency will be the currency of the paymentMethod of the Transaction.
+        // ... Thats what it will be designated in
+        transactions.first?.paymentMethod.currency
+    }
+    
     // MARK: --- Init
     init(predicate: NSPredicate? = nil, isPrinting: Bool = false) {
         _transactions = FetchRequest(
@@ -36,17 +44,6 @@ struct CategoriesSummaryView: View {
     }
 
     // MARK: --- CategoryRows
-//    fileprivate var categoryRows: [CategoryRow] {
-//        let predicate = transactions.nsPredicate ?? NSPredicate(value: true)
-//        let totals = viewContext.categoryTotals(for: predicate)
-//        
-//        return Category.allCases
-//            .sorted { $0.rawValue < $1.rawValue }
-//            .map { category in
-//                CategoryRow(category: category, total: totals[category] ?? 0, transactionIDs: [])
-//            }
-//    }
-//    
     fileprivate var categoryRows: [CategoryRow] {
         // Group all transactions by category (defaulting to .unknown)
         let grouped = Dictionary(grouping: transactions) { (tx: Transaction) in
@@ -65,9 +62,6 @@ struct CategoriesSummaryView: View {
         }
     }
 
-    
-
-    
     // MARK: --- Body
     var body: some View {
         VStack(alignment: .leading) {
@@ -90,25 +84,32 @@ extension CategoriesSummaryView {
         var totalDR: Decimal = 0
         
         for tx in transactions {
-            let amount = tx.totalAmountInGBP
+//            let amount = tx.totalAmountInGBP
+            let amount = tx.txAmount
             total += amount
             if amount > 0 { totalCR += amount }
             else if amount < 0 { totalDR += amount }
         }
         
         return (
-            total: total.string2f,
-            totalCR: totalCR.string2f,
-            totalDR: totalDR.string2f
+            total: total.formattedAsCurrency( currency ?? .unknown ),
+            totalCR: totalCR.formattedAsCurrency( currency ?? .unknown ),
+            totalDR: totalDR.formattedAsCurrency( currency ?? .unknown )
+//            total: total.string2f,
+//            totalCR: totalCR.string2f,
+//            totalDR: totalDR.string2f
         )
     }
     
     // MARK: --- TotalsView
     private var totalsView: some View {
         HStack(spacing: 40) {
-            Text("Total: \(totals.total) GBP")
-            Text("Total CRs: \(totals.totalCR) GBP")
-            Text("Total DRs: \(totals.totalDR) GBP")
+            Text("Total: \(totals.total)")
+            Text("Total CRs: \(totals.totalCR)")
+            Text("Total DRs: \(totals.totalDR)")
+//            Text("Total: \(totals.total) GBP")
+//            Text("Total CRs: \(totals.totalCR) GBP")
+//            Text("Total DRs: \(totals.totalDR) GBP")
         }
         .padding(.horizontal, 10)
     }

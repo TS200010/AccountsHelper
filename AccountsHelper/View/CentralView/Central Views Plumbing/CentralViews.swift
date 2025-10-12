@@ -119,7 +119,7 @@ struct CentralViews: View {
         case .transactionMergeView(let txs, let onComplete):
             MergeTransactionsView(transactions: txs, onComplete: onComplete)
             
-        case .transactionSummary(let predicate):
+        case .categoriesSummary(let predicate):
             CategoriesSummaryView(predicate: predicate)
             
         case .exportCD:
