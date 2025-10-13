@@ -21,6 +21,7 @@ enum MergeResult {
     case keepExisting
     case keepNew
     case keepBoth
+    case cancelMerge
 }
 
 // MARK: --- IxImporter Protocol

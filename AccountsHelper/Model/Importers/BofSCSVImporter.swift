@@ -38,7 +38,8 @@ class BofSCSVImporter: TxImporter {
             let existingSnapshot = (try? context.fetch(fetchRequest)) ?? []
 
             // MARK: --- Row Processing
-            for row in rows.dropFirst() {
+            var shouldContinue = true
+            for row in rows.dropFirst() where shouldContinue {
                 guard row.count == headers.count else { continue }
 
                 let newTx = Transaction(context: tempContext)
@@ -134,6 +135,9 @@ class BofSCSVImporter: TxImporter {
                         if !createdTransactions.contains(newTx) {
                             createdTransactions.append(newTx)
                         }
+                        
+                    case .cancelMerge:
+                        shouldContinue = false
                     }
 
                 } else {

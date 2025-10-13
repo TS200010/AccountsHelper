@@ -37,7 +37,8 @@ class AMEXCSVImporter: TxImporter {
             let fetchRequest: NSFetchRequest<Transaction> = Transaction.fetchRequest()
             let existingSnapshot = (try? context.fetch(fetchRequest)) ?? []
 
-            for row in rows.dropFirst() {
+            var shouldContinue = true
+            for row in rows.dropFirst() where shouldContinue {
                 guard row.count == headers.count else { continue }
                 
                 let newTx = Transaction(context: context)
@@ -160,7 +161,12 @@ class AMEXCSVImporter: TxImporter {
                         if !createdTransactions.contains(newTx) {
                             createdTransactions.append(newTx)
                         }
+                        
+                    case .cancelMerge:
+                        shouldContinue = false
                     }
+                    
+                    
 
 //                    if let mergedTx = await mergeHandler(existing, newTx) {
 //                        // One transaction (merged, existing, or new) should be kept

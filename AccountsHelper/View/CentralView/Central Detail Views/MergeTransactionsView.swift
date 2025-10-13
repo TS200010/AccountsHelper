@@ -10,13 +10,29 @@ import CoreData
 
 // MARK: --- Mergeable Fields
 enum MergeField: String, CaseIterable, Identifiable {
-    case accountingPeriod, accountNumber, address, category, commissionAmount,
-         currency, debitCredit, exchangeRate, explanation, extendedDetails,
-         payee, payer, paymentMethod, reference, splitAmount, splitCategory,
-         timestamp, transactionDate, txAmount
+    case timestamp
+    case transactionDate
+    case paymentMethod
+    case category
+    case txAmount
+    case currency
+    case exchangeRate
+    case payee
+    case payer
+    case splitAmount
+    case splitCategory
+    case accountNumber
+    case address
+    case commissionAmount
+    case debitCredit
+    case explanation
+    case extendedDetails
+    case accountingPeriod
+    case reference
 
     var id: String { rawValue }
 }
+
 
 // MARK: --- Field Metadata
 struct MergeFieldInfo {
@@ -169,10 +185,26 @@ struct MergeTransactionsView: View {
     // MARK: --- View Body
     var body: some View {
         VStack {
-            Text("Merge Transactions")
-                .font(.headline)
-                .padding()
+//            Text("Merge Transactions")
+//                .font(.headline)
+//                .padding()
+//            
+            // --- Headings ---
+            HStack {
+                Spacer().frame(width: 150) // space for the field names column
+                Text("        Existing Transaction")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .font(.headline)
+                    .foregroundColor(.secondary)
+                Spacer().frame(width: 80) // space for slider
+                Text("New Transaction")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .font(.headline)
+                    .foregroundColor(.secondary)
+            }
+            .padding(.bottom, 4)
 
+            // --- Fields ---
             ScrollView {
                 VStack(alignment: .leading, spacing: 12) {
                     ForEach(MergeField.allCases) { field in
@@ -217,6 +249,16 @@ struct MergeTransactionsView: View {
 
             HStack {
                 Spacer()
+                
+                Button("Cancel Merge") {
+                    // signal to stop further merging
+                    onComplete?(.cancelMerge)
+                    appState.popCentralView()
+                }
+                .buttonStyle(.bordered)
+                .foregroundColor(.red)
+                .padding(.leading)
+                
                 Button("Keep Existing") {
                     appState.popCentralView()
                     onComplete?(.keepExisting)

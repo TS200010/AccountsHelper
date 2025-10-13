@@ -73,11 +73,27 @@ extension Transaction {
 
     var exchangeRate: Decimal {
         get {
-            let rate = Decimal(exchangeRateCD) / 100
-            return rate == 0 ? 1 : rate   // avoid divide-by-zero → force 1
+            let rate = Decimal(exchangeRateCD) / 10000.0
+            return rate == 0 ? 1 : rate
         }
         set {
-            exchangeRateCD = decimalToCents(newValue == 0 ? 1 : newValue)
+            // 1. Ensure non-zero safe value
+            let safeValue = (newValue == 0) ? Decimal(1) : newValue
+
+            // 2. Scale
+            let scaled = safeValue * Decimal(10_000)
+
+            // 3. Round to integer (nearest)
+            var rounded = Decimal()
+            var copy = scaled
+            NSDecimalRound(&rounded, &copy, 0, .plain) // 0 fractional digits
+
+            // 4. Convert to Int32 safely (clamp to Int32 range)
+            let nsNumber = NSDecimalNumber(decimal: rounded)
+            let int64Value = nsNumber.int64Value
+            let clamped = min(Int64(Int32.max), max(Int64(Int32.min), int64Value))
+            exchangeRateCD = Int32(clamped)
+            print("ExchangeRateCD Setter: \(exchangeRateCD)")
         }
     }
 
@@ -110,7 +126,7 @@ extension Transaction {
     }
 
     var splitRemainderAmount: Decimal {
-        get { Decimal(txAmountCD - splitAmountCD) / 100 }
+        get { txAmount - splitAmount }
     }
 
     var splitRemainderAmountInGBP: Decimal {
@@ -126,7 +142,10 @@ extension Transaction {
 
     var txAmount: Decimal {
         get { Decimal(txAmountCD) / 100 }
-        set { txAmountCD = decimalToCents(newValue) }
+        set {
+            txAmountCD = decimalToCents(newValue)
+            print("txAmountCD Setter: \(txAmountCD) from newValue: \(newValue)")
+        }
     }
     
     var txAmountInGBP: Decimal {
@@ -153,6 +172,18 @@ extension Transaction {
         return String(format: "%.2f", amount.doubleValue)
     }
 
+    func exchangeRateAsStringLong() -> String? {
+        let fx = NSDecimalNumber(decimal: exchangeRate)
+        switch currency {
+        case .GBP:
+            return String(format: "%.4f", fx.doubleValue)
+        case .JPY:
+            return String(format: "%.4f", fx.doubleValue)
+        default:
+            return String(format: "%.4f", fx.doubleValue)
+        }
+    }
+    
     func exchangeRateAsString() -> String? {
         let fx = NSDecimalNumber(decimal: exchangeRate)
         switch currency {
@@ -198,12 +229,14 @@ extension Transaction {
 
     func splitAmountAsString() -> String? {
         let amountNumber = NSDecimalNumber(decimal: splitAmount)
+        
         switch currency {
-        case .JPY: return String(format: "%.0f", amountNumber.doubleValue)
-        default: return String(format: "%.2f", amountNumber.doubleValue)
+        case .JPY:
+            return String(format: "%.0f", amountNumber.doubleValue)
+        default:
+            return String(format: "%.2f", amountNumber.doubleValue)
         }
     }
-    
 }
 
 // MARK: --- GenerateRandomTransactions
@@ -332,5 +365,24 @@ extension Transaction {
         // Sort so order is deterministic
         components.sort()
         return components.joined(separator: "|")
+    }
+}
+
+// MARK: --- DUMP
+extension Transaction {
+    func dump() {
+ //       print("--- TX DUMP ---")
+        print("objectID:", objectID)
+        print("currencyCD:", currencyCD)
+        print("exchangeRateCD:", exchangeRateCD)
+        print("decoded exchangeRate:", exchangeRate)
+        print("txAmountCD:", txAmountCD)
+        print("txAmount:", txAmount)
+        print("txAmountInGBP:", txAmountInGBP)
+        print("splitAmountCD:", splitAmountCD)
+        print("splitAmount:", splitAmount)
+        print("splitAmountInGBP:", splitAmountInGBP)
+        print("commissionAmountCD:", commissionAmountCD)
+        print("commissionAmount:", commissionAmount)
     }
 }

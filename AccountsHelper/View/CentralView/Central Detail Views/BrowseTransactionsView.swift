@@ -32,9 +32,9 @@ fileprivate struct TransactionRow: Identifiable, Hashable {
             return wip
         } else {
 #if os(macOS)
-            return wip + "\n" + transaction.txAmountInGBP.formattedAsCurrency( .GBP )
+            return wip + "\n" + transaction.totalAmountInGBP.formattedAsCurrency( .GBP )
 #else
-//            return wip + " " + transaction.txAmountInGBP.formattedAsCurrency( .GBP )
+//            return wip + " " + transaction.totalAmountInGBP.formattedAsCurrency( .GBP )
             return wip
 #endif
         }
@@ -43,8 +43,8 @@ fileprivate struct TransactionRow: Identifiable, Hashable {
     var displaySplitAmount: String {
         if transaction.splitAmount == Decimal(0) { return "" }
 
-        var splitPart = transaction.splitAmount.formattedAsCurrency(transaction.currency) + " " + transaction.splitCategory.description
-        var remainderPart = transaction.splitRemainderAmount.formattedAsCurrency(transaction.currency) + " " + transaction.splitRemainderCategory.description
+        var splitPart = transaction.splitAmountInGBP.formattedAsCurrency( .GBP ) + " " + transaction.splitCategory.description
+        var remainderPart = transaction.splitRemainderAmountInGBP.formattedAsCurrency( .GBP ) + " " + transaction.splitRemainderCategory.description
 
     #if os(macOS)
             return splitPart + "\n" + remainderPart
@@ -102,8 +102,8 @@ fileprivate struct TransactionRow: Identifiable, Hashable {
 
 // MARK: --- SortColumn
 enum SortColumn: CaseIterable, Identifiable {
-    case category, splitCategory, currency, debitCredit, exchangeRate,
-         explanation, payee, payer, paymentMethod, splitAmount, transactionDate, txAmount
+    case category, currency, debitCredit, exchangeRate,
+         payee, payer, paymentMethod, transactionDate, txAmount
 
     var id: Self { self }
 
@@ -111,15 +111,12 @@ enum SortColumn: CaseIterable, Identifiable {
         switch self {
         case .transactionDate: return "calendar"
         case .category:        return "folder"
-        case .splitCategory:   return "folder.fill"
         case .currency:        return "dollarsign.circle"
         case .debitCredit:     return "arrow.left.arrow.right"
         case .exchangeRate:    return "chart.line.uptrend.xyaxis"
         case .paymentMethod:   return "creditcard"
         case .payee:           return "person"
         case .payer:           return "person.crop.circle"
-        case .explanation:     return "text.alignleft"
-        case .splitAmount:     return "number"
         case .txAmount:        return "sum"
         }
     }
@@ -127,15 +124,12 @@ enum SortColumn: CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .category:        return "Category"
-        case .splitCategory:   return "SplitCategory"
         case .currency:        return "Currency"
         case .debitCredit:     return "Debit/Credit"
         case .exchangeRate:    return "Fx"
-        case .explanation:     return "Explanation"
         case .payee:           return "Payee"
         case .payer:           return "Payer"
         case .paymentMethod:   return "Payment Method"
-        case .splitAmount:     return "SplitAmount"
         case .transactionDate: return "Date"
         case .txAmount:        return "Amount"
         }
@@ -144,17 +138,14 @@ enum SortColumn: CaseIterable, Identifiable {
     fileprivate func stringKey(for row: TransactionRow) -> String? {
         switch self {
         case .category:        return row.category
-        case .splitCategory:   return row.splitCategory
         case .currency:        return row.currency
         case .debitCredit:     return row.debitCredit
         case .payee:           return row.payee
         case .payer:           return row.payer
         case .paymentMethod:   return row.paymentMethod
-        case .explanation:     return row.explanation
         case .transactionDate: return row.transactionDate
         case .txAmount:        return row.txAmount
         case .exchangeRate:    return row.exchangeRate
-        default:               return nil
         }
     }
 }
@@ -217,14 +208,6 @@ struct BrowseTransactionsView: View {
     // MARK: --- Derived Rows
     private var transactionRows: [TransactionRow] {
         transactions.map { TransactionRow(transaction: $0) }
-            .sorted { lhs, rhs in
-                if let l = sortColumn.stringKey(for: lhs),
-                   let r = sortColumn.stringKey(for: rhs) {
-                    let cmp = l.localizedCompare(r)
-                    return ascending ? cmp == .orderedAscending : cmp == .orderedDescending
-                }
-                return false
-            }
     }
 
     // MARK: --- Body
@@ -596,24 +579,33 @@ extension BrowseTransactionsView {
     // MARK: --- FilteredTransactionRows
     private var filteredTransactionRows: [TransactionRow] {
         let predicate = buildPredicate()
-        
-        // Convert to array first
         let allTransactions = Array(transactions)
-        
         let filtered = predicate == nil ? allTransactions : allTransactions.filter { predicate!.evaluate(with: $0) }
         
         return filtered.map { TransactionRow(transaction: $0) }
             .sorted { lhs, rhs in
-                if sortColumn == .transactionDate {
+                switch sortColumn {
+                case .transactionDate:
                     guard let lDate = lhs.transaction.transactionDate,
                           let rDate = rhs.transaction.transactionDate else { return false }
                     return ascending ? (lDate < rDate) : (lDate > rDate)
-                } else if let l = sortColumn.stringKey(for: lhs),
-                          let r = sortColumn.stringKey(for: rhs) {
-                    let cmp = l.localizedCompare(r)
-                    return ascending ? cmp == .orderedAscending : cmp == .orderedDescending
+                case .txAmount:
+                    let lAmount = lhs.transaction.txAmountInGBP
+                    let rAmount = rhs.transaction.txAmountInGBP
+                    return ascending ? (lAmount < rAmount) : (lAmount > rAmount)
+//                case .splitAmount:
+//                    let lAmount = lhs.transaction.splitAmountInGBP
+//                    let rAmount = rhs.transaction.splitAmountInGBP
+//                    return ascending ? (lAmount < rAmount) : (lAmount > rAmount)
+                default:
+                    if let l = sortColumn.stringKey(for: lhs),
+                       let r = sortColumn.stringKey(for: rhs) {
+                        let cmp = l.localizedCompare(r)
+                        return ascending ? cmp == .orderedAscending : cmp == .orderedDescending
+                    }
+                    return false
                 }
-                return false
             }
     }
+
 }

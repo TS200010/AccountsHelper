@@ -62,7 +62,7 @@ struct InspectTransaction: View {
                             Divider()
                             transactionRow("DR/CR:", transaction.debitCredit.description)
                             Divider()
-                            transactionRow("Fx:", transaction.exchangeRateAsString() ?? "N/A")
+                            transactionRow("Fx:", transaction.exchangeRateAsStringLong() ?? "N/A")
                             Divider()
                             transactionRow("Split Amt:", String(format: "%.2f", (transaction.splitAmount as NSDecimalNumber?)?.doubleValue ?? 0))
                             Divider()
@@ -111,6 +111,10 @@ struct InspectTransaction: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .foregroundColor(.gray)
             }
+
+        }
+        .onAppear( ) {
+            transaction?.dump()
         }
     }
     
