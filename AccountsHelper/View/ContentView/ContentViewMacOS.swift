@@ -76,7 +76,7 @@ extension ContentViewMacOS {
         var body: some View {
             ZStack {
                 RoundedRectangle(cornerRadius: cornerRadius)
-                    .fill(Color(NSColor.windowBackgroundColor).opacity(0.2)) // subtle lozenge
+                    .fill(Color.ItMkPlatformWindowBackgroundColor.opacity(0.2)) // subtle lozenge
                 Text(text)
                     .foregroundColor(color)
                     .font(.headline)
@@ -127,7 +127,7 @@ extension ContentViewMacOS {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 2)
                         .padding(.horizontal, 8)
-                        .background(Color(NSColor.controlBackgroundColor).opacity(0.2))
+                        .background(Color.ItMkPlatformWindowBackgroundColor.opacity(0.2))
                         .cornerRadius(6)
                 }
             }

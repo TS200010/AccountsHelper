@@ -25,7 +25,7 @@ enum CentralViewsEnum: Hashable {
     case reconcilliationListView
     case reconciliationTransactionDetail(NSPredicate?)
     case browseTransactions(NSPredicate?)   // optional predicate
-    case transactionMergeView([Transaction], onComplete: (() -> Void)? = nil)
+    case mergeTransactionsView([Transaction], onComplete: ((MergeResult) -> Void)? = nil)
     case categoriesSummary(NSPredicate?)
     case browseCategories
     case browseCurrencies
@@ -76,7 +76,7 @@ enum CentralViewsEnum: Hashable {
         case .browsePayees: return "Browse Payees"
         case .browsePayers: return "Browse Payers"
         case .reports: return "Reports"
-        case .transactionMergeView: return "Transactions Merge"
+        case .mergeTransactionsView: return "Transactions Merge"
         case .categoriesSummary: return "Categories Summary"
         case .exportCD: return "Export Transactions"
         case .importCD: return "Import Transactions"

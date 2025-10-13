@@ -100,16 +100,37 @@ struct TxImportView<Importer: TxImporter>: View {
                     // Show merge dialog
                     await withCheckedContinuation { continuation in
                         appState.pushCentralView(
-                            .transactionMergeView([existing, new]) {
-                                continuation.resume(returning: existing)
+                            .mergeTransactionsView([existing, new]) { result in
+                                // result is the MergeResult enum from the view
+                                continuation.resume(returning: result) // <-- now correct type
                             }
                         )
                     }
+//                    await withCheckedContinuation { continuation in
+//                        appState.pushCentralView(
+//                            .mergeTransactionsView([existing, new]) { result in
+//                                switch result {
+//                                case .merged:
+//                                    continuation.resume(returning: existing)
+//                                case .keepExisting:
+//                                    continuation.resume(returning: existing)
+//                                case .keepNew:
+//                                    continuation.resume(returning: new)
+//                                case .keepBoth:
+//                                    continuation.resume(returning: nil)
+//                                    //                                continuation.resume(returning: existing)
+//                                }
+//                            }
+//                        )
+//                    }
                 }
             )
             
             importedCount = imported.count
             statusMessage = "Import complete! Imported \(importedCount)"
+            if importedCount == 0 {
+                statusMessage += "\nNo transactions imported. Did you export all Columns?"
+            }
         }
     }
 }

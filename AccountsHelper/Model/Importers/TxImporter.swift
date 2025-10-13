@@ -16,6 +16,13 @@ enum ImportType {
     // etc
 }
 
+enum MergeResult {
+    case merged
+    case keepExisting
+    case keepNew
+    case keepBoth
+}
+
 // MARK: --- IxImporter Protocol
 
 @MainActor
@@ -30,7 +37,7 @@ protocol TxImporter {
     static func importTransactions(
         fileURL: URL,
         context: NSManagedObjectContext,
-        mergeHandler: @MainActor (Transaction, Transaction) async -> Transaction
+        mergeHandler: @MainActor (Transaction, Transaction) async -> MergeResult
     ) async -> [Transaction]
 
     /// Basic CSV parsing

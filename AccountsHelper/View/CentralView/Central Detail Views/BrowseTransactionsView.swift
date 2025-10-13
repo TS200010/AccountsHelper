@@ -26,32 +26,6 @@ fileprivate struct TransactionRow: Identifiable, Hashable {
     var debitCredit: String { transaction.debitCredit.description }
 
     // MARK: --- DisplayAmount
-//    var displayAmountOld: String {
-//        let rawAmount = NSDecimalNumber(decimal: transaction.txAmount)
-//        let rawFx = NSDecimalNumber(decimal: transaction.exchangeRate)
-//        let txAmount: Double = rawAmount.doubleValue
-//        let exchangeRate: Double = rawFx.doubleValue
-////        let txAmountGBP: Double = txAmount / (exchangeRate == 0 ? 1 : exchangeRate)
-//        let txAmountGBP: Double = txAmount / (exchangeRate == 0 ? 1 : exchangeRate)
-//        let formattedAmount: String
-//        let formattedAmountGBP = String(format: "%.2f", txAmountGBP)
-//        if transaction.currency == .JPY {
-//            formattedAmount = String(format: "%.0f", txAmount)
-//        } else {
-//            formattedAmount = String(format: "%.2f", txAmount)
-//        }
-//        var result = "\(currency) \(formattedAmount) \(transaction.debitCredit == .DR ? "" : debitCredit )"
-//        if transaction.currency == .GBP {
-//            return result
-//        } else {
-//            #if os(macOS)
-//            return result + "\nGBP \(formattedAmountGBP)"
-//            #else
-//            return result + " GBP \(formattedAmountGBP)"
-//            #endif
-//        }
-//    }
-    
     var displayAmount: String {
         var wip: String = transaction.txAmount.formattedAsCurrency( transaction.currency )
         if transaction.currency == .GBP {
@@ -60,24 +34,11 @@ fileprivate struct TransactionRow: Identifiable, Hashable {
 #if os(macOS)
             return wip + "\n" + transaction.txAmountInGBP.formattedAsCurrency( .GBP )
 #else
-            return wip + transaction.txAmountInGBP.formattedAsCurrency( .GBP )
+//            return wip + " " + transaction.txAmountInGBP.formattedAsCurrency( .GBP )
+            return wip
 #endif
         }
     }
-
-    // MARK: --- DisplaySplitAmount
-//    var displaySplitAmountOld: String {
-//        if transaction.splitAmount == Decimal(0) { return "" }
-//        let rawSplit = NSDecimalNumber(decimal: transaction.splitAmount).doubleValue
-//        let rawRemainder = NSDecimalNumber(decimal: transaction.splitRemainderAmount).doubleValue
-//        let formattedSplit = transaction.currency == .JPY ? String(format: "%.0f", rawSplit) : String(format: "%.2f", rawSplit)
-//        let formattedRemainder = transaction.currency == .JPY ? String(format: "%.0f", rawRemainder) : String(format: "%.2f", rawRemainder)
-//        let splitPad = String(repeating: " ", count: max(0, 5 - formattedSplit.count))
-//        let remainderPad = String(repeating: " ", count: max(0, 5 - formattedRemainder.count))
-//        var result = "\(currency) \(formattedSplit)" + splitPad + " \(splitCategory)"
-//        result += "\n\(currency) \(formattedRemainder)" + remainderPad + " \(splitRemainderCategory)"
-//        return result
-//    }
     
     var displaySplitAmount: String {
         if transaction.splitAmount == Decimal(0) { return "" }
@@ -99,9 +60,9 @@ fileprivate struct TransactionRow: Identifiable, Hashable {
     // MARK: --- iOSRowForDisplay
     var iOSRowForDisplay: String {
         var parts: [String] = []
-        if !transactionDate.isEmpty { parts.append(transactionDate) }
-        if !displayAmount.isEmpty { parts.append(displayAmount) }
-        if !payee.isEmpty && !category.isEmpty { parts.append("\(payee): \(category)") }
+        if !transactionDate.isEmpty { parts.append("\(transactionDate) \(transaction.paymentMethod.description)" ) }
+        if !displayAmount.isEmpty { parts.append("\(displayAmount) \(payee): \(category)"  ) }
+//        if !payee.isEmpty && !category.isEmpty { parts.append("\(payee): \(category)") }
         return parts.joined(separator: "\n")
     }
 
@@ -320,7 +281,7 @@ extension BrowseTransactionsView {
             if selectedTransactionIDs.count == 2 {
                 Button("Merge Transactions") {
                     mergeCandidates = transactions.filter { selectedTransactionIDs.contains($0.objectID) }
-                    appState.pushCentralView(.transactionMergeView(mergeCandidates))
+                    appState.pushCentralView(.mergeTransactionsView(mergeCandidates))
                     appState.refreshInspector()
                 }
                 .disabled(anySelectedTransactionClosed)
@@ -391,7 +352,12 @@ extension BrowseTransactionsView {
             }
 #endif
         }
-        .font(.system(.body, design: .monospaced))
+//        .font(.system(.body, design: .monospaced))
+        #if os(macOS)
+        .font(.custom("SF Mono Medium", size: 14))
+        #else
+        .font(.custom("SF Mono Medium", size: 15))
+        #endif
         .frame(minHeight: 300)
         .tableStyle(.inset)
         .contextMenu { SortContextMenu() }
@@ -638,7 +604,12 @@ extension BrowseTransactionsView {
         
         return filtered.map { TransactionRow(transaction: $0) }
             .sorted { lhs, rhs in
-                if let l = sortColumn.stringKey(for: lhs), let r = sortColumn.stringKey(for: rhs) {
+                if sortColumn == .transactionDate {
+                    guard let lDate = lhs.transaction.transactionDate,
+                          let rDate = rhs.transaction.transactionDate else { return false }
+                    return ascending ? (lDate < rDate) : (lDate > rDate)
+                } else if let l = sortColumn.stringKey(for: lhs),
+                          let r = sortColumn.stringKey(for: rhs) {
                     let cmp = l.localizedCompare(r)
                     return ascending ? cmp == .orderedAscending : cmp == .orderedDescending
                 }

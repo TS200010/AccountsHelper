@@ -116,7 +116,7 @@ struct CentralViews: View {
         case .browsePayers:
             Text("Browse Payers View")
             
-        case .transactionMergeView(let txs, let onComplete):
+        case .mergeTransactionsView(let txs, let onComplete):
             MergeTransactionsView(transactions: txs, onComplete: onComplete)
             
         case .categoriesSummary(let predicate):

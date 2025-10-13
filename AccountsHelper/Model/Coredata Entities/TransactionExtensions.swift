@@ -296,16 +296,41 @@ extension Transaction {
         }
     }
     
+//    func comparableFieldsRepresentation() -> String {
+//        
+//        var components: [String] = []
+//        let mirror = Mirror(reflecting: self)
+//        print("Mirror children:", Mirror(reflecting: self).children.map { $0.label ?? "nil" })
+//        for child in mirror.children {
+//            guard let label = child.label else { continue }
+//            if label == "id" || label == "timestamp" { continue }
+//            let value = String(describing: child.value)
+//            components.append("\(label)=\(value)")
+//        }
+//        return components.joined(separator: "|")
+//    }
+}
+
+extension Transaction {
+    /// Builds a reproducible comparable string from MergeField definitions.
+    /// Skips volatile fields like `timestamp`.
     func comparableFieldsRepresentation() -> String {
-        
         var components: [String] = []
-        let mirror = Mirror(reflecting: self)
-        for child in mirror.children {
-            guard let label = child.label else { continue }
-            if label == "id" || label == "timestamp" { continue }
-            let value = String(describing: child.value)
-            components.append("\(label)=\(value)")
+
+        for field in MergeField.allCases {
+            // Skip fields that shouldn't affect equality
+            if field == .timestamp { continue }
+
+            guard let info = MergeField.all[field] else { continue }
+
+            let value = info.getter(self)
+            if !value.isEmpty {
+                components.append("\(field.rawValue)=\(value)")
+            }
         }
+
+        // Sort so order is deterministic
+        components.sort()
         return components.joined(separator: "|")
     }
 }

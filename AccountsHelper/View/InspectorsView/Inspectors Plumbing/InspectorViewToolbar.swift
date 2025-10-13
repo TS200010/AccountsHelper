@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import ItMkLibrary
 
 struct InspectorViewToolbar: View {
 
@@ -32,7 +33,7 @@ struct InspectorViewToolbar: View {
         .frame(height: buttonHeight)
         .background(
             RoundedRectangle(cornerRadius: buttonHeight / 2)
-                .fill(Color(NSColor.windowBackgroundColor))
+                .fill(Color(Color.ItMkPlatformWindowBackgroundColor))
         )
         .overlay(
             RoundedRectangle(cornerRadius: buttonHeight / 2)

@@ -155,7 +155,7 @@ struct MergeTransactionsView: View {
     
     // MARK: --- Injected
     let transactions: [Transaction]
-    var onComplete: (() -> Void)? = nil
+    var onComplete: ((MergeResult) -> Void)? = nil
 
     // MARK: --- State
     @State private var selectedSide: [MergeField: Bool] = [:]
@@ -164,6 +164,7 @@ struct MergeTransactionsView: View {
     // MARK: --- Local Variables
     private var leftTransaction: Transaction { transactions[0] }
     private var rightTransaction: Transaction { transactions[1] }
+    
 
     // MARK: --- View Body
     var body: some View {
@@ -216,19 +217,47 @@ struct MergeTransactionsView: View {
 
             HStack {
                 Spacer()
-                Button("Cancel") {
+                Button("Keep Existing") {
                     appState.popCentralView()
-                    onComplete?()
+                    onComplete?(.keepExisting)
                 }
-                .padding(.trailing)
+
+                Button("Keep New") {
+                    viewContext.delete(leftTransaction)
+                    do {
+                        try viewContext.save()
+                    } catch {
+                        viewContext.rollback()
+                    }
+                    appState.popCentralView()
+                    onComplete?(.keepNew)
+                }
+
+                Button("Keep Both") {
+                    appState.popCentralView()
+                    onComplete?(.keepBoth)
+                }
 
                 Button("Merge") {
                     mergeTransactions()
                     appState.popCentralView()
-                    onComplete?()
+                    onComplete?(.merged)
                 }
-                .buttonStyle(.borderedProminent)
-                .disabled(transactions.count != 2)
+
+//                Button("Cancel") {
+//                    appState.popCentralView()
+//                    onComplete?()
+//                }
+//                .padding(.trailing)
+//
+//                Button("Merge") {
+//                    mergeTransactions()
+//                    appState.popCentralView()
+//                    onComplete?()
+//                }
+//                .buttonStyle(.borderedProminent)
+//                .disabled(transactions.count != 2)
+                
             }
             .padding()
         }

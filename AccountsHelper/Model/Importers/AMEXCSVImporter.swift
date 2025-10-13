@@ -18,7 +18,7 @@ class AMEXCSVImporter: TxImporter {
     static func importTransactions(
         fileURL: URL,
         context: NSManagedObjectContext,
-        mergeHandler: @MainActor (Transaction, Transaction) async -> Transaction
+        mergeHandler: @MainActor (Transaction, Transaction) async -> MergeResult
     ) async -> [Transaction] {
         var createdTransactions: [Transaction] = []
         
@@ -26,6 +26,10 @@ class AMEXCSVImporter: TxImporter {
             let csvData = try String(contentsOf: fileURL, encoding: .utf8)
             let rows = parseCSV(csvData: csvData)
             guard let headers = rows.first else { return [] }
+            guard headers.count > 5 else {
+                print("Please export ALL fields from the AMEX WebSite")
+                return []
+            }
 
             let matcher = CategoryMatcher(context: context)
 
@@ -112,8 +116,14 @@ class AMEXCSVImporter: TxImporter {
                 
                 newTx.debitCredit = txAmountTemp >= 0 ? .DR : .CR
                 
+                
+                // TODO: Date, Payee and Exchange rate should come from the importing TX as the starting point
+                // TODO: Button should not be "Cancel, -- "Keep Both"
                 // Check for duplicates in createdTransactions + existing context
                 if let existing = Self.findMergeCandidateInSnapshot(newTx: newTx, snapshot: createdTransactions + existingSnapshot) {
+                    
+                    print("Existing: \(existing.comparableFieldsRepresentation())")
+                    print("New: \(newTx.comparableFieldsRepresentation())")
                     
                     if existing.comparableFieldsRepresentation() == newTx.comparableFieldsRepresentation() {
                         // Already identical, skip
@@ -121,11 +131,65 @@ class AMEXCSVImporter: TxImporter {
                         continue
                     }
                     
-                    let mergedTx = await mergeHandler(existing, newTx)
-                    if !createdTransactions.contains(mergedTx) {
-                        createdTransactions.append(mergedTx)
+                    let result = await mergeHandler(existing, newTx)
+
+                    switch result {
+                    case .merged:
+                        // existing has already been updated in MergeView
+                        if !createdTransactions.contains(existing) {
+                            createdTransactions.append(existing)
+                        }
+                        context.delete(newTx)
+
+                    case .keepExisting:
+                        if !createdTransactions.contains(existing) {
+                            createdTransactions.append(existing)
+                        }
+                        context.delete(newTx)
+
+                    case .keepNew:
+                        if !createdTransactions.contains(newTx) {
+                            createdTransactions.append(newTx)
+                        }
+                        context.delete(existing)
+
+                    case .keepBoth:
+                        if !createdTransactions.contains(existing) {
+                            createdTransactions.append(existing)
+                        }
+                        if !createdTransactions.contains(newTx) {
+                            createdTransactions.append(newTx)
+                        }
                     }
-                    context.delete(newTx)
+
+//                    if let mergedTx = await mergeHandler(existing, newTx) {
+//                        // One transaction (merged, existing, or new) should be kept
+//                        if !createdTransactions.contains(mergedTx) {
+//                            createdTransactions.append(mergedTx)
+//                        }
+//
+//                        // Delete the *other* one only if appropriate
+//                        if mergedTx == existing {
+//                            context.delete(newTx)
+//                        } else if mergedTx == newTx {
+//                            context.delete(existing)
+//                        }
+//                    } else {
+//                        // Keep both (do not delete either)
+//                        if !createdTransactions.contains(existing) {
+//                            createdTransactions.append(existing)
+//                        }
+//                        if !createdTransactions.contains(newTx) {
+//                            createdTransactions.append(newTx)
+//                        }
+//                    }
+
+                    
+//                    let mergedTx = await mergeHandler(existing, newTx)
+//                    if !createdTransactions.contains(mergedTx) {
+//                        createdTransactions.append(mergedTx)
+//                    }
+//                    context.delete(newTx)
                 } else {
                     createdTransactions.append(newTx)
                 }

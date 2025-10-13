@@ -18,7 +18,7 @@ class BofSCSVImporter: TxImporter {
     static func importTransactions(
         fileURL: URL,
         context: NSManagedObjectContext,
-        mergeHandler: @MainActor (Transaction, Transaction) async -> Transaction
+        mergeHandler: @MainActor (Transaction, Transaction) async -> MergeResult
     ) async -> [Transaction] {
 
         // MARK: --- Setup
@@ -105,11 +105,37 @@ class BofSCSVImporter: TxImporter {
                         continue
                     }
 
-                    let mergedTx = await mergeHandler(existing, newTx)
-                    if !createdTransactions.contains(mergedTx) {
-                        createdTransactions.append(mergedTx)
+                    let result = await mergeHandler(existing, newTx)
+
+                    switch result {
+                    case .merged:
+                        // existing has already been updated in MergeView
+                        if !createdTransactions.contains(existing) {
+                            createdTransactions.append(existing)
+                        }
+                        tempContext.delete(newTx)
+
+                    case .keepExisting:
+                        if !createdTransactions.contains(existing) {
+                            createdTransactions.append(existing)
+                        }
+                        tempContext.delete(newTx)
+
+                    case .keepNew:
+                        if !createdTransactions.contains(newTx) {
+                            createdTransactions.append(newTx)
+                        }
+                        tempContext.delete(existing)
+
+                    case .keepBoth:
+                        if !createdTransactions.contains(existing) {
+                            createdTransactions.append(existing)
+                        }
+                        if !createdTransactions.contains(newTx) {
+                            createdTransactions.append(newTx)
+                        }
                     }
-                    tempContext.delete(newTx) // merged into existing
+
                 } else {
                     createdTransactions.append(newTx)
                 }
