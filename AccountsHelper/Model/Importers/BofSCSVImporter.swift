@@ -74,7 +74,7 @@ class BofSCSVImporter: TxImporter {
 
                     case "credit amount":
                         if let credit = Decimal(string: value.replacingOccurrences(of: ",", with: "")), credit > 0 {
-                            newTx.txAmount = credit
+                            newTx.txAmount = -credit
                             newTx.debitCredit = .CR
                         }
 

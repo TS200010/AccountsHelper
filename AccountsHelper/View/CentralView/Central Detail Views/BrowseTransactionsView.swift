@@ -24,6 +24,9 @@ fileprivate struct TransactionRow: Identifiable, Hashable {
 
     // MARK: --- DebitCredit
     var debitCredit: String { transaction.debitCredit.description }
+    
+    // MARK: --- RunningBalance
+    var runningBalance: Decimal = 0
 
     // MARK: --- DisplayAmount
     var displayAmount: String {
@@ -318,6 +321,11 @@ extension BrowseTransactionsView {
                 .width(min: 90, ideal: 100, max: 150)
             TableColumn("Amount") { multiLineTableCell($0.displayAmount, for: $0) }
                 .width(min: 130, ideal: 130, max: 150)
+//            TableColumn("Balance") { row in
+//                tableCell(row.runningBalance.formattedAsCurrency(.GBP), for: row)
+//            }
+            TableColumn("Balance") { tableCell($0.runningBalance.formattedAsCurrency(.GBP), for: $0) }
+                .width(min: 130, ideal: 130, max: 150)
             TableColumn("Fx") { tableCell($0.exchangeRate, for: $0) }
                 .width(min: 50, ideal: 55, max: 60)
             TableColumn("Category") { tableCell($0.category, for: $0) }
@@ -495,12 +503,12 @@ extension BrowseTransactionsView {
     // MARK: --- BuildPredicate
     private func buildPredicate() -> NSPredicate? {
         var predicates: [NSPredicate] = []
-
+        
         // --- Payment Method Filter
         if let method = selectedPaymentMethod {
             predicates.append(NSPredicate(format: "paymentMethodCD == %@", NSNumber(value: method.rawValue)))
         }
-
+        
         // --- Accounting Period / Date Filter
         if let method = selectedPaymentMethod, let period = selectedAccountingPeriod {
             if let reconciliation = try? Reconciliation.fetchOne(for: period, paymentMethod: method, context: viewContext) {
@@ -509,18 +517,18 @@ extension BrowseTransactionsView {
                 predicates.append(NSPredicate(format: "transactionDate >= %@ AND transactionDate <= %@", start, end))
             }
         }
-
+        
         guard !predicates.isEmpty else { return nil }
         return NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
     }
-
+    
     
     // MARK: --- RefreshFetchRequest
     private func refreshFetchRequest() {
         transactions.nsPredicate = buildPredicate()
     }
-
-        // MARK: --- FilterBar
+    
+    // MARK: --- FilterBar
     // MARK: --- FilterBar
     private var filterBar: some View {
         HStack(spacing: 16) {
@@ -532,7 +540,7 @@ extension BrowseTransactionsView {
                 }
             }
             .pickerStyle(MenuPickerStyle())
-
+            
             // --- Accounting Period Picker (only show if a payment method is selected)
             if let method = selectedPaymentMethod {
                 Picker("Period", selection: $selectedAccountingPeriod) {
@@ -545,14 +553,14 @@ extension BrowseTransactionsView {
                 }
                 .pickerStyle(MenuPickerStyle())
             }
-
+            
             Spacer()
         }
         .padding(.horizontal)
         .padding(.vertical, 4)
         .background(Color.ItMkPlatformWindowBackgroundColor)
     }
-
+    
     // MARK: --- Unique Accounting Periods
     private var uniqueAccountingPeriods: [AccountingPeriod] {
         let periods = transactions.compactMap { transaction -> AccountingPeriod? in
@@ -582,30 +590,49 @@ extension BrowseTransactionsView {
         let allTransactions = Array(transactions)
         let filtered = predicate == nil ? allTransactions : allTransactions.filter { predicate!.evaluate(with: $0) }
         
-        return filtered.map { TransactionRow(transaction: $0) }
-            .sorted { lhs, rhs in
-                switch sortColumn {
-                case .transactionDate:
-                    guard let lDate = lhs.transaction.transactionDate,
-                          let rDate = rhs.transaction.transactionDate else { return false }
-                    return ascending ? (lDate < rDate) : (lDate > rDate)
-                case .txAmount:
-                    let lAmount = lhs.transaction.txAmountInGBP
-                    let rAmount = rhs.transaction.txAmountInGBP
-                    return ascending ? (lAmount < rAmount) : (lAmount > rAmount)
-//                case .splitAmount:
-//                    let lAmount = lhs.transaction.splitAmountInGBP
-//                    let rAmount = rhs.transaction.splitAmountInGBP
-//                    return ascending ? (lAmount < rAmount) : (lAmount > rAmount)
-                default:
-                    if let l = sortColumn.stringKey(for: lhs),
-                       let r = sortColumn.stringKey(for: rhs) {
-                        let cmp = l.localizedCompare(r)
-                        return ascending ? cmp == .orderedAscending : cmp == .orderedDescending
-                    }
-                    return false
+        // Map to rows
+        var rows = filtered.map { TransactionRow(transaction: $0) }
+        
+        // Sort rows
+        rows.sort { lhs, rhs in
+            switch sortColumn {
+            case .transactionDate:
+                guard let lDate = lhs.transaction.transactionDate,
+                      let rDate = rhs.transaction.transactionDate else { return false }
+                return ascending ? (lDate < rDate) : (lDate > rDate)
+            case .txAmount:
+                let lAmount = lhs.transaction.txAmountInGBP
+                let rAmount = rhs.transaction.txAmountInGBP
+                return ascending ? (lAmount < rAmount) : (lAmount > rAmount)
+            default:
+                if let l = sortColumn.stringKey(for: lhs),
+                   let r = sortColumn.stringKey(for: rhs) {
+                    let cmp = l.localizedCompare(r)
+                    return ascending ? cmp == .orderedAscending : cmp == .orderedDescending
                 }
+                return false
             }
+        }
+        
+        // MARK: --- Compute running balances (GBP only)
+        if let paymentMethod = selectedPaymentMethod, sortColumn == .transactionDate {
+            // Get previous reconciliation balance if available
+            var balance: Decimal = 0
+            if let previousRec = reconciliations
+                .filter({ $0.paymentMethod == paymentMethod })
+                .sorted(by: { ($0.periodYear, $0.periodMonth) > ($1.periodYear, $1.periodMonth) })
+                .first {
+                balance = previousRec.endingBalance
+            }
+            
+            // Apply running balance
+            for i in 0..<rows.count {
+                rows[i].runningBalance = balance - rows[i].transaction.txAmountInGBP
+                balance = rows[i].runningBalance
+            }
+        }
+        
+        return rows
     }
-
+    
 }
