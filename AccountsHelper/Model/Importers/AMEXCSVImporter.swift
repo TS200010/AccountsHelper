@@ -119,7 +119,6 @@ class AMEXCSVImporter: TxImporter {
                 
                 
                 // TODO: Date, Payee and Exchange rate should come from the importing TX as the starting point
-                // TODO: Button should not be "Cancel, -- "Keep Both"
                 // Check for duplicates in createdTransactions + existing context
                 if let existing = Self.findMergeCandidateInSnapshot(newTx: newTx, snapshot: createdTransactions + existingSnapshot) {
                     
@@ -165,37 +164,6 @@ class AMEXCSVImporter: TxImporter {
                     case .cancelMerge:
                         shouldContinue = false
                     }
-                    
-                    
-
-//                    if let mergedTx = await mergeHandler(existing, newTx) {
-//                        // One transaction (merged, existing, or new) should be kept
-//                        if !createdTransactions.contains(mergedTx) {
-//                            createdTransactions.append(mergedTx)
-//                        }
-//
-//                        // Delete the *other* one only if appropriate
-//                        if mergedTx == existing {
-//                            context.delete(newTx)
-//                        } else if mergedTx == newTx {
-//                            context.delete(existing)
-//                        }
-//                    } else {
-//                        // Keep both (do not delete either)
-//                        if !createdTransactions.contains(existing) {
-//                            createdTransactions.append(existing)
-//                        }
-//                        if !createdTransactions.contains(newTx) {
-//                            createdTransactions.append(newTx)
-//                        }
-//                    }
-
-                    
-//                    let mergedTx = await mergeHandler(existing, newTx)
-//                    if !createdTransactions.contains(mergedTx) {
-//                        createdTransactions.append(mergedTx)
-//                    }
-//                    context.delete(newTx)
                 } else {
                     createdTransactions.append(newTx)
                 }

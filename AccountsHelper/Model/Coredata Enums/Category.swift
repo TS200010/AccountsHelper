@@ -42,13 +42,17 @@ import ItMkLibrary
 
     case ToYokko            = 50
     case ToAJBell           = 51
-    case IntDivIncome       = 52
-    case OtherIncome        = 53
-    case StatePensionT      = 54
-    case StatePensionY      = 55
-    case NCRPension         = 56
-    case VisaPayment        = 57
-    case AMEXPatment        = 58
+    case BofSToCash         = 52
+    
+    case IntDivIncome       = 60
+    case OtherIncome        = 61
+    
+    case StatePensionT      = 70
+    case StatePensionY      = 71
+    case NCRPension         = 72
+    
+    case VisaPayment        = 80
+    case AMEXPatment        = 81
 
     case OpeningBalance     = 98
     case unknown            = 999
@@ -94,6 +98,7 @@ import ItMkLibrary
         case .CouncilTax:       return String(localized: "CouncilTax")
         case .ToYokko:          return String(localized: "ToYokko")
         case .ToAJBell:         return String(localized: "ToAJBell")
+        case .BofSToCash:       return String(localized: "BofSToCash")
         case .IntDivIncome:     return String(localized: "IntDivIncome")
         case .OtherIncome:      return String(localized: "OtherIncome")
         case .StatePensionT:    return String(localized: "StatePensionT")

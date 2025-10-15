@@ -10,6 +10,17 @@ import SwiftUI
 import CoreData
 import ItMkLibrary
 
+// MARK: --- To work aroound a SwiftUI bug
+fileprivate func safeUIUpdate(_ action: @escaping () -> Void) {
+    action()
+//    DispatchQueue.main.async {
+//        withAnimation(.none) {
+//            action()
+//        }
+//    }
+}
+
+
 // MARK: --- SortColumn
 enum SortColumn: CaseIterable, Identifiable {
     case category, currency, debitCredit, exchangeRate,
@@ -89,7 +100,7 @@ struct BrowseTransactionsView: View {
     // MARK: --- CoreData
     init(predicate: NSPredicate? = nil) {
         _transactions = FetchRequest(
-            sortDescriptors: [NSSortDescriptor(keyPath: \Transaction.timestamp, ascending: true)],
+            sortDescriptors: [NSSortDescriptor(keyPath: \Transaction.transactionDate, ascending: true)],
             predicate: predicate
         )
     }
@@ -128,8 +139,16 @@ struct BrowseTransactionsView: View {
             statusBar
         }
         .toolbar { toolbarItems }
-        .onChange(of: selectedAccountingPeriod) { _, _ in refreshFetchRequest() }
-        .onChange(of: selectedPaymentMethod) { _, _ in refreshFetchRequest() }
+        .onChange(of: selectedAccountingPeriod) { _, _ in
+            safeUIUpdate {
+                refreshFetchRequest()
+            }
+        }
+        .onChange(of: selectedPaymentMethod) { _, _ in
+            safeUIUpdate {
+                refreshFetchRequest()
+            }
+        }
         .confirmationDialog(
             "Are you sure?",
             isPresented: $showingDeleteConfirmation,
@@ -160,17 +179,19 @@ extension BrowseTransactionsView {
     // MARK: --- ContextMenu
     @ViewBuilder
     private func contextMenu(for row: TransactionRow) -> some View {
+        
         if selectedTransactionIDs.contains(row.id) {
-
+            
             if selectedTransactionIDs.count == 1 {
                 Button("Edit Transaction") {
+                    safeUIUpdate { selectedTransactionIDs = [row.id] }
                     appState.selectedTransactionID = row.id
                     appState.pushCentralView(.editTransaction(existingTransaction: row.transaction))
                     appState.refreshInspector()
                 }
                 .disabled(anySelectedTransactionClosed)
             }
-
+            
             if selectedTransactionIDs.count == 2 {
                 Button("Merge Transactions") {
                     mergeCandidates = transactions.filter { selectedTransactionIDs.contains($0.objectID) }
@@ -180,16 +201,49 @@ extension BrowseTransactionsView {
                 .disabled(anySelectedTransactionClosed)
                 Divider()
             }
-
+            
             Button(role: .destructive) {
-                transactionsToDelete = selectedTransactionIDs
-                showingDeleteConfirmation = true
+                safeUIUpdate {
+                    transactionsToDelete = selectedTransactionIDs
+                    showingDeleteConfirmation = true
+                }
             } label: {
                 Label("Delete Transaction(s)", systemImage: "trash")
             }
             .disabled(anySelectedTransactionClosed)
         }
     }
+
+//        if selectedTransactionIDs.contains(row.id) {
+//
+//            if selectedTransactionIDs.count == 1 {
+//                Button("Edit Transaction") {
+//                    appState.selectedTransactionID = row.id
+//                    appState.pushCentralView(.editTransaction(existingTransaction: row.transaction))
+//                    appState.refreshInspector()
+//                }
+//                .disabled(anySelectedTransactionClosed)
+//            }
+//
+//            if selectedTransactionIDs.count == 2 {
+//                Button("Merge Transactions") {
+//                    mergeCandidates = transactions.filter { selectedTransactionIDs.contains($0.objectID) }
+//                    appState.pushCentralView(.mergeTransactionsView(mergeCandidates))
+//                    appState.refreshInspector()
+//                }
+//                .disabled(anySelectedTransactionClosed)
+//                Divider()
+//            }
+//
+//            Button(role: .destructive) {
+//                transactionsToDelete = selectedTransactionIDs
+//                showingDeleteConfirmation = true
+//            } label: {
+//                Label("Delete Transaction(s)", systemImage: "trash")
+//            }
+//            .disabled(anySelectedTransactionClosed)
+//        }
+//    }
 
     // MARK: --- MultiLineTableCell
     @ViewBuilder
@@ -245,7 +299,7 @@ extension BrowseTransactionsView {
             TableColumn("Transaction") { row in
                 tableCell(row.iOSRowForDisplay, for: row)
                     .onTapGesture {
-                        selectedTransactionIDs = [row.id]
+                        safeUIUpdate { selectedTransactionIDs = [row.id] }
                     }
             }
 #endif
@@ -260,12 +314,14 @@ extension BrowseTransactionsView {
         .tableStyle(.inset)
         .contextMenu { SortContextMenu() }
         .onChange(of: selectedTransactionIDs) { _, newSelection in
-            if let firstID = newSelection.first {
-                appState.selectedTransactionID = firstID
-                appState.selectedInspectorView = .viewTransaction
-            } else {
-                selectedTransaction = nil
-                appState.selectedTransactionID = nil
+            safeUIUpdate {
+                if let firstID = newSelection.first {
+                    appState.selectedTransactionID = firstID
+                    appState.selectedInspectorView = .viewTransaction
+                } else {
+                    selectedTransaction = nil
+                    appState.selectedTransactionID = nil
+                }
             }
         }
     }
@@ -307,8 +363,10 @@ extension BrowseTransactionsView {
         Group {
             ToolbarItem {
                 Button(role: .destructive) {
-                    transactionsToDelete = selectedTransactionIDs
-                    showingDeleteConfirmation = true
+                    safeUIUpdate {
+                        transactionsToDelete = selectedTransactionIDs
+                        showingDeleteConfirmation = true
+                    }
                 } label: {
                     Label("Delete Selected", systemImage: "trash")
                 }
@@ -353,14 +411,32 @@ extension BrowseTransactionsView {
 
     // MARK: --- Helpers
     private func updateSortColumn(_ column: SortColumn) {
-        if sortColumn == column {
-            ascending.toggle()
-        } else {
-            sortColumn = column
-            ascending = true
+        // Defer the change to avoid mutating the table's data while AppKit/SwiftUI
+        // are mid-update (this avoids the NSIndexSet enumerateIndexesInRange crash).
+        DispatchQueue.main.async {
+            // Prevent SwiftUI animated diffs which sometimes cause internal indexset issues.
+            withAnimation(.none) {
+                if sortColumn == column {
+                    ascending.toggle()
+                } else {
+                    sortColumn = column
+                    ascending = true
+                }
+                safeUIUpdate {
+                    selectedTransactionIDs.removeAll()
+                }
+            }
         }
-        selectedTransactionIDs.removeAll()
     }
+//    private func updateSortColumn(_ column: SortColumn) {
+//        if sortColumn == column {
+//            ascending.toggle()
+//        } else {
+//            sortColumn = column
+//            ascending = true
+//        }
+//        selectedTransactionIDs.removeAll()
+//    }
 
     private var anySelectedTransactionClosed: Bool {
         selectedTransactionIDs.contains { id in
@@ -381,7 +457,9 @@ extension BrowseTransactionsView {
                 }
                 transactionsToDelete.forEach { viewContext.delete($0) }
                 try viewContext.save()
-                selectedTransactionIDs.removeAll()
+                safeUIUpdate {
+                    selectedTransactionIDs.removeAll()
+                }
 
                 undoManager?.registerUndo(withTarget: viewContext) { context in
                     for data in deletedObjectsData {
@@ -432,7 +510,9 @@ extension BrowseTransactionsView {
     
     // MARK: --- RefreshFetchRequest
     private func refreshFetchRequest() {
-        transactions.nsPredicate = buildPredicate()
+        safeUIUpdate {
+            transactions.nsPredicate = buildPredicate()
+        }
     }
     
     // MARK: --- FilterBar

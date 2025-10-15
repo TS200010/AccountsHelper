@@ -25,7 +25,7 @@ struct CategoriesSummaryView: View {
     // MARK: --- Init
     init(predicate: NSPredicate? = nil, isPrinting: Bool = false) {
         _transactions = FetchRequest(
-            sortDescriptors: [NSSortDescriptor(keyPath: \Transaction.timestamp, ascending: true)],
+            sortDescriptors: [NSSortDescriptor(keyPath: \Transaction.transactionDate, ascending: true)],
             predicate: predicate
         )
     }

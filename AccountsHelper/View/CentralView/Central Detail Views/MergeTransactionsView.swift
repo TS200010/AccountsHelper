@@ -137,7 +137,7 @@ extension MergeField {
         ),
         .exchangeRate: MergeFieldInfo(
             displayName: "Exchange Rate",
-            getter: { $0.exchangeRateAsString() ?? "" },
+            getter: { $0.exchangeRateAsStringLong() ?? "" },
             hasValue: { $0.exchangeRate != 0 },
             setter: { $0.exchangeRate = $1.exchangeRate }
         ),

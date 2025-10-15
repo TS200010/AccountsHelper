@@ -106,23 +106,6 @@ struct TxImportView<Importer: TxImporter>: View {
                             }
                         )
                     }
-//                    await withCheckedContinuation { continuation in
-//                        appState.pushCentralView(
-//                            .mergeTransactionsView([existing, new]) { result in
-//                                switch result {
-//                                case .merged:
-//                                    continuation.resume(returning: existing)
-//                                case .keepExisting:
-//                                    continuation.resume(returning: existing)
-//                                case .keepNew:
-//                                    continuation.resume(returning: new)
-//                                case .keepBoth:
-//                                    continuation.resume(returning: nil)
-//                                    //                                continuation.resume(returning: existing)
-//                                }
-//                            }
-//                        )
-//                    }
                 }
             )
             
