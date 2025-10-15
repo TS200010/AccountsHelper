@@ -40,9 +40,10 @@ import ItMkLibrary
     case Utilities          = 27
     case CouncilTax         = 28
 
-    case ToYokko            = 50
-    case ToAJBell           = 51
-    case BofSToCash         = 52
+    case ToYokko            = 40
+    case ToAJBell           = 41
+    
+    case TFBofSToCash       = 50
     
     case IntDivIncome       = 60
     case OtherIncome        = 61
@@ -64,6 +65,13 @@ import ItMkLibrary
     func rawValueAsString() -> String {
         return self.rawValue.description
     }
+    
+//    func hasCounter() -> Category {
+//        switch self {
+//            
+//        }
+//        
+//    }
 
     // MARK: --- CustomStringConvertible
     var description: String {
@@ -98,7 +106,7 @@ import ItMkLibrary
         case .CouncilTax:       return String(localized: "CouncilTax")
         case .ToYokko:          return String(localized: "ToYokko")
         case .ToAJBell:         return String(localized: "ToAJBell")
-        case .BofSToCash:       return String(localized: "BofSToCash")
+        case .TFBofSToCash:     return String(localized: "TFBofSToCash")
         case .IntDivIncome:     return String(localized: "IntDivIncome")
         case .OtherIncome:      return String(localized: "OtherIncome")
         case .StatePensionT:    return String(localized: "StatePensionT")
