@@ -9,6 +9,12 @@ import Foundation
 import SwiftUI
 import CoreData
 import ItMkLibrary
+#if os(macOS)
+import AppKit
+typealias UIRectCorner = CACornerMask
+#else
+import UIKit
+#endif
 
 // MARK: --- To work aroound a SwiftUI bug
 fileprivate func safeUIUpdate(_ action: @escaping () -> Void) {
@@ -89,10 +95,23 @@ struct BrowseTransactionsView: View {
     @State private var sortColumn: SortColumn = .transactionDate
     @State private var transactionsToDelete: Set<NSManagedObjectID> = []
     @State private var showMergeSheet = false
+    @State private var lastClickedRowIndex: Int? = nil
     // Filter State
     @State private var selectedAccountingPeriod: AccountingPeriod? = nil
     @State private var selectedPaymentMethod: PaymentMethod? = nil
-    
+    // Column Width State
+    #if os(macOS)
+    @State private var columnWidths: [String: CGFloat] = [
+        "Payment Method": 80,
+        "Date": 100,
+        "Amount": 130,
+        "Balance": 130,
+        "Fx": 60,
+        "Category": 80,
+        "Split": 200,
+        "Payee": 300
+    ]
+    #endif
 
     // MARK: --- Injected Properties
     @FetchRequest private var transactions: FetchedResults<Transaction>
@@ -136,8 +155,10 @@ struct BrowseTransactionsView: View {
         VStack(spacing: 0) {
             filterBar
             transactionsTable
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             statusBar
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .toolbar { toolbarItems }
         .onChange(of: selectedAccountingPeriod) { _, _ in
             safeUIUpdate {
@@ -250,10 +271,17 @@ extension BrowseTransactionsView {
     private func multiLineTableCell(_ content: String, for row: TransactionRow) -> some View {
         HStack {
             Text(content)
-                .foregroundColor(row.transaction.closed ? .blue : (row.transaction.isValid() ? .primary : .red))
-                .lineLimit(nil)
+                .foregroundColor(
+                    selectedTransactionIDs.contains(row.id)
+                    ? .white // selected row text
+                    : (row.transaction.closed ? .blue : (row.transaction.isValid() ? .primary : .red))
+                )
+                .lineLimit(2)
+                .truncationMode(.tail)
+//                .lineLimit(nil)
             Spacer()
         }
+        .padding(.leading, 6)
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
         .contextMenu { contextMenu(for: row) }
@@ -264,9 +292,16 @@ extension BrowseTransactionsView {
     private func tableCell(_ content: String, for row: TransactionRow) -> some View {
         HStack {
             Text(content)
-                .foregroundColor(row.transaction.closed ? .blue : (row.transaction.isValid() ? .primary : .red))
+                .foregroundColor(
+                    selectedTransactionIDs.contains(row.id)
+                    ? .white // selected row text
+                    : (row.transaction.closed ? .blue : (row.transaction.isValid() ? .primary : .red))
+                )
+                .lineLimit(1)
+                .truncationMode(.tail)
             Spacer()
         }
+        .padding(.leading, 6)
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
         .contextMenu { contextMenu(for: row) }
@@ -274,44 +309,48 @@ extension BrowseTransactionsView {
 
     // MARK: --- TransactionsTable
     private var transactionsTable: some View {
-        Table(filteredTransactionRows, selection: $selectedTransactionIDs) {
-#if os(macOS)
-            TableColumn("Payment Method") { tableCell($0.paymentMethod, for: $0) }
-                .width(min: 50, ideal: 80, max: 100)
-            TableColumn("Date") { tableCell($0.transactionDate, for: $0) }
-                .width(min: 90, ideal: 100, max: 150)
-            TableColumn("Amount") { multiLineTableCell($0.displayAmount, for: $0) }
-                .width(min: 130, ideal: 130, max: 150)
-//            TableColumn("Balance") { row in
-//                tableCell(row.runningBalance.formattedAsCurrency(.GBP), for: row)
-//            }
-            TableColumn("Balance") { tableCell($0.runningBalance.formattedAsCurrency(.GBP), for: $0) }
-                .width(min: 130, ideal: 130, max: 150)
-            TableColumn("Fx") { tableCell($0.exchangeRate, for: $0) }
-                .width(min: 50, ideal: 55, max: 60)
-            TableColumn("Category") { tableCell($0.category, for: $0) }
-                .width(min: 90, ideal: 80, max: 100)
-            TableColumn("Split") { multiLineTableCell($0.displaySplitAmount, for: $0) }
-                .width(min: 200, ideal: 200, max: 300)
-            TableColumn("Payee") { tableCell($0.payee, for: $0) }
-                .width(min: 50, ideal: 100, max: 300)
-#else
-            TableColumn("Transaction") { row in
-                tableCell(row.iOSRowForDisplay, for: row)
-                    .onTapGesture {
-                        safeUIUpdate { selectedTransactionIDs = [row.id] }
-                    }
-            }
-#endif
-        }
-//        .font(.system(.body, design: .monospaced))
         #if os(macOS)
-        .font(.custom("SF Mono Medium", size: 14))
-        #else
-        .font(.custom("SF Mono Medium", size: 15))
-        #endif
-        .frame(minHeight: 300)
-        .tableStyle(.inset)
+        GeometryReader { proxy in
+            ScrollView(.horizontal) { // horizontal scroll
+                VStack(spacing: 0) {
+                    // --- Header Row
+                    HStack(spacing: 0) {
+                        TableHeaderCell("Payment Method", width: 80)
+                        TableHeaderCell("Date", width: 100)
+                        TableHeaderCell("Amount", width: 130)
+                        TableHeaderCell("Balance", width: 130)
+                        TableHeaderCell("Fx", width: 60)
+                        TableHeaderCell("Category", width: 80)
+                        TableHeaderCell("Split", width: 200)
+                        TableHeaderCell("Payee", width: 100)
+                    }
+                    .background(Color.gray.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                    
+                    // --- Rows in vertical ScrollView
+                    ScrollView(.vertical) {
+                        LazyVStack(spacing: 0) {
+                            ForEach(Array(filteredTransactionRows.enumerated()), id: \.element.id) { index, row in
+                                TransactionRowView(
+                                    row: row,
+                                    selectedTransactionIDs: $selectedTransactionIDs,
+                                    anySelectedTransactionClosed: anySelectedTransactionClosed,
+                                    appState: appState,
+                                    index: index
+                                )
+                                .background(rowBackground(for: index, row: row))
+                            }
+                        }
+                    }
+                    .frame(minHeight: 300)
+                }
+                // --- Make VStack at least as wide as the available window
+                .frame(minWidth: proxy.size.width, alignment: .leading)
+            }
+            // --- Make the horizontal scroll expand to full width
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        }
+//        .frame(maxWidth: .infinity)
         .contextMenu { SortContextMenu() }
         .onChange(of: selectedTransactionIDs) { _, newSelection in
             safeUIUpdate {
@@ -324,7 +363,143 @@ extension BrowseTransactionsView {
                 }
             }
         }
+        #endif
     }
+
+    // MARK: --- TransactionRowView
+    @ViewBuilder
+    private func TransactionRowView(
+        row: TransactionRow,
+        selectedTransactionIDs: Binding<Set<NSManagedObjectID>>,
+        anySelectedTransactionClosed: Bool,
+        appState: AppState,
+        index: Int
+    ) -> some View {
+        #if os(macOS)
+        HStack(spacing: 0) {
+            tableCell(row.paymentMethod, for: row)
+                .frame(width: columnWidths["Payment Method"] ?? 80)
+            tableCell(row.transactionDate, for: row)
+                .frame(width: columnWidths["Date"] ?? 100)
+            multiLineTableCell(row.displayAmount, for: row)
+                .frame(width: columnWidths["Amount"] ?? 130)
+            tableCell(row.runningBalance.formattedAsCurrency(.GBP), for: row)
+                .frame(width: columnWidths["Balance"] ?? 130)
+            tableCell(row.exchangeRate, for: row)
+                .frame(width: columnWidths["Fx"] ?? 60)
+            tableCell(row.category, for: row)
+                .frame(width: columnWidths["Category"] ?? 80)
+            multiLineTableCell(row.displaySplitAmount, for: row)
+                .frame(width: columnWidths["Split"] ?? 200)
+            tableCell(row.payee, for: row)
+                .frame(width: columnWidths["Payee"] ?? 100)
+        }
+//        HStack(spacing: 0) {
+//            tableCell(row.paymentMethod, for: row).frame(width: 80)
+//            tableCell(row.transactionDate, for: row).frame(width: 100)
+//            multiLineTableCell(row.displayAmount, for: row).frame(width: 130)
+//            tableCell(row.runningBalance.formattedAsCurrency(.GBP), for: row).frame(width: 130)
+//            tableCell(row.exchangeRate, for: row).frame(width: 60)
+//            tableCell(row.category, for: row).frame(width: 80)
+//            multiLineTableCell(row.displaySplitAmount, for: row).frame(width: 200)
+//            tableCell(row.payee, for: row).frame(width: 100)
+//        }
+        .padding(.leading, 16)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            #if os(macOS)
+            safeUIUpdate {
+                let modifiers = NSEvent.modifierFlags
+                let rowIndex = index
+
+                if modifiers.contains(.command) {
+                    // Cmd-click toggles selection
+                    if selectedTransactionIDs.wrappedValue.contains(row.id) {
+                        selectedTransactionIDs.wrappedValue.remove(row.id)
+                    } else {
+                        selectedTransactionIDs.wrappedValue.insert(row.id)
+                    }
+                    lastClickedRowIndex = rowIndex
+                } else if modifiers.contains(.shift), let lastIndex = lastClickedRowIndex {
+                    // Shift-click selects range
+                    let minIndex = min(lastIndex, rowIndex)
+                    let maxIndex = max(lastIndex, rowIndex)
+                    let rangeIDs = filteredTransactionRows[minIndex...maxIndex].map { $0.id }
+                    selectedTransactionIDs.wrappedValue.formUnion(rangeIDs)
+                } else {
+                    // Regular click selects single row
+                    selectedTransactionIDs.wrappedValue = [row.id]
+                    lastClickedRowIndex = rowIndex
+                }
+            }
+            #else
+            safeUIUpdate { selectedTransactionIDs.wrappedValue = [row.id] }
+            #endif
+        }
+
+        .contextMenu { contextMenu(for: row) }
+        #else
+        tableCell(row.iOSRowForDisplay, for: row)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                safeUIUpdate { selectedTransactionIDs.wrappedValue = [row.id] }
+            }
+            .contextMenu { contextMenu(for: row) }
+        #endif
+    }
+
+    // MARK: --- TableHeaderCell (macOS only)
+    #if os(macOS)
+    @ViewBuilder
+    private func TableHeaderCell(_ title: String, width: CGFloat) -> some View {
+        let handleWidth: CGFloat = 4
+        let totalWidth = columnWidths[title] ?? width
+
+        HStack(spacing: 0) {
+            Text(title)
+                .padding(.leading, 6)
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .font(.custom("SF Mono Medium", size: 14))
+                .frame(width: totalWidth - handleWidth, height: 28, alignment: .leading)
+                .background(Color.gray.opacity(0.1))
+                .border(Color.gray.opacity(0.3), width: 0.5)
+
+            // Drag handle (invisible but hittable)
+            Rectangle()
+                .foregroundColor(.clear)
+                .frame(width: handleWidth, height: 28)
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            columnWidths[title] = max(60, totalWidth + value.translation.width)
+                        }
+                )
+                .onHover { hovering in
+//                    NSCursor.pointingHand.set() // optional: can also use
+                    NSCursor.resizeLeftRight.set()
+                    if !hovering { NSCursor.arrow.set() }
+                }
+        }
+//        .padding(.leading, 4)
+//        .padding(.leading, 6)
+//        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(width: totalWidth, height: 28)
+    }
+
+    
+//    @ViewBuilder
+//    private func TableHeaderCell(_ title: String, width: CGFloat) -> some View {
+//        Text(title)
+//            .font(.custom("SF Mono Medium", size: 14))
+//            .frame(width: width, alignment: .leading)
+//            .padding(.horizontal, 2)
+//            .padding(.vertical, 4)
+//            .background(Color.gray.opacity(0.1))
+//            .border(Color.gray.opacity(0.3), width: 0.5)
+//    }
+    #endif
 
     // MARK: --- SortContextMenu
     @ViewBuilder
@@ -428,15 +603,6 @@ extension BrowseTransactionsView {
             }
         }
     }
-//    private func updateSortColumn(_ column: SortColumn) {
-//        if sortColumn == column {
-//            ascending.toggle()
-//        } else {
-//            sortColumn = column
-//            ascending = true
-//        }
-//        selectedTransactionIDs.removeAll()
-//    }
 
     private var anySelectedTransactionClosed: Bool {
         selectedTransactionIDs.contains { id in
@@ -515,7 +681,6 @@ extension BrowseTransactionsView {
         }
     }
     
-    // MARK: --- FilterBar
     // MARK: --- FilterBar
     private var filterBar: some View {
         HStack(spacing: 16) {
@@ -621,5 +786,112 @@ extension BrowseTransactionsView {
         
         return rows
     }
-    
 }
+
+// MARK: --- VIEW HELPERS
+extension BrowseTransactionsView {
+    
+    // Helper for the row background
+    @ViewBuilder
+    private func rowBackground(for index: Int, row: TransactionRow) -> some View {
+        if selectedTransactionIDs.contains(row.id) {
+            let prevSelected = index > 0 && selectedTransactionIDs.contains(filteredTransactionRows[index-1].id)
+            let nextSelected = index < filteredTransactionRows.count-1 && selectedTransactionIDs.contains(filteredTransactionRows[index+1].id)
+            let corners: RectCorner = {
+                switch (prevSelected, nextSelected) {
+                case (false, false): return .allCorners
+                case (false, true): return [.topLeft, .topRight]
+                case (true, false): return [.bottomLeft, .bottomRight]
+                case (true, true): return []
+                }
+            }()
+            Color.blue.opacity(1)
+                .clipShape(RoundedCorner(corners: corners, radius: 8))
+        } else if index % 2 == 0 {
+            Color.gray.opacity(0.05)
+        } else {
+            Color.clear
+        }
+    }
+    
+    
+    // MARK: --- RectCorner OptionSet
+    struct RectCorner: OptionSet {
+        let rawValue: Int
+        
+        static let topLeft     = RectCorner(rawValue: 1 << 0)
+        static let topRight    = RectCorner(rawValue: 1 << 1)
+        static let bottomLeft  = RectCorner(rawValue: 1 << 2)
+        static let bottomRight = RectCorner(rawValue: 1 << 3)
+        static let allCorners: RectCorner = [.topLeft, .topRight, .bottomLeft, .bottomRight]
+    }
+    
+    // MARK: --- RoundedCorner
+    struct RoundedCorner: Shape {
+        var corners: RectCorner
+        var radius: CGFloat
+        
+        func path(in rect: CGRect) -> Path {
+            var path = Path()
+            
+            let tl = corners.contains(.topLeft) ? radius : 0
+            let tr = corners.contains(.topRight) ? radius : 0
+            let bl = corners.contains(.bottomLeft) ? radius : 0
+            let br = corners.contains(.bottomRight) ? radius : 0
+            
+            path.move(to: CGPoint(x: rect.minX + tl, y: rect.minY))
+            
+            // Top edge
+            path.addLine(to: CGPoint(x: rect.maxX - tr, y: rect.minY))
+            if tr > 0 {
+                path.addArc(
+                    center: CGPoint(x: rect.maxX - tr, y: rect.minY + tr),
+                    radius: tr,
+                    startAngle: .degrees(-90),
+                    endAngle: .degrees(0),
+                    clockwise: false
+                )
+            }
+            
+            // Right edge
+            path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - br))
+            if br > 0 {
+                path.addArc(
+                    center: CGPoint(x: rect.maxX - br, y: rect.maxY - br),
+                    radius: br,
+                    startAngle: .degrees(0),
+                    endAngle: .degrees(90),
+                    clockwise: false
+                )
+            }
+            
+            // Bottom edge
+            path.addLine(to: CGPoint(x: rect.minX + bl, y: rect.maxY))
+            if bl > 0 {
+                path.addArc(
+                    center: CGPoint(x: rect.minX + bl, y: rect.maxY - bl),
+                    radius: bl,
+                    startAngle: .degrees(90),
+                    endAngle: .degrees(180),
+                    clockwise: false
+                )
+            }
+            
+            // Left edge
+            path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + tl))
+            if tl > 0 {
+                path.addArc(
+                    center: CGPoint(x: rect.minX + tl, y: rect.minY + tl),
+                    radius: tl,
+                    startAngle: .degrees(180),
+                    endAngle: .degrees(270),
+                    clockwise: false
+                )
+            }
+            
+            path.closeSubpath()
+            return path
+        }
+    }
+}
+
