@@ -86,21 +86,30 @@ struct BrowseTransactionsView: View {
     @Environment(AppState.self) var appState
 
     // MARK: --- State
+    // Focus State
+    @FocusState private var focusedRowIndex: Int?
+    // Sort State
     @State private var ascending: Bool = true
+    @State private var sortColumn: SortColumn = .transactionDate
+    // Merge State
     @State private var mergeCandidates: [Transaction] = []
+    // Selection State
     @State private var selectedTransaction: Transaction?
     @State private var selectedTransactionIDs = Set<NSManagedObjectID>()
+    @State private var lastClickedRowIndex: Int? = nil
+    // Dialogs etc State
     @State private var showingDeleteConfirmation = false
     @State private var showingEditTransactionView = false
-    @State private var sortColumn: SortColumn = .transactionDate
-    @State private var transactionsToDelete: Set<NSManagedObjectID> = []
     @State private var showMergeSheet = false
-    @State private var lastClickedRowIndex: Int? = nil
+    // Delete State
+    @State private var transactionsToDelete: Set<NSManagedObjectID> = []
     // Filter State
     @State private var selectedAccountingPeriod: AccountingPeriod? = nil
     @State private var selectedPaymentMethod: PaymentMethod? = nil
     // Column Width State
     #if os(macOS)
+    @State private var availableWidth: CGFloat = 0
+    @State private var scaledColumnWidths: [String: CGFloat] = [:]
     @State private var columnWidths: [String: CGFloat] = [
         "Payment Method": 80,
         "Date": 100,
@@ -235,37 +244,6 @@ extension BrowseTransactionsView {
         }
     }
 
-//        if selectedTransactionIDs.contains(row.id) {
-//
-//            if selectedTransactionIDs.count == 1 {
-//                Button("Edit Transaction") {
-//                    appState.selectedTransactionID = row.id
-//                    appState.pushCentralView(.editTransaction(existingTransaction: row.transaction))
-//                    appState.refreshInspector()
-//                }
-//                .disabled(anySelectedTransactionClosed)
-//            }
-//
-//            if selectedTransactionIDs.count == 2 {
-//                Button("Merge Transactions") {
-//                    mergeCandidates = transactions.filter { selectedTransactionIDs.contains($0.objectID) }
-//                    appState.pushCentralView(.mergeTransactionsView(mergeCandidates))
-//                    appState.refreshInspector()
-//                }
-//                .disabled(anySelectedTransactionClosed)
-//                Divider()
-//            }
-//
-//            Button(role: .destructive) {
-//                transactionsToDelete = selectedTransactionIDs
-//                showingDeleteConfirmation = true
-//            } label: {
-//                Label("Delete Transaction(s)", systemImage: "trash")
-//            }
-//            .disabled(anySelectedTransactionClosed)
-//        }
-//    }
-
     // MARK: --- MultiLineTableCell
     @ViewBuilder
     private func multiLineTableCell(_ content: String, for row: TransactionRow) -> some View {
@@ -278,7 +256,6 @@ extension BrowseTransactionsView {
                 )
                 .lineLimit(2)
                 .truncationMode(.tail)
-//                .lineLimit(nil)
             Spacer()
         }
         .padding(.leading, 6)
@@ -311,46 +288,89 @@ extension BrowseTransactionsView {
     private var transactionsTable: some View {
         #if os(macOS)
         GeometryReader { proxy in
-            ScrollView(.horizontal) { // horizontal scroll
-                VStack(spacing: 0) {
-                    // --- Header Row
-                    HStack(spacing: 0) {
-                        TableHeaderCell("Payment Method", width: 80)
-                        TableHeaderCell("Date", width: 100)
-                        TableHeaderCell("Amount", width: 130)
-                        TableHeaderCell("Balance", width: 130)
-                        TableHeaderCell("Fx", width: 60)
-                        TableHeaderCell("Category", width: 80)
-                        TableHeaderCell("Split", width: 200)
-                        TableHeaderCell("Payee", width: 100)
+            
+//            let availableWidth = proxy.size.width
+            let width = proxy.size.width
+            
+            Color.clear // or any invisible view to attach `.onAppear` / `.onChange`
+                .onAppear {
+                    // only set once on first appear
+                    if availableWidth != width {
+                        availableWidth = width
+                        updateScaledWidths(for: width)
                     }
-                    .background(Color.gray.opacity(0.1))
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                    
-                    // --- Rows in vertical ScrollView
-                    ScrollView(.vertical) {
-                        LazyVStack(spacing: 0) {
-                            ForEach(Array(filteredTransactionRows.enumerated()), id: \.element.id) { index, row in
-                                TransactionRowView(
-                                    row: row,
-                                    selectedTransactionIDs: $selectedTransactionIDs,
-                                    anySelectedTransactionClosed: anySelectedTransactionClosed,
-                                    appState: appState,
-                                    index: index
-                                )
-                                .background(rowBackground(for: index, row: row))
+                }
+                .onChange(of: width) { newWidth in
+                    availableWidth = newWidth
+                    updateScaledWidths(for: newWidth)
+                }
+            
+            VStack(spacing: 0) {
+                // --- Header Row
+                HStack(spacing: 0) {
+                    TableHeaderCell("Payment Method", width: 80)
+                        .frame(width: scaledColumnWidths["Payment Method"] ?? 80)
+                    TableHeaderCell("Date", width: 100)
+                        .frame(width: scaledColumnWidths["Date"] ?? 100)
+                    TableHeaderCell("Amount", width: 130)
+                        .frame(width: scaledColumnWidths["Amount"] ?? 130)
+                    TableHeaderCell("Balance", width: 130)
+                        .frame(width: scaledColumnWidths["Balance"] ?? 130)
+                    TableHeaderCell("Fx", width: 60)
+                        .frame(width: scaledColumnWidths["Fx"] ?? 60)
+                    TableHeaderCell("Category", width: 80)
+                        .frame(width: scaledColumnWidths["Category"] ?? 80)
+                    TableHeaderCell("Split", width: 200)
+                        .frame(width: scaledColumnWidths["Split"] ?? 200)
+                    TableHeaderCell("Payee", width: 100)
+                        .frame(width: scaledColumnWidths["Payee"] ?? 100)
+                }
+                .background(Color.gray.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+
+                // --- Rows
+                ScrollView(.vertical) {
+                    LazyVStack(spacing: 0) {
+                        ForEach(Array(filteredTransactionRows.enumerated()), id: \.element.id) { index, row in
+                            TransactionRowView(
+                                row: row,
+                                selectedTransactionIDs: $selectedTransactionIDs,
+                                anySelectedTransactionClosed: anySelectedTransactionClosed,
+                                appState: appState,
+                                index: index
+                            )
+                            .background(rowBackground(for: index, row: row))
+                            .focusable(true)
+                            .focused($focusedRowIndex, equals: index)
+                            .onTapGesture { focusedRowIndex = index }
+                            .onMoveCommand { direction in
+                                switch direction {
+                                case .up:
+                                    if let current = focusedRowIndex, current > 0 {
+                                        focusedRowIndex = current - 1
+                                    }
+                                case .down:
+                                    if let current = focusedRowIndex,
+                                       current < filteredTransactionRows.count - 1 {
+                                        focusedRowIndex = current + 1
+                                    }
+                                default: break
+                                }
                             }
                         }
                     }
-                    .frame(minHeight: 300)
                 }
-                // --- Make VStack at least as wide as the available window
-                .frame(minWidth: proxy.size.width, alignment: .leading)
+                .frame(minHeight: 300)
             }
-            // --- Make the horizontal scroll expand to full width
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+            .onAppear {
+                updateScaledWidths(for: availableWidth)
+            }
+            .onChange(of: availableWidth) { _, newWidth in
+                updateScaledWidths(for: newWidth)
+            }
+            // --- Constrain VStack to the width of the available window
+            .frame(minWidth: proxy.size.width, alignment: .leading)
         }
-//        .frame(maxWidth: .infinity)
         .contextMenu { SortContextMenu() }
         .onChange(of: selectedTransactionIDs) { _, newSelection in
             safeUIUpdate {
@@ -365,6 +385,115 @@ extension BrowseTransactionsView {
         }
         #endif
     }
+    
+    // MARK: --- UpdateScaledWidths
+    private func updateScaledWidths(for availableWidth: CGFloat) {
+        let minWidth: CGFloat = 60
+        let totalRequested = columnWidths.values.reduce(0, +)
+
+        // Scale to fit availableWidth proportionally
+        let scaleFactor = availableWidth / totalRequested
+        scaledColumnWidths = columnWidths.mapValues { max(minWidth, $0 * scaleFactor) }
+
+        // Debug
+        print("Scaled column widths: \(scaledColumnWidths)")
+    }
+
+
+
+    // MARK: --- ResizeColumn
+    private func resizeColumn(title: String, delta: CGFloat) {
+        guard let currentWidth = columnWidths[title] else { return }
+        guard availableWidth > 0 else { return }
+        
+        let minWidth: CGFloat = 60
+        let newWidth = max(minWidth, currentWidth + delta)
+
+        columnWidths[title] = newWidth
+
+        // Ensure total width does not exceed availableWidth
+        let totalWidth = columnWidths.values.reduce(0, +)
+        if totalWidth > availableWidth {
+            // Pick last column to shrink (or any chosen column)
+            let shrinkKey = "Payee"
+            if shrinkKey != title, let current = columnWidths[shrinkKey] {
+                let excess = totalWidth - availableWidth
+                columnWidths[shrinkKey] = max(minWidth, current - excess)
+            }
+
+        }
+
+        scaledColumnWidths = columnWidths
+    }
+
+    
+//    private func resizeColumn(title: String, delta: CGFloat) {
+//        
+//        guard let currentWidth = scaledColumnWidths[title] else { return }
+//        
+//        let newWidth = max(60, currentWidth + delta)
+//        
+//        columnWidths[title] = newWidth
+//        scaledColumnWidths[title] = newWidth
+//    }
+
+
+//    private var transactionsTable: some View {
+//        #if os(macOS)
+//        GeometryReader { proxy in
+////            ScrollView(.horizontal) { // horizontal scroll
+//                VStack(spacing: 0) {
+//                    // --- Header Row
+//                    HStack(spacing: 0) {
+//                        TableHeaderCell("Payment Method", width: 80)
+//                        TableHeaderCell("Date", width: 100)
+//                        TableHeaderCell("Amount", width: 130)
+//                        TableHeaderCell("Balance", width: 130)
+//                        TableHeaderCell("Fx", width: 60)
+//                        TableHeaderCell("Category", width: 80)
+//                        TableHeaderCell("Split", width: 200)
+//                        TableHeaderCell("Payee", width: 100)
+//                    }
+//                    .background(Color.gray.opacity(0.1))
+//                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+//                    
+//                    // --- Rows in vertical ScrollView
+//                    ScrollView(.vertical) {
+//                        LazyVStack(spacing: 0) {
+//                            ForEach(Array(filteredTransactionRows.enumerated()), id: \.element.id) { index, row in
+//                                TransactionRowView(
+//                                    row: row,
+//                                    selectedTransactionIDs: $selectedTransactionIDs,
+//                                    anySelectedTransactionClosed: anySelectedTransactionClosed,
+//                                    appState: appState,
+//                                    index: index
+//                                )
+//                                .background(rowBackground(for: index, row: row))
+//                            }
+//                        }
+//                    }
+//                    .frame(minHeight: 300)
+//                }
+//                // --- Make VStack at least as wide as the available window
+//                .frame(minWidth: proxy.size.width, alignment: .leading)
+//           }
+//            // --- Make the horizontal scroll expand to full width
+////            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+////        }
+//        .contextMenu { SortContextMenu() }
+//        .onChange(of: selectedTransactionIDs) { _, newSelection in
+//            safeUIUpdate {
+//                if let firstID = newSelection.first {
+//                    appState.selectedTransactionID = firstID
+//                    appState.selectedInspectorView = .viewTransaction
+//                } else {
+//                    selectedTransaction = nil
+//                    appState.selectedTransactionID = nil
+//                }
+//            }
+//        }
+//        #endif
+//    }
 
     // MARK: --- TransactionRowView
     @ViewBuilder
@@ -378,32 +507,22 @@ extension BrowseTransactionsView {
         #if os(macOS)
         HStack(spacing: 0) {
             tableCell(row.paymentMethod, for: row)
-                .frame(width: columnWidths["Payment Method"] ?? 80)
+                .frame(width: scaledColumnWidths["Payment Method"] ?? 80)
             tableCell(row.transactionDate, for: row)
-                .frame(width: columnWidths["Date"] ?? 100)
+                .frame(width: scaledColumnWidths["Date"] ?? 100)
             multiLineTableCell(row.displayAmount, for: row)
-                .frame(width: columnWidths["Amount"] ?? 130)
+                .frame(width: scaledColumnWidths["Amount"] ?? 130)
             tableCell(row.runningBalance.formattedAsCurrency(.GBP), for: row)
-                .frame(width: columnWidths["Balance"] ?? 130)
+                .frame(width: scaledColumnWidths["Balance"] ?? 130)
             tableCell(row.exchangeRate, for: row)
-                .frame(width: columnWidths["Fx"] ?? 60)
+                .frame(width: scaledColumnWidths["Fx"] ?? 60)
             tableCell(row.category, for: row)
-                .frame(width: columnWidths["Category"] ?? 80)
+                .frame(width: scaledColumnWidths["Category"] ?? 80)
             multiLineTableCell(row.displaySplitAmount, for: row)
-                .frame(width: columnWidths["Split"] ?? 200)
+                .frame(width: scaledColumnWidths["Split"] ?? 200)
             tableCell(row.payee, for: row)
-                .frame(width: columnWidths["Payee"] ?? 100)
+                .frame(width: scaledColumnWidths["Payee"] ?? 100)
         }
-//        HStack(spacing: 0) {
-//            tableCell(row.paymentMethod, for: row).frame(width: 80)
-//            tableCell(row.transactionDate, for: row).frame(width: 100)
-//            multiLineTableCell(row.displayAmount, for: row).frame(width: 130)
-//            tableCell(row.runningBalance.formattedAsCurrency(.GBP), for: row).frame(width: 130)
-//            tableCell(row.exchangeRate, for: row).frame(width: 60)
-//            tableCell(row.category, for: row).frame(width: 80)
-//            multiLineTableCell(row.displaySplitAmount, for: row).frame(width: 200)
-//            tableCell(row.payee, for: row).frame(width: 100)
-//        }
         .padding(.leading, 16)
         .contentShape(Rectangle())
         .onTapGesture {
@@ -450,22 +569,22 @@ extension BrowseTransactionsView {
 
     // MARK: --- TableHeaderCell (macOS only)
     #if os(macOS)
-    @ViewBuilder
+@ViewBuilder
     private func TableHeaderCell(_ title: String, width: CGFloat) -> some View {
         let handleWidth: CGFloat = 4
-        let totalWidth = columnWidths[title] ?? width
-
+        
         HStack(spacing: 0) {
+            // --- Column title
             Text(title)
                 .padding(.leading, 6)
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .font(.custom("SF Mono Medium", size: 14))
-                .frame(width: totalWidth - handleWidth, height: 28, alignment: .leading)
+                .frame(width: (scaledColumnWidths[title] ?? width) - handleWidth, height: 28, alignment: .leading)
                 .background(Color.gray.opacity(0.1))
                 .border(Color.gray.opacity(0.3), width: 0.5)
-
-            // Drag handle (invisible but hittable)
+            
+            // --- Drag handle
             Rectangle()
                 .foregroundColor(.clear)
                 .frame(width: handleWidth, height: 28)
@@ -473,33 +592,19 @@ extension BrowseTransactionsView {
                 .gesture(
                     DragGesture(minimumDistance: 0)
                         .onChanged { value in
-                            columnWidths[title] = max(60, totalWidth + value.translation.width)
+//                            let val2 = (value.translation.width > 0 ? 1 : -1 )
+//                            resizeColumn(title: title, delta: CGFloat(val2))
+                            resizeColumn(title: title, delta: value.translation.width)
                         }
                 )
                 .onHover { hovering in
-//                    NSCursor.pointingHand.set() // optional: can also use
                     NSCursor.resizeLeftRight.set()
                     if !hovering { NSCursor.arrow.set() }
                 }
         }
-//        .padding(.leading, 4)
-//        .padding(.leading, 6)
-//        .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(width: totalWidth, height: 28)
+        .frame(width: scaledColumnWidths[title] ?? width, height: 28)
     }
-
-    
-//    @ViewBuilder
-//    private func TableHeaderCell(_ title: String, width: CGFloat) -> some View {
-//        Text(title)
-//            .font(.custom("SF Mono Medium", size: 14))
-//            .frame(width: width, alignment: .leading)
-//            .padding(.horizontal, 2)
-//            .padding(.vertical, 4)
-//            .background(Color.gray.opacity(0.1))
-//            .border(Color.gray.opacity(0.3), width: 0.5)
-//    }
-    #endif
+#endif
 
     // MARK: --- SortContextMenu
     @ViewBuilder
