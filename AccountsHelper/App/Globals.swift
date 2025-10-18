@@ -26,7 +26,7 @@ var gUseLiveStore = false
 let gUploadSchema = false
 
 // MARK: --- For debugging Views. The compiler will optimise out unused variables.
-let gViewCheck = false
+let gViewCheck = true
 
 // MARK: --- To remove Magic numbers from the code
 let gInspectorMaxWidth:      CGFloat = 350

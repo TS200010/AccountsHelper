@@ -122,10 +122,13 @@ struct BrowseTransactionsView: View {
     ]
     #endif
 
-    // MARK: --- Injected Properties
+    // MARK: --- Constants
+    private let rowHeight: CGFloat = 28
+    
+    // MARK: --- CoreData
     @FetchRequest private var transactions: FetchedResults<Transaction>
 
-    // MARK: --- CoreData
+    // MARK: --- Initialiser
     init(predicate: NSPredicate? = nil) {
         _transactions = FetchRequest(
             sortDescriptors: [NSSortDescriptor(keyPath: \Transaction.transactionDate, ascending: true)],
@@ -325,6 +328,7 @@ extension BrowseTransactionsView {
                     TableHeaderCell("Payee", width: 100)
                         .frame(width: scaledColumnWidths["Payee"] ?? 100)
                 }
+                .padding(.leading, 16)
                 .background(Color.gray.opacity(0.1))
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
 
@@ -392,7 +396,8 @@ extension BrowseTransactionsView {
         let totalRequested = columnWidths.values.reduce(0, +)
 
         // Scale to fit availableWidth proportionally
-        let scaleFactor = availableWidth / totalRequested
+        // 16 is to not entirely fill available space
+        let scaleFactor = (availableWidth - 50) / totalRequested
         scaledColumnWidths = columnWidths.mapValues { max(minWidth, $0 * scaleFactor) }
 
         // Debug
@@ -436,26 +441,31 @@ extension BrowseTransactionsView {
         index: Int
     ) -> some View {
         #if os(macOS)
-        HStack(spacing: 0) {
-            tableCell(row.paymentMethod, for: row)
-                .frame(width: scaledColumnWidths["Payment Method"] ?? 80)
-            tableCell(row.transactionDate, for: row)
-                .frame(width: scaledColumnWidths["Date"] ?? 100)
-            multiLineTableCell(row.displayAmount, for: row)
-                .frame(width: scaledColumnWidths["Amount"] ?? 130)
-            tableCell(row.runningBalance.formattedAsCurrency(.GBP), for: row)
-                .frame(width: scaledColumnWidths["Balance"] ?? 130)
-            tableCell(row.exchangeRate, for: row)
-                .frame(width: scaledColumnWidths["Fx"] ?? 60)
-            tableCell(row.category, for: row)
-                .frame(width: scaledColumnWidths["Category"] ?? 80)
-            multiLineTableCell(row.displaySplitAmount, for: row)
-                .frame(width: scaledColumnWidths["Split"] ?? 200)
-            tableCell(row.payee, for: row)
-                .frame(width: scaledColumnWidths["Payee"] ?? 100)
+        ZStack {                                     // NEW: wrap row content so background can fill full width
+            rowBackground(for: index, row: row)
+            HStack(spacing: 0) {
+                tableCell(row.paymentMethod, for: row)
+                    .frame(width: scaledColumnWidths["Payment Method"] ?? 80)
+                tableCell(row.transactionDate, for: row)
+                    .frame(width: scaledColumnWidths["Date"] ?? 100)
+                multiLineTableCell(row.displayAmount, for: row)
+                    .frame(width: scaledColumnWidths["Amount"] ?? 130)
+                tableCell(row.runningBalance.formattedAsCurrency(.GBP), for: row)
+                    .frame(width: scaledColumnWidths["Balance"] ?? 130)
+                tableCell(row.exchangeRate, for: row)
+                    .frame(width: scaledColumnWidths["Fx"] ?? 60)
+                tableCell(row.category, for: row)
+                    .frame(width: scaledColumnWidths["Category"] ?? 80)
+                multiLineTableCell(row.displaySplitAmount, for: row)
+                    .frame(width: scaledColumnWidths["Split"] ?? 200)
+                tableCell(row.payee, for: row)
+                    .frame(width: scaledColumnWidths["Payee"] ?? 100)
+            }
+            .padding(.leading, 16)
+            .contentShape(Rectangle())
         }
-        .padding(.leading, 16)
-        .contentShape(Rectangle())
+        .background(rowBackground(for: index, row: row))
+        .if( gViewCheck ) { view in view.border( .green )}
         .onTapGesture {
             #if os(macOS)
             safeUIUpdate {
@@ -498,6 +508,7 @@ extension BrowseTransactionsView {
         #endif
     }
 
+
     // MARK: --- TableHeaderCell (macOS only)
     #if os(macOS)
 @ViewBuilder
@@ -511,14 +522,14 @@ extension BrowseTransactionsView {
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .font(.custom("SF Mono Medium", size: 14))
-                .frame(width: (scaledColumnWidths[title] ?? width) - handleWidth, height: 28, alignment: .leading)
+                .frame(width: (scaledColumnWidths[title] ?? width) - handleWidth, height: rowHeight, alignment: .leading)
                 .background(Color.gray.opacity(0.1))
                 .border(Color.gray.opacity(0.3), width: 0.5)
             
             // --- Drag handle
             Rectangle()
                 .foregroundColor(.clear)
-                .frame(width: handleWidth, height: 28)
+                .frame(width: handleWidth, height: rowHeight)
                 .contentShape(Rectangle())
                 .gesture(
                     DragGesture(minimumDistance: 0)
@@ -533,7 +544,7 @@ extension BrowseTransactionsView {
                     if !hovering { NSCursor.arrow.set() }
                 }
         }
-        .frame(width: scaledColumnWidths[title] ?? width, height: 28)
+        .frame(width: scaledColumnWidths[title] ?? width, height: rowHeight)
     }
 #endif
 
@@ -830,23 +841,69 @@ extension BrowseTransactionsView {
     // Helper for the row background
     @ViewBuilder
     private func rowBackground(for index: Int, row: TransactionRow) -> some View {
+        let rowWidth = scaledColumnWidths.values.reduce(0, +)
         if selectedTransactionIDs.contains(row.id) {
+            
             let prevSelected = index > 0 && selectedTransactionIDs.contains(filteredTransactionRows[index-1].id)
             let nextSelected = index < filteredTransactionRows.count-1 && selectedTransactionIDs.contains(filteredTransactionRows[index+1].id)
-            let corners: RectCorner = {
-                switch (prevSelected, nextSelected) {
-                case (false, false): return .allCorners
-                case (false, true): return [.topLeft, .topRight]
-                case (true, false): return [.bottomLeft, .bottomRight]
-                case (true, true): return []
-                }
-            }()
-            Color.blue.opacity(1)
-                .clipShape(RoundedCorner(corners: corners, radius: 8))
+            if !prevSelected && !nextSelected {
+                // Single row selected — round all corners
+                RoundedRectangle(cornerRadius: 8)
+                    .foregroundColor(.blue)
+                    .frame(width: rowWidth, height: rowHeight)
+            } else if !prevSelected && nextSelected {
+                // Top row of multi-selection — round top corners only
+                Color.blue
+                    .frame(width: rowWidth, height: rowHeight)
+                    .clipShape(RoundedCorner(corners: [.topLeft, .topRight], radius: 8))
+            } else if prevSelected && !nextSelected {
+                // Bottom row of multi-selection — round bottom corners only
+                Color.blue
+                    .frame(width: rowWidth, height: rowHeight)
+                    .clipShape(RoundedCorner(corners: [.bottomLeft, .bottomRight], radius: 8))
+            } else {
+                // Middle row of multi-selection — no rounding
+                Color.blue
+                    .frame(width: rowWidth, height: rowHeight)
+            }
+            
+            //            RoundedRectangle(cornerRadius: 8)
+            //                .foregroundColor(.blue)
+            //                .frame(width: rowWidth, height: 28)
+            
+            //            let prevSelected = index > 0 && selectedTransactionIDs.contains(filteredTransactionRows[index-1].id)
+            //            let nextSelected = index < filteredTransactionRows.count-1 && selectedTransactionIDs.contains(filteredTransactionRows[index+1].id)
+            //            RoundedRectangle(cornerRadius: 8)
+            //                .foregroundColor(.blue)
+            //                .frame(width: rowWidth, height: 28)
+            //                .opacity(1)
+            //                .mask(
+            //                    HStack(spacing: 0) {
+            //                        if !prevSelected { Spacer() } // top corner spacing handled visually
+            //                        Rectangle().frame(maxWidth: .infinity)
+            //                        if !nextSelected { Spacer() }
+            //                    }
+            //                )
+            
+            //            let corners: RectCorner = {
+            //                switch (prevSelected, nextSelected) {
+            //                case (false, false): return .allCorners
+            //                case (false, true): return [.topLeft, .topRight]
+            //                case (true, false): return [.bottomLeft, .bottomRight]
+            //                case (true, true): return []
+            //                }
+            //            }()
+            //            Color.blue.opacity(1)
+            //                .frame(maxWidth: .infinity)
+            //                .clipShape(RoundedCorner(corners: corners, radius: 8))
+            //                .zIndex(1)
         } else if index % 2 == 0 {
-            Color.gray.opacity(0.05)
-        } else {
             Color.clear
+                .frame(width: rowWidth, height: rowHeight)
+        } else {
+            Color.gray.opacity(0.05)
+                .frame(width: rowWidth, height: rowHeight)
+ 
         }
     }
     
