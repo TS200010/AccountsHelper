@@ -16,6 +16,7 @@ typealias UIRectCorner = CACornerMask
 import UIKit
 #endif
 
+
 // MARK: --- To work aroound a SwiftUI bug
 fileprivate func safeUIUpdate(_ action: @escaping () -> Void) {
     action()
@@ -303,7 +304,7 @@ extension BrowseTransactionsView {
                         updateScaledWidths(for: width)
                     }
                 }
-                .onChange(of: width) { newWidth in
+                .onChange(of: width) { _, newWidth in
                     availableWidth = newWidth
                     updateScaledWidths(for: newWidth)
                 }
@@ -344,19 +345,29 @@ extension BrowseTransactionsView {
                                 index: index
                             )
                             .background(rowBackground(for: index, row: row))
-                            .focusable(true)
+                            .focusable(false) // Disable blue focusRing
                             .focused($focusedRowIndex, equals: index)
                             .onTapGesture { focusedRowIndex = index }
                             .onMoveCommand { direction in
                                 switch direction {
                                 case .up:
                                     if let current = focusedRowIndex, current > 0 {
-                                        focusedRowIndex = current - 1
+                                        let newIndex = current - 1
+                                        focusedRowIndex = newIndex
+                                        lastClickedRowIndex = newIndex
+                                        DispatchQueue.main.async {
+                                            selectedTransactionIDs = [filteredTransactionRows[newIndex].id]
+                                        }
                                     }
                                 case .down:
                                     if let current = focusedRowIndex,
                                        current < filteredTransactionRows.count - 1 {
-                                        focusedRowIndex = current + 1
+                                        let newIndex = current + 1
+                                        focusedRowIndex = newIndex
+                                        lastClickedRowIndex = newIndex
+                                        DispatchQueue.main.async {
+                                            selectedTransactionIDs = [filteredTransactionRows[newIndex].id]
+                                        }
                                     }
                                 default: break
                                 }
@@ -441,7 +452,7 @@ extension BrowseTransactionsView {
         index: Int
     ) -> some View {
         #if os(macOS)
-        ZStack {                                     // NEW: wrap row content so background can fill full width
+        ZStack {                                     // Wrap so background can fill full width
             rowBackground(for: index, row: row)
             HStack(spacing: 0) {
                 tableCell(row.paymentMethod, for: row)
@@ -511,7 +522,7 @@ extension BrowseTransactionsView {
 
     // MARK: --- TableHeaderCell (macOS only)
     #if os(macOS)
-@ViewBuilder
+    @ViewBuilder
     private func TableHeaderCell(_ title: String, width: CGFloat) -> some View {
         let handleWidth: CGFloat = 4
         
