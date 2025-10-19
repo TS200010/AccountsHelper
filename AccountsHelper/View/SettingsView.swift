@@ -113,7 +113,18 @@ struct GeneralSettingsView: View {
                     Text("\(Int(refreshInterval))")
                         .frame(width: 40, alignment: .leading)
                 }
+                
+                // --- RESET COLUMN WIDTHS BUTTON ---
+                Button("Reset Column Widths") {
+                    let columnWidthsKey = "BrowseTransactionsColumnWidths"
+                    UserDefaults.standard.removeObject(forKey: columnWidthsKey)
+                    // Optional: post notification to notify BrowseTransactionsView
+//                    NotificationCenter.default.post(name: .resetColumnWidths, object: nil)
+                }
+                .foregroundColor(.red)
             }
+            
+            
         }
         .padding()
     }

@@ -41,6 +41,9 @@ let gNumTransactionAttributes = 19 // Number minus one as we do not care about T
 let gAppName: String = Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "UnknownAppName"
 let defaultURL: String = "\\NoSourceFile"
 
+// MARK: --- User State Persistence
+let columnWidthsKey = "BrowseTransactionsView_ColumnWidths"
+
 // MARK: --- Global Alert system
 var gGlobalAlert: GlobalAlert = GlobalAlert()
 

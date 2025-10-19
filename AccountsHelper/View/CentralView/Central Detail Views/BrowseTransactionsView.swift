@@ -292,17 +292,16 @@ extension BrowseTransactionsView {
     private var transactionsTable: some View {
         #if os(macOS)
         GeometryReader { proxy in
-            
-//            let availableWidth = proxy.size.width
             let width = proxy.size.width
             
             Color.clear // or any invisible view to attach `.onAppear` / `.onChange`
                 .onAppear {
-                    // only set once on first appear
-                    if availableWidth != width {
-                        availableWidth = width
-                        updateScaledWidths(for: width)
+                    availableWidth = width
+                    // Load saved widths
+                    if let saved = UserDefaults.standard.dictionary(forKey: columnWidthsKey) as? [String: Double] {
+                        columnWidths = saved.mapValues { CGFloat($0) }
                     }
+                    updateScaledWidths(for: availableWidth)
                 }
                 .onChange(of: width) { _, newWidth in
                     availableWidth = newWidth
@@ -314,6 +313,7 @@ extension BrowseTransactionsView {
                 HStack(spacing: 0) {
                     TableHeaderCell("Payment Method", width: 80)
                         .frame(width: scaledColumnWidths["Payment Method"] ?? 80)
+                        .if( gViewCheck ) { view in view.border( .green )}
                     TableHeaderCell("Date", width: 100)
                         .frame(width: scaledColumnWidths["Date"] ?? 100)
                     TableHeaderCell("Amount", width: 130)
@@ -329,9 +329,11 @@ extension BrowseTransactionsView {
                     TableHeaderCell("Payee", width: 100)
                         .frame(width: scaledColumnWidths["Payee"] ?? 100)
                 }
-                .padding(.leading, 16)
-                .background(Color.gray.opacity(0.1))
+//                .padding(.leading, 16)
+                .background(Color(white: 0.84))
+//                .background(Color.gray.opacity(0.1))
                 .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+//                .if( gViewCheck ) { view in view.border( .blue )}
 
                 // --- Rows
                 ScrollView(.vertical) {
@@ -419,28 +421,69 @@ extension BrowseTransactionsView {
 
     // MARK: --- ResizeColumn
     private func resizeColumn(title: String, delta: CGFloat) {
-        guard let currentWidth = columnWidths[title] else { return }
-        guard availableWidth > 0 else { return }
-        
+        guard let currentWidth = columnWidths[title], availableWidth > 0 else { return }
+
         let minWidth: CGFloat = 60
         let newWidth = max(minWidth, currentWidth + delta)
-
         columnWidths[title] = newWidth
 
-        // Ensure total width does not exceed availableWidth
-        let totalWidth = columnWidths.values.reduce(0, +)
+        // Total width after resize
+        var totalWidth = columnWidths.values.reduce(0, +)
+
+        // If total exceeds availableWidth, shrink flexible columns
         if totalWidth > availableWidth {
-            // Pick last column to shrink (or any chosen column)
-            let shrinkKey = "Payee"
-            if shrinkKey != title, let current = columnWidths[shrinkKey] {
-                let excess = totalWidth - availableWidth
-                columnWidths[shrinkKey] = max(minWidth, current - excess)
+            var remainingExcess = totalWidth - availableWidth
+
+            // Flexible columns excluding the dragged one
+            let flexibleColumns = columnWidths.keys.filter { $0 != title }
+
+            for key in flexibleColumns.reversed() { // shrink from right
+                guard let width = columnWidths[key] else { continue }
+                let shrinkable = max(width - minWidth, 0)
+                if shrinkable >= remainingExcess {
+                    columnWidths[key] = width - remainingExcess
+                    remainingExcess = 0
+                    break
+                } else {
+                    columnWidths[key] = width - shrinkable
+                    remainingExcess -= shrinkable
+                }
             }
 
+            // Clamp dragged column if still over
+            if remainingExcess > 0 {
+                columnWidths[title] = max(minWidth, newWidth - remainingExcess)
+            }
         }
 
         scaledColumnWidths = columnWidths
+        // Save
+        UserDefaults.standard.set(columnWidths.mapValues { Double($0) }, forKey: columnWidthsKey)
     }
+
+//    private func resizeColumn(title: String, delta: CGFloat) {
+//        guard let currentWidth = columnWidths[title] else { return }
+//        guard availableWidth > 0 else { return }
+//        
+//        let minWidth: CGFloat = 60
+//        let newWidth = max(minWidth, currentWidth + delta)
+//
+//        columnWidths[title] = newWidth
+//
+//        // Ensure total width does not exceed availableWidth
+//        let totalWidth = columnWidths.values.reduce(0, +)
+//        if totalWidth > availableWidth {
+//            // Pick last column to shrink (or any chosen column)
+//            let shrinkKey = "Payee"
+//            if shrinkKey != title, let current = columnWidths[shrinkKey] {
+//                let excess = totalWidth - availableWidth
+//                columnWidths[shrinkKey] = max(minWidth, current - excess)
+//            }
+//
+//        }
+//
+//        scaledColumnWidths = columnWidths
+//    }
 
     // MARK: --- TransactionRowView
     @ViewBuilder
@@ -457,6 +500,7 @@ extension BrowseTransactionsView {
             HStack(spacing: 0) {
                 tableCell(row.paymentMethod, for: row)
                     .frame(width: scaledColumnWidths["Payment Method"] ?? 80)
+                    .if( gViewCheck ) { view in view.border( .yellow )}
                 tableCell(row.transactionDate, for: row)
                     .frame(width: scaledColumnWidths["Date"] ?? 100)
                 multiLineTableCell(row.displayAmount, for: row)
@@ -534,12 +578,12 @@ extension BrowseTransactionsView {
                 .truncationMode(.tail)
                 .font(.custom("SF Mono Medium", size: 14))
                 .frame(width: (scaledColumnWidths[title] ?? width) - handleWidth, height: rowHeight, alignment: .leading)
-                .background(Color.gray.opacity(0.1))
-                .border(Color.gray.opacity(0.3), width: 0.5)
+//                .background(Color.gray.opacity(0.1))
+//                .border(Color.gray.opacity(0.3), width: 0.5)
             
             // --- Drag handle
             Rectangle()
-                .foregroundColor(.clear)
+                .foregroundColor(.white)
                 .frame(width: handleWidth, height: rowHeight)
                 .contentShape(Rectangle())
                 .gesture(
