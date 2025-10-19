@@ -27,6 +27,17 @@ fileprivate func safeUIUpdate(_ action: @escaping () -> Void) {
 //    }
 }
 
+// MARK: --- RectCorner OptionSet
+struct RectCorner: OptionSet {
+    let rawValue: Int
+    
+    static let topLeft     = RectCorner(rawValue: 1 << 0)
+    static let topRight    = RectCorner(rawValue: 1 << 1)
+    static let bottomLeft  = RectCorner(rawValue: 1 << 2)
+    static let bottomRight = RectCorner(rawValue: 1 << 3)
+    static let allCorners: RectCorner = [.topLeft, .topRight, .bottomLeft, .bottomRight]
+}
+
 
 // MARK: --- SortColumn
 enum SortColumn: CaseIterable, Identifiable {
@@ -293,110 +304,116 @@ extension BrowseTransactionsView {
         #if os(macOS)
         GeometryReader { proxy in
             let width = proxy.size.width
-            
-            Color.clear // or any invisible view to attach `.onAppear` / `.onChange`
-                .onAppear {
-                    availableWidth = width
-                    // Load saved widths
-                    if let saved = UserDefaults.standard.dictionary(forKey: columnWidthsKey) as? [String: Double] {
-                        columnWidths = saved.mapValues { CGFloat($0) }
+            ZStack(alignment: .leading) {
+                Color.clear // or any invisible view to attach `.onAppear` / `.onChange`
+                    .onAppear {
+                        availableWidth = width
+                        // Load saved widths
+                        if let saved = UserDefaults.standard.dictionary(forKey: columnWidthsKey) as? [String: Double] {
+                            columnWidths = saved.mapValues { CGFloat($0) }
+                        }
+                        updateScaledWidths(for: availableWidth)
                     }
-                    updateScaledWidths(for: availableWidth)
-                }
-                .onChange(of: width) { _, newWidth in
-                    availableWidth = newWidth
-                    updateScaledWidths(for: newWidth)
-                }
-            
-            VStack(spacing: 0) {
-                // --- Header Row
-                HStack(spacing: 0) {
-                    TableHeaderCell("Payment Method", width: 80)
-                        .frame(width: scaledColumnWidths["Payment Method"] ?? 80)
-                        .if( gViewCheck ) { view in view.border( .green )}
-                    TableHeaderCell("Date", width: 100)
-                        .frame(width: scaledColumnWidths["Date"] ?? 100)
-                    TableHeaderCell("Amount", width: 130)
-                        .frame(width: scaledColumnWidths["Amount"] ?? 130)
-                    TableHeaderCell("Balance", width: 130)
-                        .frame(width: scaledColumnWidths["Balance"] ?? 130)
-                    TableHeaderCell("Fx", width: 60)
-                        .frame(width: scaledColumnWidths["Fx"] ?? 60)
-                    TableHeaderCell("Category", width: 80)
-                        .frame(width: scaledColumnWidths["Category"] ?? 80)
-                    TableHeaderCell("Split", width: 200)
-                        .frame(width: scaledColumnWidths["Split"] ?? 200)
-                    TableHeaderCell("Payee", width: 100)
-                        .frame(width: scaledColumnWidths["Payee"] ?? 100)
-                }
-//                .padding(.leading, 16)
-                .background(Color(white: 0.84))
-//                .background(Color.gray.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-//                .if( gViewCheck ) { view in view.border( .blue )}
-
-                // --- Rows
-                ScrollView(.vertical) {
-                    LazyVStack(spacing: 0) {
-                        ForEach(Array(filteredTransactionRows.enumerated()), id: \.element.id) { index, row in
-                            TransactionRowView(
-                                row: row,
-                                selectedTransactionIDs: $selectedTransactionIDs,
-                                anySelectedTransactionClosed: anySelectedTransactionClosed,
-                                appState: appState,
-                                index: index
-                            )
-                            .background(rowBackground(for: index, row: row))
-                            .focusable(false) // Disable blue focusRing
-                            .focused($focusedRowIndex, equals: index)
-                            .onTapGesture { focusedRowIndex = index }
-                            .onMoveCommand { direction in
-                                switch direction {
-                                case .up:
-                                    if let current = focusedRowIndex, current > 0 {
-                                        let newIndex = current - 1
-                                        focusedRowIndex = newIndex
-                                        lastClickedRowIndex = newIndex
-                                        DispatchQueue.main.async {
-                                            selectedTransactionIDs = [filteredTransactionRows[newIndex].id]
+                    .onChange(of: width) { _, newWidth in
+                        availableWidth = newWidth
+                        updateScaledWidths(for: newWidth)
+                    }
+                
+                VStack(spacing: 0) {
+                    // --- Header Row
+                    ZStack{
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(Color(white: 0.80)) // slightly darker
+                            .frame(height: rowHeight) // force exact row height
+                            .padding(.leading, 8)
+                            .if(gViewCheck) { view in view.border(.orange) }
+                        
+                        HStack(spacing: 0) {
+                            TableHeaderCell("Payment Method", width: 80)
+                                .frame(width: scaledColumnWidths["Payment Method"] ?? 80)
+                                .if( gViewCheck ) { view in view.border( .green )}
+                            TableHeaderCell("Date", width: 100)
+                                .frame(width: scaledColumnWidths["Date"] ?? 100)
+                            TableHeaderCell("Amount", width: 130)
+                                .frame(width: scaledColumnWidths["Amount"] ?? 130)
+                            TableHeaderCell("Balance", width: 130)
+                                .frame(width: scaledColumnWidths["Balance"] ?? 130)
+                            TableHeaderCell("Fx", width: 60)
+                                .frame(width: scaledColumnWidths["Fx"] ?? 60)
+                            TableHeaderCell("Category", width: 80)
+                                .frame(width: scaledColumnWidths["Category"] ?? 80)
+                            TableHeaderCell("Split", width: 200)
+                                .frame(width: scaledColumnWidths["Split"] ?? 200)
+                            TableHeaderCell("Payee", width: 100)
+                                .frame(width: scaledColumnWidths["Payee"] ?? 100)
+                        }
+                        .if( gViewCheck ) { view in view.border( .cyan )}
+                    }
+                    .if( gViewCheck ) { view in view.border( .blue )}
+                    
+                    // --- Rows
+                    ScrollView(.vertical) {
+                        LazyVStack(spacing: 0) {
+                            ForEach(Array(filteredTransactionRows.enumerated()), id: \.element.id) { index, row in
+                                TransactionRowView(
+                                    row: row,
+                                    selectedTransactionIDs: $selectedTransactionIDs,
+                                    anySelectedTransactionClosed: anySelectedTransactionClosed,
+                                    appState: appState,
+                                    index: index
+                                )
+                                .focusable(false) // Disable blue focusRing
+                                .focused($focusedRowIndex, equals: index)
+                                .onTapGesture { focusedRowIndex = index }
+                                .onMoveCommand { direction in
+                                    switch direction {
+                                    case .up:
+                                        if let current = focusedRowIndex, current > 0 {
+                                            let newIndex = current - 1
+                                            focusedRowIndex = newIndex
+                                            lastClickedRowIndex = newIndex
+                                            DispatchQueue.main.async {
+                                                selectedTransactionIDs = [filteredTransactionRows[newIndex].id]
+                                            }
                                         }
-                                    }
-                                case .down:
-                                    if let current = focusedRowIndex,
-                                       current < filteredTransactionRows.count - 1 {
-                                        let newIndex = current + 1
-                                        focusedRowIndex = newIndex
-                                        lastClickedRowIndex = newIndex
-                                        DispatchQueue.main.async {
-                                            selectedTransactionIDs = [filteredTransactionRows[newIndex].id]
+                                    case .down:
+                                        if let current = focusedRowIndex,
+                                           current < filteredTransactionRows.count - 1 {
+                                            let newIndex = current + 1
+                                            focusedRowIndex = newIndex
+                                            lastClickedRowIndex = newIndex
+                                            DispatchQueue.main.async {
+                                                selectedTransactionIDs = [filteredTransactionRows[newIndex].id]
+                                            }
                                         }
+                                    default: break
                                     }
-                                default: break
                                 }
                             }
                         }
                     }
+                    .frame(minHeight: 300)
                 }
-                .frame(minHeight: 300)
+                .onAppear {
+                    updateScaledWidths(for: availableWidth)
+                }
+                .onChange(of: availableWidth) { _, newWidth in
+                    updateScaledWidths(for: newWidth)
+                }
+                // --- Constrain VStack to the width of the available window
+                .frame(minWidth: proxy.size.width, alignment: .leading)
+                .if(gViewCheck) { view in view.border(.red).padding(.leading, 0) }
             }
-            .onAppear {
-                updateScaledWidths(for: availableWidth)
-            }
-            .onChange(of: availableWidth) { _, newWidth in
-                updateScaledWidths(for: newWidth)
-            }
-            // --- Constrain VStack to the width of the available window
-            .frame(minWidth: proxy.size.width, alignment: .leading)
-        }
-        .contextMenu { SortContextMenu() }
-        .onChange(of: selectedTransactionIDs) { _, newSelection in
-            safeUIUpdate {
-                if let firstID = newSelection.first {
-                    appState.selectedTransactionID = firstID
-                    appState.selectedInspectorView = .viewTransaction
-                } else {
-                    selectedTransaction = nil
-                    appState.selectedTransactionID = nil
+            .contextMenu { SortContextMenu() }
+            .onChange(of: selectedTransactionIDs) { _, newSelection in
+                safeUIUpdate {
+                    if let firstID = newSelection.first {
+                        appState.selectedTransactionID = firstID
+                        appState.selectedInspectorView = .viewTransaction
+                    } else {
+                        selectedTransaction = nil
+                        appState.selectedTransactionID = nil
+                    }
                 }
             }
         }
@@ -428,7 +445,7 @@ extension BrowseTransactionsView {
         columnWidths[title] = newWidth
 
         // Total width after resize
-        var totalWidth = columnWidths.values.reduce(0, +)
+        let totalWidth = columnWidths.values.reduce(0, +)
 
         // If total exceeds availableWidth, shrink flexible columns
         if totalWidth > availableWidth {
@@ -460,30 +477,6 @@ extension BrowseTransactionsView {
         // Save
         UserDefaults.standard.set(columnWidths.mapValues { Double($0) }, forKey: columnWidthsKey)
     }
-
-//    private func resizeColumn(title: String, delta: CGFloat) {
-//        guard let currentWidth = columnWidths[title] else { return }
-//        guard availableWidth > 0 else { return }
-//        
-//        let minWidth: CGFloat = 60
-//        let newWidth = max(minWidth, currentWidth + delta)
-//
-//        columnWidths[title] = newWidth
-//
-//        // Ensure total width does not exceed availableWidth
-//        let totalWidth = columnWidths.values.reduce(0, +)
-//        if totalWidth > availableWidth {
-//            // Pick last column to shrink (or any chosen column)
-//            let shrinkKey = "Payee"
-//            if shrinkKey != title, let current = columnWidths[shrinkKey] {
-//                let excess = totalWidth - availableWidth
-//                columnWidths[shrinkKey] = max(minWidth, current - excess)
-//            }
-//
-//        }
-//
-//        scaledColumnWidths = columnWidths
-//    }
 
     // MARK: --- TransactionRowView
     @ViewBuilder
@@ -519,7 +512,6 @@ extension BrowseTransactionsView {
             .padding(.leading, 16)
             .contentShape(Rectangle())
         }
-        .background(rowBackground(for: index, row: row))
         .if( gViewCheck ) { view in view.border( .green )}
         .onTapGesture {
             #if os(macOS)
@@ -921,37 +913,6 @@ extension BrowseTransactionsView {
                 Color.blue
                     .frame(width: rowWidth, height: rowHeight)
             }
-            
-            //            RoundedRectangle(cornerRadius: 8)
-            //                .foregroundColor(.blue)
-            //                .frame(width: rowWidth, height: 28)
-            
-            //            let prevSelected = index > 0 && selectedTransactionIDs.contains(filteredTransactionRows[index-1].id)
-            //            let nextSelected = index < filteredTransactionRows.count-1 && selectedTransactionIDs.contains(filteredTransactionRows[index+1].id)
-            //            RoundedRectangle(cornerRadius: 8)
-            //                .foregroundColor(.blue)
-            //                .frame(width: rowWidth, height: 28)
-            //                .opacity(1)
-            //                .mask(
-            //                    HStack(spacing: 0) {
-            //                        if !prevSelected { Spacer() } // top corner spacing handled visually
-            //                        Rectangle().frame(maxWidth: .infinity)
-            //                        if !nextSelected { Spacer() }
-            //                    }
-            //                )
-            
-            //            let corners: RectCorner = {
-            //                switch (prevSelected, nextSelected) {
-            //                case (false, false): return .allCorners
-            //                case (false, true): return [.topLeft, .topRight]
-            //                case (true, false): return [.bottomLeft, .bottomRight]
-            //                case (true, true): return []
-            //                }
-            //            }()
-            //            Color.blue.opacity(1)
-            //                .frame(maxWidth: .infinity)
-            //                .clipShape(RoundedCorner(corners: corners, radius: 8))
-            //                .zIndex(1)
         } else if index % 2 == 0 {
             Color.clear
                 .frame(width: rowWidth, height: rowHeight)
@@ -960,18 +921,6 @@ extension BrowseTransactionsView {
                 .frame(width: rowWidth, height: rowHeight)
  
         }
-    }
-    
-    
-    // MARK: --- RectCorner OptionSet
-    struct RectCorner: OptionSet {
-        let rawValue: Int
-        
-        static let topLeft     = RectCorner(rawValue: 1 << 0)
-        static let topRight    = RectCorner(rawValue: 1 << 1)
-        static let bottomLeft  = RectCorner(rawValue: 1 << 2)
-        static let bottomRight = RectCorner(rawValue: 1 << 3)
-        static let allCorners: RectCorner = [.topLeft, .topRight, .bottomLeft, .bottomRight]
     }
     
     // MARK: --- RoundedCorner
