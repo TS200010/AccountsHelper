@@ -10,8 +10,12 @@ import CoreData
 
 fileprivate let hStackSpacing: CGFloat = 12.0
 fileprivate let labelWidth: CGFloat = 120
-fileprivate let rowHeight: CGFloat = 44
-
+fileprivate let rowHeight: CGFloat = 35
+#if os(macOS)
+fileprivate let interFieldSpacing: CGFloat = 0
+#else
+fileprivate let interFieldSpacing: CGFloat = 3
+#endif
 // MARK: --- Focus identifiers for amount fields
 enum AmountFieldIdentifier: Hashable {
     case mainAmountField
@@ -37,7 +41,7 @@ struct AddOrEditTransactionView: View {
     var existingTransaction: Transaction?
     var onSave: ((TransactionStruct) -> Void)?
     
-    // MARK: --- Init
+    // MARK: --- Initialisers
     init(transaction: Transaction? = nil, onSave: ((TransactionStruct) -> Void)? = nil) {
         if let transaction {
             let structData = TransactionStruct(from: transaction)
@@ -84,7 +88,6 @@ struct AddOrEditTransactionView: View {
                 header
                 mainFields
                 splitSection
-                //                Spacer()
                 actionButtons
             }
             .frame(maxWidth: 700)
@@ -107,7 +110,8 @@ struct AddOrEditTransactionView: View {
     // MARK: --- Main Fields
     private var mainFields: some View {
         GroupBox(label: Label("Transaction Details", systemImage: "doc.text")) {
-            VStack(spacing: 6) {
+            VStack(spacing: interFieldSpacing ) {
+                
                 LabeledDatePicker(
                     label: "TX Date",
                     date: Binding(
@@ -117,7 +121,9 @@ struct AddOrEditTransactionView: View {
                     displayedComponents: [.date],
                     isValid: transactionData.isTransactionDateValid()
                 )
+                
                 LabeledPicker(label: "Payer", selection: $transactionData.payer, isValid: transactionData.isPayerValid())
+                
                 LabeledPicker(label: "Currency", selection: $transactionData.currency, isValid: transactionData.isCurrencyValid())
                 
                 if transactionData.currency != .GBP {
@@ -138,7 +144,6 @@ struct AddOrEditTransactionView: View {
                         transactionData.category = matcher.matchCategory(for: payee)
                     }
                 
-                //            LabeledPicker(label: "Category", selection: $transactionData.category, isValid: transactionData.isCategoryValid())
                 HStack(spacing: 8) {
                     LabeledPicker(
                         label: "Category",
@@ -163,12 +168,48 @@ struct AddOrEditTransactionView: View {
     
     // MARK: --- Split Section
     private var splitSection: some View {
-        
+    #if os(iOS)
+        VStack(spacing: 16) {
+            SplitTransactionView(
+                transactionData: $transactionData,
+                splitTransaction: $splitTransaction,
+//                focusedField: $focusedField
+            )
+            CounterTransactionView(
+                transactionData: $transactionData,
+                counterTransaction: $counterTransactionActive,
+                counterPaymentMethod: $counterPaymentMethod
+            )
+        }
+    #elseif os(macOS)
         HStack(alignment: .top, spacing: 16) {
-            
-            // MARK: --- Split Transaction Section
+            SplitTransactionView(
+                transactionData: $transactionData,
+                splitTransaction: $splitTransaction,
+//                focusedField: $focusedField
+            )
+            .frame(minWidth: 300)
+            .focused($focusedField, equals: .splitAmountField)
+
+            CounterTransactionView(
+                transactionData: $transactionData,
+                counterTransaction: $counterTransactionActive,
+                counterPaymentMethod: $counterPaymentMethod
+            )
+            .frame(minWidth: 300)
+        }
+    #endif
+    }
+
+    // MARK: --- SplitTransactionView
+    struct SplitTransactionView: View {
+        @Binding var transactionData: TransactionStruct
+        @Binding var splitTransaction: Bool
+        @FocusState var focusedField: AmountFieldIdentifier? // <-- pass parent state as Binding
+
+        var body: some View {
             GroupBox(label: Label("Split Transaction", systemImage: "square.split.2x1")) {
-                VStack(spacing: 8) {
+                VStack(spacing: 8 ) {
                     Button(splitTransaction ? "Unsplit Transaction" : "Split Transaction") {
                         if splitTransaction {
                             splitTransaction = false
@@ -182,23 +223,23 @@ struct AddOrEditTransactionView: View {
                         }
                     }
                     .buttonStyle(.borderedProminent)
-                    
-                    VStack(spacing: 0) {
+
+                    VStack(spacing: interFieldSpacing ) {
                         LabeledDecimalWithFX(
                             label: "Split",
                             amount: $transactionData.splitAmount,
                             currency: $transactionData.currency,
                             fxRate: $transactionData.exchangeRate,
-                            isValid: transactionData.isSplitAmountValid()
+                            isValid: !splitTransaction || transactionData.isSplitAmountValid()
                         )
                         .focused($focusedField, equals: .splitAmountField)
-                        
+
                         LabeledPicker(
                             label: "Split Category",
                             selection: $transactionData.splitCategory,
-                            isValid: transactionData.isSplitCategoryValid()
+                            isValid: !splitTransaction || transactionData.isSplitCategoryValid()
                         )
-                        
+
                         LabeledDecimalWithFX(
                             label: "Remainder",
                             amount: Binding(get: { transactionData.splitRemainderAmount }, set: { _ in }),
@@ -207,131 +248,60 @@ struct AddOrEditTransactionView: View {
                             isValid: true,
                             displayOnly: true
                         )
-                        
+
                         LabeledPicker(
                             label: "Remainder Category",
                             selection: $transactionData.category,
-                            isValid: transactionData.isSplitRemainderCategoryValid()
+                            isValid: !splitTransaction || transactionData.isSplitRemainderCategoryValid()
                         )
                     }
                     .disabled(!splitTransaction)
                     .opacity(splitTransaction ? 1.0 : 0.5)
                 }
-                .frame(minWidth: 300)
             }
-            
-            // MARK: --- Counter Transaction Section
+        }
+    }
+
+    // MARK: --- CounterTransactionView
+    struct CounterTransactionView: View {
+        @Binding var transactionData: TransactionStruct
+        @Binding var counterTransaction: Bool
+        @Binding var counterPaymentMethod: PaymentMethod?
+
+        var body: some View {
             GroupBox(label: Label("Counter Transaction", systemImage: "arrow.2.squarepath")) {
-                VStack(spacing: 8) {
-                    Button(counterTransactionActive ? "Remove Counter Transaction" : "Counter Transaction") {
-                        counterTransactionActive.toggle()
-                        if !counterTransactionActive {
+                VStack(spacing: 8 ) {
+                    Button(counterTransaction ? "Remove Counter Transaction" : "Counter Transaction") {
+                        counterTransaction.toggle()
+                        if !counterTransaction {
                             transactionData.paymentMethod = .unknown
                         }
                     }
                     .buttonStyle(.borderedProminent)
-                    
-                    VStack(spacing: 0) {
+
+                    VStack(spacing: interFieldSpacing ) {
                         LabeledPicker(
                             label: "Counter Payment",
                             selection: Binding(
                                 get: { counterPaymentMethod ?? .unknown },
                                 set: { counterPaymentMethod = $0 }
                             ),
-                            isValid: counterPaymentMethod != nil && counterPaymentMethod != .unknown
+                            isValid: !counterTransaction || (counterPaymentMethod != nil && counterPaymentMethod != .unknown)
                         )
-                        .disabled(!counterTransactionActive)
-                        .opacity(counterTransactionActive ? 1.0 : 0.5)
-//                        LabeledPicker(
-//                            label: "Counter Payment",
-//                            selection: $transactionData.paymentMethod,
-//                            isValid: transactionData.paymentMethod != .unknown
-//                        )
+                        .disabled(!counterTransaction)
+                        .opacity(counterTransaction ? 1.0 : 0.5)
                     }
-                    .disabled(!counterTransactionActive)
-                    .opacity(counterTransactionActive ? 1.0 : 0.5)
-                    
-                    Spacer(minLength: 20) // ensures visual height matches Split section
+                    .disabled(!counterTransaction)
+                    .opacity(counterTransaction ? 1.0 : 0.5)
                 }
-                .frame(minWidth: 300 )
             }
         }
-        
     }
-    //
-    //        // MARK: --- Split & Counter Section
-    //        HStack(alignment: .top, spacing: 16) {
-    //            
-    //            // VStack 1: Split/Unspli
-    //            VStack(spacing: 8) {
-    //                if !splitTransaction {
-    //                    Button("Split Transaction") {
-    //                        splitTransaction = true
-    //                        let half = (transactionData.txAmount / 2).rounded(scale: 2, roundingMode: .up)
-    //                        transactionData.splitAmount = half
-    //                        transactionData.splitCategory = .unknown
-    //                    }
-    //                    .buttonStyle(.borderedProminent)
-    //                } else {
-    //                    Button("Unsplit Transaction") {
-    //                        splitTransaction = false
-    //                        transactionData.splitAmount = 0
-    //                        transactionData.splitCategory = .unknown
-    //                    }
-    //                    .buttonStyle(.borderedProminent)
-    //                    
-    //                    VStack(spacing: 0) {
-    //                        LabeledDecimalWithFX(label: "Split", amount: $transactionData.splitAmount, currency: $transactionData.currency, fxRate: $transactionData.exchangeRate, isValid: transactionData.isSplitAmountValid())
-    //                            .focused($focusedField, equals: .splitAmountField)
-    //                        LabeledPicker(label: "Split Category", selection: $transactionData.splitCategory, isValid: transactionData.isSplitCategoryValid())
-    //                        LabeledDecimalWithFX(label: "Remainder", amount: Binding(get: { transactionData.splitRemainderAmount }, set: { _ in }), currency: $transactionData.currency, fxRate: $transactionData.exchangeRate, isValid: true, displayOnly: true)
-    //                        LabeledPicker(label: "Remainder Category", selection: $transactionData.category, isValid: transactionData.isSplitRemainderCategoryValid())
-    //                    }
-    //                }
-    //            }
-    //            .frame(minWidth: 300, alignment: .topLeading)
-    //            
-    //            Spacer()
-    //            
-    //            // VStack 2: Counter Transaction
-    //            VStack(spacing: 8) {
-    //                Button("Counter Transaction") {
-    //                    counterTransactionActive = true
-    //                    counterPaymentMethod = nil
-    //                }
-    //                .buttonStyle(.borderedProminent)
-    //
-    //                if counterTransactionActive {
-    //                    VStack(spacing: 6) {
-    //                        LabeledDecimalWithFX(
-    //                            label: "Counter Amount",
-    //                            amount: .constant(-transactionData.txAmount),
-    //                            currency: $transactionData.currency,
-    //                            fxRate: $transactionData.exchangeRate,
-    //                            isValid: true,
-    //                            displayOnly: true
-    //                        )
-    //
-    //                        LabeledPicker(
-    //                            label: "Payment Method",
-    //                            selection: Binding(
-    //                                get: { counterPaymentMethod ?? .unknown },
-    //                                set: { counterPaymentMethod = $0 }
-    //                            ),
-    //                            isValid: counterPaymentMethod != nil && counterPaymentMethod != .unknown
-    //                        )
-    //                    }
-    //                    .padding(.top, 4)
-    //                }
-    //            }
-    //            .frame(minWidth: 300, alignment: .topLeading)
-    //        }
-    //        .frame(maxWidth: .infinity, alignment: .leading) // anchors HStack
-    //    }
+
     
     // MARK: --- Action Buttons
     private var actionButtons: some View {
-        GroupBox(label: Label("Transaction DIsposition", systemImage: "square.and.arrow.down")) {
+        GroupBox(label: Label("Transaction Disposition", systemImage: "square.and.arrow.down")) {
             HStack {
                 Spacer()
                 Button("Don't Save", role: .cancel) {
@@ -359,8 +329,9 @@ struct AddOrEditTransactionView: View {
         }
     }
     
-    // MARK: --- Helpers
-    // MARK: --- ResetFOrm
+    // MARK: --- HELPERS
+    
+    // MARK: --- ResetForm
     private func resetForm() {
         transactionData = TransactionStruct()
         transactionData.setDefaults()
@@ -398,24 +369,6 @@ struct AddOrEditTransactionView: View {
         }
     }
 }
-    
-//    private func saveTransaction() {
-//        let tx = existingTransaction ?? Transaction(context: viewContext)
-//        transactionData.apply(to: tx)
-//
-//        do {
-//            try viewContext.save()
-//        } catch {
-//            print("Failed to save transaction: \(error)")
-//            viewContext.rollback()
-//        }
-//
-//        if let payee = transactionData.payee {
-//            let matcher = CategoryMatcher(context: viewContext)
-//            matcher.teachMapping(for: payee, category: transactionData.category)
-//        }
-//    }
-//}
 
 
 // MARK: --- LabeledDatePicker

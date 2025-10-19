@@ -123,7 +123,6 @@ extension ContentViewMacOS {
                 HStack {
                     Text(gUseLiveStore ? "          Using LIVE Store          " : "          Using TEST Store          ")
                         .foregroundColor(gUseLiveStore ? .green : .red)
-//                        .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 2)
                         .padding(.horizontal, 8)
@@ -133,7 +132,7 @@ extension ContentViewMacOS {
             }
             
             
-//            // Principal Action Button (placeholder)
+// MARK: --- Principal Action Button (placeholder)
 //            ToolbarItem(placement: .principal) {
 //                Button {
 //                    withAnimation { /* Action here */ }
@@ -141,6 +140,7 @@ extension ContentViewMacOS {
 //                    Image(systemName: "trash.slash.circle.fill")
 //                }
 //            }
+            
         }
     }
 }

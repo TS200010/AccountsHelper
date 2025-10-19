@@ -135,7 +135,7 @@ struct BrowseTransactionsView: View {
     #endif
 
     // MARK: --- Constants
-    private let rowHeight: CGFloat = 28
+    private let macOSRowHeight: CGFloat = 28
     
     // MARK: --- CoreData
     @FetchRequest private var transactions: FetchedResults<Transaction>
@@ -289,8 +289,12 @@ extension BrowseTransactionsView {
                     ? .white // selected row text
                     : (row.transaction.closed ? .blue : (row.transaction.isValid() ? .primary : .red))
                 )
+            #if os(macOS)
                 .lineLimit(1)
                 .truncationMode(.tail)
+            #else
+                .lineLimit(2)
+            #endif
             Spacer()
         }
         .padding(.leading, 6)
@@ -324,7 +328,7 @@ extension BrowseTransactionsView {
                     ZStack{
                         RoundedRectangle(cornerRadius: 8, style: .continuous)
                             .fill(Color(white: 0.80)) // slightly darker
-                            .frame(height: rowHeight) // force exact row height
+                            .frame(height: macOSRowHeight) // force exact row height
                             .padding(.leading, 8)
                             .if(gViewCheck) { view in view.border(.orange) }
                         
@@ -417,10 +421,28 @@ extension BrowseTransactionsView {
                 }
             }
         }
+        #else
+        // iOS version using standard SwiftUI Table
+        Table(filteredTransactionRows, selection: $selectedTransactionIDs) {
+            TableColumn("Transaction") { row in
+                tableCell(row.iOSRowForDisplay, for: row)
+                    .onTapGesture {
+                        safeUIUpdate {
+                            selectedTransactionIDs = [row.id]
+                            appState.selectedTransactionID = row.id
+                        }
+                    }
+            }
+        }
+        .font(.custom("SF Mono Medium", size: 15))
+        .frame(minHeight: 300)
+        .tableStyle(.inset)
+        .contextMenu { SortContextMenu() }
         #endif
     }
     
     // MARK: --- UpdateScaledWidths
+#if os(macOS)
     private func updateScaledWidths(for availableWidth: CGFloat) {
         let minWidth: CGFloat = 60
         let totalRequested = columnWidths.values.reduce(0, +)
@@ -433,10 +455,12 @@ extension BrowseTransactionsView {
         // Debug
         print("Scaled column widths: \(scaledColumnWidths)")
     }
+#endif
 
 
 
     // MARK: --- ResizeColumn
+#if os(macOS)
     private func resizeColumn(title: String, delta: CGFloat) {
         guard let currentWidth = columnWidths[title], availableWidth > 0 else { return }
 
@@ -477,6 +501,7 @@ extension BrowseTransactionsView {
         // Save
         UserDefaults.standard.set(columnWidths.mapValues { Double($0) }, forKey: columnWidthsKey)
     }
+    #endif
 
     // MARK: --- TransactionRowView
     @ViewBuilder
@@ -569,14 +594,14 @@ extension BrowseTransactionsView {
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .font(.custom("SF Mono Medium", size: 14))
-                .frame(width: (scaledColumnWidths[title] ?? width) - handleWidth, height: rowHeight, alignment: .leading)
+                .frame(width: (scaledColumnWidths[title] ?? width) - handleWidth, height: macOSRowHeight, alignment: .leading)
 //                .background(Color.gray.opacity(0.1))
 //                .border(Color.gray.opacity(0.3), width: 0.5)
             
             // --- Drag handle
             Rectangle()
                 .foregroundColor(.white)
-                .frame(width: handleWidth, height: rowHeight)
+                .frame(width: handleWidth, height: macOSRowHeight)
                 .contentShape(Rectangle())
                 .gesture(
                     DragGesture(minimumDistance: 0)
@@ -591,7 +616,7 @@ extension BrowseTransactionsView {
                     if !hovering { NSCursor.arrow.set() }
                 }
         }
-        .frame(width: scaledColumnWidths[title] ?? width, height: rowHeight)
+        .frame(width: scaledColumnWidths[title] ?? width, height: macOSRowHeight)
     }
 #endif
 
@@ -888,39 +913,53 @@ extension BrowseTransactionsView {
     // Helper for the row background
     @ViewBuilder
     private func rowBackground(for index: Int, row: TransactionRow) -> some View {
+#if os(macOS)
         let rowWidth = scaledColumnWidths.values.reduce(0, +)
         if selectedTransactionIDs.contains(row.id) {
-            
             let prevSelected = index > 0 && selectedTransactionIDs.contains(filteredTransactionRows[index-1].id)
             let nextSelected = index < filteredTransactionRows.count-1 && selectedTransactionIDs.contains(filteredTransactionRows[index+1].id)
             if !prevSelected && !nextSelected {
                 // Single row selected — round all corners
                 RoundedRectangle(cornerRadius: 8)
                     .foregroundColor(.blue)
-                    .frame(width: rowWidth, height: rowHeight)
+                    .frame(width: rowWidth, height: macOSRowHeight)
             } else if !prevSelected && nextSelected {
                 // Top row of multi-selection — round top corners only
                 Color.blue
-                    .frame(width: rowWidth, height: rowHeight)
+                    .frame(width: rowWidth, height: macOSRowHeight)
                     .clipShape(RoundedCorner(corners: [.topLeft, .topRight], radius: 8))
             } else if prevSelected && !nextSelected {
                 // Bottom row of multi-selection — round bottom corners only
                 Color.blue
-                    .frame(width: rowWidth, height: rowHeight)
+                    .frame(width: rowWidth, height: macOSRowHeight)
                     .clipShape(RoundedCorner(corners: [.bottomLeft, .bottomRight], radius: 8))
             } else {
                 // Middle row of multi-selection — no rounding
                 Color.blue
-                    .frame(width: rowWidth, height: rowHeight)
+                    .frame(width: rowWidth, height: macOSRowHeight)
             }
         } else if index % 2 == 0 {
             Color.clear
-                .frame(width: rowWidth, height: rowHeight)
+                .frame(width: rowWidth, height: macOSRowHeight)
         } else {
             Color.gray.opacity(0.05)
-                .frame(width: rowWidth, height: rowHeight)
- 
+                .frame(width: rowWidth, height: macOSRowHeight)
+            
         }
+#else
+        // TODO: Set to frame width
+        let rowWidth:CGFloat = 0 // Not actuallty needed at the moment
+        let iOSRowHeight: CGFloat = 40
+        if index % 2 == 0 {
+            Color.clear
+                .frame(height: iOSRowHeight)
+                .frame(maxWidth: .infinity) // fill the whole width
+        } else {
+            Color.gray.opacity(0.05)
+                .frame(height: iOSRowHeight)
+                .frame(maxWidth: .infinity) // fill the whole width
+        }
+#endif
     }
     
     // MARK: --- RoundedCorner

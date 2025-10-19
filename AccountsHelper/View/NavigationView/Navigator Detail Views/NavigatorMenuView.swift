@@ -80,6 +80,14 @@ struct NavigatorMenuView: View {
     var body: some View {
         VStack(spacing: 4) {
             
+            Text(gUseLiveStore ? "Using LIVE Store" : "Using TEST Store")
+                .foregroundColor(gUseLiveStore ? .green : .red)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 2)
+                .padding(.horizontal, 8)
+                .background(Color.ItMkPlatformWindowBackgroundColor.opacity(0.2))
+                .cornerRadius(6)
+            
             SidebarButton(title: "Add Transaction",
                           systemImage: "plus.circle",
                           view: .addTransaction,
