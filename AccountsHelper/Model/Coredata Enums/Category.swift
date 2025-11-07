@@ -53,7 +53,7 @@ import ItMkLibrary
     case NCRPension         = 72
     
     case VisaPayment        = 80
-    case AMEXPatment        = 81
+    case AMEXPayment        = 81
 
     case OpeningBalance     = 98
     case unknown            = 999
@@ -113,7 +113,7 @@ import ItMkLibrary
         case .StatePensionY:    return String(localized: "StatePensionY")
         case .NCRPension:       return String(localized: "NCRPension")
         case .VisaPayment:      return String(localized: "VisaPayment")
-        case .AMEXPatment:      return String(localized: "AMEXPatment")
+        case .AMEXPayment:      return String(localized: "AMEXPayment")
         case .OpeningBalance:   return String(localized: "OpeningBalance")
         case .unknown:          return String(localized: "Unknown")
         }

@@ -7,9 +7,11 @@
 
 import SwiftUI
 import CoreData
+import ItMkLibrary
 
 fileprivate let hStackSpacing: CGFloat = 12.0
-fileprivate let labelWidth: CGFloat = 120
+fileprivate let labelWidth: CGFloat = 140
+fileprivate let pickerWidth: CGFloat = 200
 fileprivate let rowHeight: CGFloat = 35
 #if os(macOS)
 fileprivate let interFieldSpacing: CGFloat = 0
@@ -184,16 +186,15 @@ struct AddOrEditTransactionView: View {
     #elseif os(macOS)
         HStack(alignment: .top, spacing: 16) {
             SplitTransactionView(
-                transactionData: $transactionData,
-                splitTransaction: $splitTransaction,
-//                focusedField: $focusedField
+                transactionData:     $transactionData,
+                splitTransaction:    $splitTransaction,
             )
             .frame(minWidth: 300)
             .focused($focusedField, equals: .splitAmountField)
 
             CounterTransactionView(
-                transactionData: $transactionData,
-                counterTransaction: $counterTransactionActive,
+                transactionData:      $transactionData,
+                counterTransaction:   $counterTransactionActive,
                 counterPaymentMethod: $counterPaymentMethod
             )
             .frame(minWidth: 300)
@@ -261,43 +262,85 @@ struct AddOrEditTransactionView: View {
             }
         }
     }
-
-    // MARK: --- CounterTransactionView
+    
+    //    // MARK: --- CounterTransactionView
     struct CounterTransactionView: View {
         @Binding var transactionData: TransactionStruct
         @Binding var counterTransaction: Bool
         @Binding var counterPaymentMethod: PaymentMethod?
-
+        
+        // Suggested counter methods based on PaymentMethod + Category
+        private var suggestedCounterMethods: [PaymentMethod] {
+            if let suggested = CounterTriggers.trigger(
+                for: transactionData.paymentMethod,
+                category: transactionData.category
+            ) {
+                return [suggested]
+            }
+            return []
+        }
+        
         var body: some View {
             GroupBox(label: Label("Counter Transaction", systemImage: "arrow.2.squarepath")) {
-                VStack(spacing: 8 ) {
-                    Button(counterTransaction ? "Remove Counter Transaction" : "Counter Transaction") {
+                VStack(spacing: 12) {
+                    
+                    Button(counterTransaction ? "Remove Counter Transaction" : "Add Counter Transaction") {
                         counterTransaction.toggle()
-                        if !counterTransaction {
-                            transactionData.paymentMethod = .unknown
+                        
+                        if counterTransaction {
+                            // Auto-suggest top picker if a trigger exists
+                            counterPaymentMethod = suggestedCounterMethods.first ?? .unknown
+                        } else {
+                            counterPaymentMethod = nil
                         }
                     }
                     .buttonStyle(.borderedProminent)
+                    
+                    VStack(spacing: 8) {
+                            // --- Top Picker: Suggested Counter Methods ---
+                            if !suggestedCounterMethods.isEmpty {
+                                LabeledPicker(
+                                    label: "Suggested Counter Pmt",
+                                    selection: Binding(
+                                        get: { counterPaymentMethod ?? .unknown },
+                                        set: { counterPaymentMethod = $0 }
+                                    ),
+                                    isValid: counterPaymentMethod != nil && counterPaymentMethod != .unknown,
+                                    items: suggestedCounterMethods
+                                )
+                            }
+                            
+                            // --- Bottom Picker: Manual Payment Method (any) ---
+                            LabeledPicker(
+                                label: "Chosen Counter Pmt",
+                                selection: Binding(
+                                    get: { counterPaymentMethod ?? .unknown },
+                                    set: { counterPaymentMethod = $0 }
+                                ),
+                                isValid: counterPaymentMethod != nil && counterPaymentMethod != .unknown
+                            )
+                            
+                            // --- Amount Box ---
+                            LabeledDecimalWithFX(
+                                label: "Counter Pmt Amount (memo)",
+                                amount: Binding(get: { transactionData.txAmount }, set: { _ in }),
+                                currency: $transactionData.currency,
+                                fxRate: $transactionData.exchangeRate,
+                                isValid: true,
+                                displayOnly: true
+                            )
 
-                    VStack(spacing: interFieldSpacing ) {
-                        LabeledPicker(
-                            label: "Counter Payment",
-                            selection: Binding(
-                                get: { counterPaymentMethod ?? .unknown },
-                                set: { counterPaymentMethod = $0 }
-                            ),
-                            isValid: !counterTransaction || (counterPaymentMethod != nil && counterPaymentMethod != .unknown)
-                        )
-                        .disabled(!counterTransaction)
-                        .opacity(counterTransaction ? 1.0 : 0.5)
                     }
                     .disabled(!counterTransaction)
                     .opacity(counterTransaction ? 1.0 : 0.5)
+                    .if(gViewCheck) { view in view.border(.green) }
                 }
+                .padding(.vertical, 8)
+                .if(gViewCheck) { view in view.border(.orange) }
             }
+            .if(gViewCheck) { view in view.border(.red) }
         }
     }
-
     
     // MARK: --- Action Buttons
     private var actionButtons: some View {
@@ -450,13 +493,28 @@ struct LabeledPicker<T: CaseIterable & Hashable & CustomStringConvertible>: View
     let label: String
     @Binding var selection: T
     let isValid: Bool
+    var items: [T]? = nil   // Optional filtered items
     
     @State private var showDialog = false
 
     var body: some View {
+//        let displayItems = items ?? Array(T.allCases)
+        // --- Ensure current selection is always in the list
+        let displayItems: [T] = {
+            if let items = items {
+                if items.contains(selection) {
+                    return items
+                } else {
+                    return items + [selection]
+                }
+            } else {
+                return Array(T.allCases)
+            }
+        }()
+        
         HStack {
             Text(label)
-                .padding(.leading, 14) 
+                .padding(.leading, 14)
                 .frame(width: labelWidth, alignment: .leading)
                 .foregroundColor(.secondary)
             Spacer()
@@ -469,7 +527,7 @@ struct LabeledPicker<T: CaseIterable & Hashable & CustomStringConvertible>: View
             }
         }
         .frame(height: rowHeight)
-        .background(Color(UIColor.secondarySystemBackground)) // single grey
+        .background(Color(UIColor.secondarySystemBackground))
         .overlay(
             RoundedRectangle(cornerRadius: 8)
                 .stroke(isValid ? Color.clear : Color.red, lineWidth: 2)
@@ -480,7 +538,7 @@ struct LabeledPicker<T: CaseIterable & Hashable & CustomStringConvertible>: View
             showDialog = true
         }
         .confirmationDialog("Select \(label)", isPresented: $showDialog, titleVisibility: .visible) {
-            ForEach(Array(T.allCases), id: \.self) { option in
+            ForEach(displayItems, id: \.self) { option in
                 Button(option.description) {
                     selection = option
                 }
@@ -489,30 +547,47 @@ struct LabeledPicker<T: CaseIterable & Hashable & CustomStringConvertible>: View
     }
 }
 #elseif os(macOS)
-struct LabeledPicker<T: CaseIterable & Hashable>: View where T.AllCases: RandomAccessCollection {
+struct LabeledPicker<T: CaseIterable & Hashable & CustomStringConvertible>: View where T.AllCases: RandomAccessCollection {
     let label: String
     @Binding var selection: T
     let isValid: Bool
+    var items: [T]? = nil   // Optional filtered items
 
     private let hStackSpacing: CGFloat = 8
     @FocusState private var focused: Bool
 
     var body: some View {
+//        let displayItems = items ?? Array(T.allCases)
+        // --- Ensure current selection is always in the list
+        let displayItems: [T] = {
+            if let items = items {
+                if items.contains(selection) {
+                    return items
+                } else {
+                    return items + [selection]
+                }
+            } else {
+                return Array(T.allCases)
+            }
+        }()
+        
         HStack(spacing: hStackSpacing) {
             Text(label)
                 .frame(width: labelWidth, alignment: .trailing)
+            
             Picker("", selection: $selection) {
-                ForEach(Array(T.allCases), id: \.self) { option in
-                    Text(String(describing: option)).tag(option)
+                ForEach(displayItems, id: \.self) { option in
+                    Text(option.description).tag(option)
                 }
             }
             .pickerStyle(.menu)
-            .frame(maxWidth: 150)
+            .frame(maxWidth: pickerWidth, alignment: .leading)
+//            .padding(0)
             .overlay(
                 RoundedRectangle(cornerRadius: 4)
                     .stroke(isValid ? Color.clear : Color.red)
             )
-            Spacer()
+            Spacer( )
         }
         .frame(height: rowHeight)
         .contentShape(Rectangle())
@@ -730,7 +805,6 @@ struct LabeledDecimalWithFX: View {
 }
 #elseif os(macOS)
 struct LabeledDecimalWithFX: View {
-    
     let label: String
     @Binding var amount: Decimal
     @Binding var currency: Currency
