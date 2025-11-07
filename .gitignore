@@ -23,3 +23,7 @@ Packages/
 # CocoaPods
 Pods/
 
+# macOS Finder files
+.DS_Store
+
+
