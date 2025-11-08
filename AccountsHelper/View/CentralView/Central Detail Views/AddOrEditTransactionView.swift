@@ -38,6 +38,7 @@ struct AddOrEditTransactionView: View {
     // Counter Transaction
     @State private var counterTransactionActive: Bool = false
     @State private var counterPaymentMethod: PaymentMethod? = nil
+    @State private var counterFXRate: Decimal = 0
     
     // MARK: --- External
     var existingTransaction: Transaction?
@@ -195,7 +196,8 @@ struct AddOrEditTransactionView: View {
             CounterTransactionView(
                 transactionData:      $transactionData,
                 counterTransaction:   $counterTransactionActive,
-                counterPaymentMethod: $counterPaymentMethod
+                counterPaymentMethod: $counterPaymentMethod,
+                counterFXRate:        $counterFXRate
             )
             .frame(minWidth: 300)
         }
@@ -268,6 +270,7 @@ struct AddOrEditTransactionView: View {
         @Binding var transactionData: TransactionStruct
         @Binding var counterTransaction: Bool
         @Binding var counterPaymentMethod: PaymentMethod?
+        @Binding var counterFXRate: Decimal
         
         // Suggested counter methods based on PaymentMethod + Category
         private var suggestedCounterMethods: [PaymentMethod] {
@@ -297,39 +300,65 @@ struct AddOrEditTransactionView: View {
                     .buttonStyle(.borderedProminent)
                     
                     VStack(spacing: 8) {
-                            // --- Top Picker: Suggested Counter Methods ---
-                            if !suggestedCounterMethods.isEmpty {
-                                LabeledPicker(
-                                    label: "Suggested Counter Pmt",
-                                    selection: Binding(
-                                        get: { counterPaymentMethod ?? .unknown },
-                                        set: { counterPaymentMethod = $0 }
-                                    ),
-                                    isValid: counterPaymentMethod != nil && counterPaymentMethod != .unknown,
-                                    items: suggestedCounterMethods
-                                )
-                            }
-                            
-                            // --- Bottom Picker: Manual Payment Method (any) ---
+                        
+                        // --- FX If counter transaction is different currency ---
+                        if counterTransaction && transactionData.paymentMethod.currency != counterPaymentMethod?.currency {
+                            LabeledDecimalField(
+                                label: "Counter FX Rate",
+                                amount: $counterFXRate,
+                                isValid: counterFXRate > 0
+                            )
+                        }
+                        
+                        // --- Top Picker: Suggested Counter Methods ---
+                        if !suggestedCounterMethods.isEmpty {
                             LabeledPicker(
-                                label: "Chosen Counter Pmt",
+                                label: "Suggested Counter Pmt",
                                 selection: Binding(
                                     get: { counterPaymentMethod ?? .unknown },
                                     set: { counterPaymentMethod = $0 }
                                 ),
-                                isValid: counterPaymentMethod != nil && counterPaymentMethod != .unknown
+                                isValid: counterPaymentMethod != nil && counterPaymentMethod != .unknown,
+                                items: suggestedCounterMethods
                             )
-                            
-                            // --- Amount Box ---
-                            LabeledDecimalWithFX(
-                                label: "Counter Pmt Amount (memo)",
-                                amount: Binding(get: { transactionData.txAmount }, set: { _ in }),
-                                currency: $transactionData.currency,
-                                fxRate: $transactionData.exchangeRate,
-                                isValid: true,
-                                displayOnly: true
-                            )
-
+                        }
+                        
+                        // --- Bottom Picker: Manual Payment Method (any) ---
+                        LabeledPicker(
+                            label: "Chosen Counter Pmt",
+                            selection: Binding(
+                                get: { counterPaymentMethod ?? .unknown },
+                                set: { counterPaymentMethod = $0 }
+                            ),
+                            isValid: counterPaymentMethod != nil && counterPaymentMethod != .unknown
+                        )
+                        
+                        // --- Amount Box ---
+                        LabeledDecimalWithFX(
+                            label: "Counter Pmt Amount",
+                            amount: Binding(
+                                get: {
+                                    guard let method = counterPaymentMethod else { return transactionData.txAmount }
+                                    if transactionData.currency == method.currency {
+                                        return transactionData.txAmount
+                                    } else {
+                                        guard counterFXRate > 0 else { return 0 }
+                                        // Convert via GBP
+                                        let gbpValue = transactionData.currency == .GBP
+                                            ? transactionData.txAmount
+                                            : transactionData.txAmount / transactionData.exchangeRate
+                                        return gbpValue * counterFXRate
+                                    }
+                                },
+                                set: { _ in }
+                            ),
+//                            amount: Binding(get: { transactionData.txAmount }, set: { _ in }),
+                            currency: $transactionData.currency,
+                            fxRate: $transactionData.exchangeRate,
+                            isValid: true,
+                            displayOnly: true
+                        )
+                        
                     }
                     .disabled(!counterTransaction)
                     .opacity(counterTransaction ? 1.0 : 0.5)
@@ -382,22 +411,46 @@ struct AddOrEditTransactionView: View {
     
     // MARK: --- SaveTransaction
     private func saveTransaction() {
-        // Save main transaction
+        // --- Save main transaction
         let tx = existingTransaction ?? Transaction(context: viewContext)
         transactionData.apply(to: tx)
         
-        // Save counter transaction if active
-        if counterTransactionActive,
-           counterPaymentMethod != .unknown {
+        // --- Save counter transaction if active
+        if counterTransactionActive, let method = counterPaymentMethod, method != .unknown {
             let counterTx = Transaction(context: viewContext)
             var counterData = transactionData
-            counterData.txAmount = -transactionData.txAmount
-            if let method = counterPaymentMethod {
-                counterData.paymentMethod = method
+            
+            // Set counter payment method
+            counterData.paymentMethod = method
+            
+            // Set counter currency
+            counterData.currency = method.currency
+            
+            // Prompted FX rate for non-GBP counter
+            if counterData.currency == .GBP {
+                counterData.exchangeRate = 1
+            } else {
+                // exchangeRate should have been prompted from the user in the UI
+                // Make sure it is set
+                counterData.exchangeRate = counterFXRate
             }
+            
+            // Convert main transaction amount to GBP
+            let amountInGBP: Decimal
+            if transactionData.currency == .GBP {
+                amountInGBP = transactionData.txAmount
+            } else {
+                amountInGBP = transactionData.txAmount / transactionData.exchangeRate
+            }
+            
+            // Set counter transaction amount in counter currency
+            counterData.txAmount = -amountInGBP * counterData.exchangeRate
+            
+            // Apply to counter transaction
             counterData.apply(to: counterTx)
         }
         
+        // --- Save context
         do {
             try viewContext.save()
         } catch {
@@ -405,12 +458,44 @@ struct AddOrEditTransactionView: View {
             viewContext.rollback()
         }
         
-        // Teach category mapping for main transaction
+        // --- Teach category mapping for main transaction
         if let payee = transactionData.payee {
             let matcher = CategoryMatcher(context: viewContext)
             matcher.teachMapping(for: payee, category: transactionData.category)
         }
     }
+
+
+//    private func saveTransaction() {
+//        // Save main transaction
+//        let tx = existingTransaction ?? Transaction(context: viewContext)
+//        transactionData.apply(to: tx)
+//        
+//        // Save counter transaction if active
+//        if counterTransactionActive,
+//           counterPaymentMethod != .unknown {
+//            let counterTx = Transaction(context: viewContext)
+//            var counterData = transactionData
+//            counterData.txAmount = -transactionData.txAmount
+//            if let method = counterPaymentMethod {
+//                counterData.paymentMethod = method
+//            }
+//            counterData.apply(to: counterTx)
+//        }
+//        
+//        do {
+//            try viewContext.save()
+//        } catch {
+//            print("Failed to save transaction: \(error)")
+//            viewContext.rollback()
+//        }
+//        
+//        // Teach category mapping for main transaction
+//        if let payee = transactionData.payee {
+//            let matcher = CategoryMatcher(context: viewContext)
+//            matcher.teachMapping(for: payee, category: transactionData.category)
+//        }
+//    }
 }
 
 

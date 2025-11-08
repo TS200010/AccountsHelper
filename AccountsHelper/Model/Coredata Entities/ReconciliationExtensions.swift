@@ -74,7 +74,10 @@ extension Reconciliation {
     }
 
     // MARK: --- PaymentMethod
-    var paymentMethod: PaymentMethod { PaymentMethod(rawValue: paymentMethodCD) ?? .unknown }
+    var paymentMethod: PaymentMethod {
+        get { PaymentMethod(rawValue: paymentMethodCD) ?? .unknown }
+        set { paymentMethodCD = newValue.rawValue }
+    }
 
     // MARK: --- PreviousEndingBalance
     var previousEndingBalance: Decimal {
@@ -94,7 +97,10 @@ extension Reconciliation {
     // MARK: --- TotalTransactions
     var totalTransactions: Decimal {
         guard let context = self.managedObjectContext else { return 0 }
-        return (try? fetchTransactions(in: context).reduce(Decimal(0)) { $0 + $1.txAmount }) ?? 0
+        let sum = (try? fetchTransactions(in: context).reduce(Decimal(0)) { $0 + $1.txAmount }) ?? 0
+        // Negate the total as we are storing a +ve number for money going out ie a Debit
+        // If we do not negate it the arithmatic does not work.
+        return -sum
     }
 
     // MARK: --- TransactionEndDate
@@ -243,7 +249,9 @@ extension Reconciliation {
         
         do {
             let txs = try fetchTransactions(in: context)
-            let sum = txs.reduce(Decimal(0)) { $0 + $1.txAmount }
+            // Negate the total as we are storing a +ve number for money going out - a Debit
+            // If we do not negate it the arithmatic does not work.
+            let sum = -(txs.reduce(Decimal(0)) { $0 + $1.txAmount })
 
             let previousBalance: Decimal
             if let prev = try? Reconciliation.fetchPrevious(for: self.paymentMethod, before: self.transactionEndDate, context: context) {

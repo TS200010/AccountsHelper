@@ -47,7 +47,7 @@ struct ReconcilliationListView: View {
         reconciliationListContent
             .onAppear { refreshRows() }
             .toolbar { toolbarContent }
-            .sheet(isPresented: $showingNewReconciliation, onDismiss: { refreshRows() }) { newReconciliationSheet }
+            .sheet(isPresented: $showingNewReconciliation,   onDismiss: { refreshRows() }) { newReconciliationSheet }
             .sheet(isPresented: $showingEditReconciliation, onDismiss: { refreshRows() }) { editReconciliationSheet }
             .confirmationDialog(
                 "Are you sure you want to delete this Reconciliation?",
@@ -87,7 +87,7 @@ extension ReconcilliationListView {
     // MARK: --- newReconciliationSheet
     private var newReconciliationSheet: some View {
         NavigationStack {
-            NewReconciliationView()
+            AddOrEditReconciliationView()
                 .environment(\.managedObjectContext, context)
         }
         .frame(minWidth: 400, minHeight: 300)
@@ -96,10 +96,22 @@ extension ReconcilliationListView {
     // MARK: --- editReconciliationSheet
     private var editReconciliationSheet: some View {
         NavigationStack {
-            EditReconcilationView()
+            if let selectedID = appState.selectedReconciliationID,
+               let rec = try? context.existingObject(with: selectedID) as? Reconciliation {
+                AddOrEditReconciliationView(reconciliationToEdit: rec)
+                    .environment(\.managedObjectContext, context)
+            } else {
+                Text("No reconciliation selected")
+            }
         }
         .frame(minWidth: 400, minHeight: 300)
     }
+//    private var editReconciliationSheet: some View {
+//        NavigationStack {
+//            EditReconcilationView()
+//        }
+//        .frame(minWidth: 400, minHeight: 300)
+//    }
 }
 
 // MARK: --- CONFIRMATION DIALOGS
@@ -475,7 +487,7 @@ extension ReconcilliationListView {
             appState.selectedReconciliationID = row.id
             showingEditReconciliation = true
         } label: {
-            Label("Edit Ending Balance", systemImage: "pencil.circle")
+            Label("Edit Reconciliation", systemImage: "pencil.circle")
         }
         .disabled(canAddEndingBalance)
         

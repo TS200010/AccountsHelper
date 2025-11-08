@@ -1,5 +1,5 @@
 //
-//  NewReconciliationView.swift
+//  AddOrEditReconciliationView.swift
 //  AccountsHelper
 //
 //  Created by Anthony Stanners on 27/09/2025.
@@ -8,8 +8,11 @@
 import Foundation
 import SwiftUI
 
-// MARK: - New Reconciliation View
-struct NewReconciliationView: View {
+// MARK: - AddOrEditReconciliationView
+struct AddOrEditReconciliationView: View {
+    
+    // MARK: --- Injected
+    var reconciliationToEdit: Reconciliation?
     
     // MARK: --- Environment
     @Environment(\.managedObjectContext) private var context
@@ -41,12 +44,22 @@ struct NewReconciliationView: View {
     private var isEndingBalanceValid: Bool {
         Decimal(string: endingBalance) != nil
     }
-
+    
     private var isUniquePeriodValid: Bool {
         let period = AccountingPeriod(year: selectedYear, month: selectedMonth)
         let existing = try? Reconciliation.fetchOne(for: period, paymentMethod: selectedPaymentMethod, context: context)
+        // If editing, allow same record
+        if let existing, let reconciliationToEdit, existing == reconciliationToEdit {
+            return true
+        }
         return existing == nil
     }
+
+//    private var isUniquePeriodValid: Bool {
+//        let period = AccountingPeriod(year: selectedYear, month: selectedMonth)
+//        let existing = try? Reconciliation.fetchOne(for: period, paymentMethod: selectedPaymentMethod, context: context)
+//        return existing == nil
+//    }
 
     private var canSave: Bool {
         isPaymentMethodValid &&
@@ -66,14 +79,23 @@ struct NewReconciliationView: View {
         }
         .padding(24)
         .frame(minWidth: 500, minHeight: 320)
+        .onAppear {
+            if let rec = reconciliationToEdit {
+                selectedPaymentMethod = rec.paymentMethod
+                statementDate = rec.statementDate ?? Date()
+                endingBalance = rec.endingBalance.formatted()  // show as string
+                selectedYear  = Int(rec.periodYear)
+                selectedMonth = Int(rec.periodMonth)
+            }
+        }
     }
 }
 
 // MARK: --- Subviews
-extension NewReconciliationView {
+extension AddOrEditReconciliationView {
     
     private var headerView: some View {
-        Text("New Reconciliation")
+        Text(reconciliationToEdit == nil ? "New Reconciliation" : "Edit Reconciliation")
             .font(.title2)
             .bold()
     }
@@ -124,7 +146,7 @@ extension NewReconciliationView {
                     
                     Picker("Year", selection: $selectedYear) {
                         ForEach(2000...currentYear, id: \.self) { year in
-                            Text("\(year)").tag(year)
+                            Text("\(String(year))").tag(year)
                         }
                     }
                 }
@@ -152,7 +174,9 @@ extension NewReconciliationView {
         HStack {
             Spacer()
             Button("Cancel") { dismiss() }
-            Button("Save") { saveReconciliation() }
+            Button(reconciliationToEdit == nil ? "Save" : "Update") {
+                saveReconciliation()
+            }
                 .keyboardShortcut(.defaultAction)
                 .disabled(!canSave)
         }
@@ -160,29 +184,68 @@ extension NewReconciliationView {
 }
 
 // MARK: --- Actions
-extension NewReconciliationView {
+extension AddOrEditReconciliationView {
     
     private func saveReconciliation() {
         guard let balanceDecimal = Decimal(string: endingBalance) else { return }
         let period = AccountingPeriod(year: selectedYear, month: selectedMonth)
+
         do {
-            _ = try Reconciliation.createNew(
-                paymentMethod: selectedPaymentMethod,
-                period: period,
-                statementDate: statementDate,
-                endingBalance: balanceDecimal,
-                in: context
-            )
+            if let rec = reconciliationToEdit {
+                // Editing an existing reconciliation
+                rec.paymentMethod = selectedPaymentMethod
+                rec.statementDate = statementDate
+                rec.endingBalance = balanceDecimal
+                rec.periodYear = Int32(selectedYear)
+                rec.periodMonth = Int32(selectedMonth)
+                rec.periodKey = Reconciliation.makePeriodKey(
+                    year: Int32(selectedYear),
+                    month: Int32(selectedMonth),
+                    paymentMethod: selectedPaymentMethod
+                )
+            } else {
+                // Creating a new reconciliation
+                _ = try Reconciliation.createNew(
+                    paymentMethod: selectedPaymentMethod,
+                    period: period,
+                    statementDate: statementDate,
+                    endingBalance: balanceDecimal,
+                    in: context
+                )
+            }
+
+            try context.save()
             dismiss()
         } catch {
-            print("Error creating reconciliation: \(error)")
+            print("Error saving reconciliation: \(error)")
+            context.rollback()
         }
     }
+
+
+
+    
+//    private func saveReconciliation() {
+//        guard let balanceDecimal = Decimal(string: endingBalance) else { return }
+//        let period = AccountingPeriod(year: selectedYear, month: selectedMonth)
+//        do {
+//            _ = try Reconciliation.createNew(
+//                paymentMethod: selectedPaymentMethod,
+//                period: period,
+//                statementDate: statementDate,
+//                endingBalance: balanceDecimal,
+//                in: context
+//            )
+//            dismiss()
+//        } catch {
+//            print("Error creating reconciliation: \(error)")
+//        }
+//    }
 }
 
 // MARK: --- Preview
 struct NewReconciliationView_Previews: PreviewProvider {
     static var previews: some View {
-        NewReconciliationView()
+        AddOrEditReconciliationView()
     }
 }
