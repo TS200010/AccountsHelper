@@ -33,7 +33,7 @@ struct CategoriesSummaryView: View {
         var endBalance: Decimal = 0
         var totalCR: Decimal = 0
         var totalDR: Decimal = 0
-        var total: Decimal { get { totalCR - totalDR } }
+        var total: Decimal { get { totalCR + totalDR } }
         var currency: Currency = .unknown
     }
     
@@ -67,7 +67,7 @@ struct CategoriesSummaryView: View {
         }
         
         // Compute ending balance
-        result.endBalance = result.startBalance + result.totalDR - result.totalCR
+        result.endBalance = result.startBalance - result.total
         return result
     }
     

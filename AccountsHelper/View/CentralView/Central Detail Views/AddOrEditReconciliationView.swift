@@ -221,31 +221,5 @@ extension AddOrEditReconciliationView {
             context.rollback()
         }
     }
-
-
-
-    
-//    private func saveReconciliation() {
-//        guard let balanceDecimal = Decimal(string: endingBalance) else { return }
-//        let period = AccountingPeriod(year: selectedYear, month: selectedMonth)
-//        do {
-//            _ = try Reconciliation.createNew(
-//                paymentMethod: selectedPaymentMethod,
-//                period: period,
-//                statementDate: statementDate,
-//                endingBalance: balanceDecimal,
-//                in: context
-//            )
-//            dismiss()
-//        } catch {
-//            print("Error creating reconciliation: \(error)")
-//        }
-//    }
 }
 
-// MARK: --- Preview
-struct NewReconciliationView_Previews: PreviewProvider {
-    static var previews: some View {
-        AddOrEditReconciliationView()
-    }
-}
