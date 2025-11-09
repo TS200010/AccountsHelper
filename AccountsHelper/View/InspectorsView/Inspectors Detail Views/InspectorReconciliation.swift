@@ -63,6 +63,8 @@ struct InspectorReconciliation: View {
                         HStack {
                             Text("Accounting Period:").bold()
                             Text(rec.accountingPeriod.displayStringWithOpening)
+                            Text("\(rec.accountingPeriod.month)/")
+                            Text("\(rec.accountingPeriod.year)")
                             Spacer()
                         }
                         .padding()
