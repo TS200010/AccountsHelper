@@ -471,7 +471,7 @@ extension ReconcilliationListView {
             )
             appState.pushCentralView(.categoriesSummary(predicate))
         } label: {
-            Label("Summary", systemImage: "doc.text.magnifyingglass")
+            Label("Categories Summary", systemImage: "doc.text.magnifyingglass")
         }
         
         Button { exportXLSSummary(for: row) } label: {
