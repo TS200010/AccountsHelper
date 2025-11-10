@@ -11,6 +11,7 @@ import CoreData
 import ItMkLibrary
 #if os(macOS)
 import AppKit
+import PrintingKit
 typealias UIRectCorner = CACornerMask
 #else
 import UIKit
@@ -678,6 +679,14 @@ extension BrowseTransactionsView {
                 }
                 .disabled(!(undoManager?.canRedo ?? false))
             }
+            // MARK: --- Frint Menu
+            ToolbarItem(placement: .automatic) {
+                Button {
+                    printTransactions()
+                } label: {
+                    Label("Print Transactions", systemImage: "printer")
+                }
+            }
             // MARK: --- Filter Menu
             ToolbarItem {
                 Menu {
@@ -1029,5 +1038,188 @@ extension BrowseTransactionsView {
             return path
         }
     }
+}
+ 
+// MARK: --- PrintTransactions
+extension BrowseTransactionsView {
+    
+    func printTransactions() {
+        
+//        var showCurrencySymbol: Bool { }
+        
+        let columnWidths: [String: Int] = [
+            "Date":          10,
+            "Category":      15,
+            "Amount":        12,
+            "FX":            6,
+            "Split":         12,
+            "SplitCategory": 15,
+            "Payee":         15
+        ]
+        
+        func padded(_ string: String, column: String, alignRight: Bool = false, spacing: Int = 1) -> String {
+            guard let width = columnWidths[column] else { return string }
+            let actualWidth = max(width, string.count)
+            let padding = String(repeating: " ", count: actualWidth - string.count)
+            let space = String(repeating: " ", count: spacing)
+            return alignRight ? padding + string + space : string + padding + space
+        }
+        
+//        func padded(_ string: String, column: String, alignRight: Bool = false) -> String {
+//            guard let width = columnWidths[column] else { return string }
+//            if string.count >= width { return String(string.prefix(width)) }
+//            let padding = String(repeating: " ", count: width - string.count)
+//            return alignRight ? padding + string : string + padding
+//        }
+        
+        let printer = Printer.shared
+        let report = NSMutableString()
+        
+        // MARK: --- Build the report header
+        report.append("Full Transactions Report\n")
+        report.append(String(repeating: "=", count: 50) + "\n\n")
+        report.append(
+            padded("Date", column: "Date") +
+            padded("Category", column: "Category") +
+            padded("Amount", column: "Amount", alignRight: true) +
+            padded("FX", column: "FX") +
+            padded("Split", column: "Split") +
+            padded("Split Category", column: "SplitCategory") +
+            padded("Payee", column: "Payee") +
+            "\n"
+        )
+        report.append(String(repeating: "-", count: columnWidths.values.reduce(0, +)) + "\n")
+        
+        // MARK: --- Add transactions
+        for tx in transactions {
+            let dateStr     = tx.transactionDate?.formatted(date: .numeric, time: .omitted) ?? ""
+            let categoryStr = tx.category.description
+            let amountStr   = tx.txAmountAsString( withSymbol: true ) ?? ""
+            let fxStr       = tx.currency != .GBP ? (tx.exchangeRateAsString() ?? "") : ""
+            let splitStr    = tx.splitAmount != 0 ?  tx.splitAmountAsString( withSymbol: true ) : ""
+            let splitCatStr = tx.splitAmount != 0 ?  tx.splitCategory.description : ""
+            let payeeStr    = String((tx.payee ?? "" ).prefix(15))
+//            let amountStr   = String(format: "%.2f", NSDecimalNumber(decimal: tx.txAmount).doubleValue)
+//            let fxStr       = String(format: "%.2f", NSDecimalNumber(decimal: tx.exchangeRate).doubleValue)
+
+
+            report.append(
+                padded(dateStr, column: "Date") +
+                padded(categoryStr, column: "Category") +
+                padded(amountStr, column: "Amount", alignRight: true) +
+                padded(fxStr, column: "FX") +
+                padded(splitStr, column: "Split") +
+                padded(splitCatStr,column: "SplitCategory") +
+                padded(payeeStr, column: "Payee") +
+                "\n"
+            )
+        }
+        
+        // MARK: --- Create attributes for monospaced font
+        let attrs: [NSAttributedString.Key: Any] = [
+            .font: NSFont.monospacedSystemFont(ofSize: 10, weight: .regular)
+        ]
+        let attributedReport = NSAttributedString(string: report as String, attributes: attrs)
+        
+        // MARK: --- Print
+        do {
+            try printer.printAttributedString(
+                attributedReport,
+                config: Printer.PageConfiguration(
+                    pageSize: CGSize(width: 595, height: 842),
+                    pageMargins: Printer.PageMargins(top: 36, left: 36, bottom: 36, right: 36)
+                )
+            )
+        } catch {
+            print("Failed to print: \(error)")
+        }
+    }
+    
+    func printTransactionsOld() {
+        #if os(macOS)
+        DispatchQueue.main.async {
+            // Build report
+            let report = NSMutableString()
+            
+            // Push content to top of page
+            let currentLineCount = report.components(separatedBy: "\n").count
+            let totalLinesPerPage = 55 // tweak based on font & page size
+            let linesToAdd = max(0, totalLinesPerPage - currentLineCount)
+            for _ in 0..<linesToAdd {
+                report.append("\n")
+            }
+
+            // Create NSTextView
+            let printInfo = NSPrintInfo.shared
+            let pageSize = printInfo.paperSize
+            let textView = NSTextView(frame: NSRect(x: 0, y: 0, width: pageSize.width, height: pageSize.height))
+            textView.string = report as String
+            textView.font = NSFont.monospacedSystemFont(ofSize: 10, weight: .regular)
+            textView.isEditable = false
+            textView.textContainerInset = .zero // remove any padding
+
+            // Resize to fit content
+            if let layoutManager = textView.layoutManager,
+               let textContainer = textView.textContainer {
+                textContainer.widthTracksTextView = true
+                textContainer.heightTracksTextView = false
+//                let usedHeight = layoutManager.usedRect(for: textContainer).height
+//                textView.frame.size.height = usedHeight
+            }
+
+            // Print operation tied to main window
+            if let window = NSApp.mainWindow {
+                let printOp = NSPrintOperation(view: textView)
+                printOp.showsPrintPanel = true
+                printOp.showsProgressPanel = true
+                printOp.runModal(for: window, delegate: nil, didRun: nil, contextInfo: nil)
+            }
+        }
+        #endif
+    }
+
+    
+    
+//    func printTransactions() {
+//        #if os(macOS)
+//        DispatchQueue.main.async {
+//            // Create the mutable report string (same as CategoriesSummaryView)
+//            let report = NSMutableString()
+//            report.append("Transactions Report\n")
+//            report.append("-----------------------------\n")
+//            report.append("Hello World\n")
+//            report.append("-----------------------------\n")
+//            
+//            // Create text view for printing
+//            let pageSize = NSMakeSize(595, 842) // A4 at 72dpi
+//            let textView = NSTextView(frame: NSRect(origin: .zero, size: pageSize))
+//            textView.string = report as String
+//            textView.font = NSFont.monospacedSystemFont(ofSize: 10, weight: .regular)
+//            textView.isEditable = false
+//
+//            // Keep layout tight to one page
+//            if let textContainer = textView.textContainer {
+//                textContainer.containerSize = pageSize
+//                textContainer.widthTracksTextView = true
+//                textContainer.heightTracksTextView = false
+//                textContainer.lineFragmentPadding = 0
+//            }
+//            textView.textContainerInset = .zero
+////            let textView = NSTextView(frame: NSRect(x: 0, y: 0, width: 595, height: 700))
+////            textView.string = report as String
+////            textView.font = NSFont.monospacedSystemFont(ofSize: 10, weight: .regular)
+////            textView.isEditable = false
+////            textView.sizeToFit()
+//            textView.isHorizontallyResizable = false
+//            textView.isVerticallyResizable = true
+//            
+//            // Print operation (modal, same style as CategoriesSummaryView)
+//            let printOp = NSPrintOperation(view: textView)
+//            printOp.showsPrintPanel = true
+//            printOp.showsProgressPanel = true
+//            printOp.runModal(for: NSApp.mainWindow!, delegate: nil, didRun: nil, contextInfo: nil)
+//        }
+//        #endif
+//    }
 }
 

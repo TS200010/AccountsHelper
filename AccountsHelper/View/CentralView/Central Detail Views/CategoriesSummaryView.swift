@@ -76,12 +76,36 @@ struct CategoriesSummaryView: View {
         let category: Category
         let total: Decimal
         let transactionIDs: [NSManagedObjectID]
+        let currency: Currency
         
         var id: Int32 { category.id }
         
         var totalString: String {
-            String(format: "%.2f", NSDecimalNumber(decimal: total).doubleValue)
+            let formatter = NumberFormatter()
+            formatter.numberStyle = .currency
+            formatter.locale = currency.localeForCurrency
+            
+            // Ensure no decimal places for zero-minor-unit currencies like JPY
+            switch currency {
+            case .JPY:
+                formatter.maximumFractionDigits = 0
+                formatter.minimumFractionDigits = 0
+            default:
+                formatter.maximumFractionDigits = 2
+                formatter.minimumFractionDigits = 2
+            }
+            
+            let formatted = formatter.string(from: total as NSDecimalNumber) ?? "\(total)"
+
+            // Pad to fixed width for alignment (matches printout spacing)
+            let paddedLength = 10
+            let padding = String(repeating: " ", count: max(0, paddedLength - formatted.count))
+            return padding + formatted
         }
+
+//        var totalString: String {
+//            String(format: "%.2f", NSDecimalNumber(decimal: total).doubleValue)
+//        }
     }
 
     // MARK: --- CategoryRows
@@ -89,6 +113,7 @@ struct CategoriesSummaryView: View {
         let grouped = Dictionary(grouping: transactions) { (tx: Transaction) in
             tx.category
         }
+        let currentCurrency = currency ?? .unknown
         
         return Category.allCases.map { category in
             let txs = grouped[category] ?? []
@@ -97,7 +122,7 @@ struct CategoriesSummaryView: View {
             }
             let ids = txs.map { $0.objectID }
             
-            return CategoryRow(category: category, total: total, transactionIDs: ids)
+            return CategoryRow(category: category, total: total, transactionIDs: ids, currency: currentCurrency )
         }
     }
     
@@ -139,7 +164,13 @@ extension CategoriesSummaryView {
     private var categoriesTable: some View {
         Table(categoryRows, selection: $selectedCategoryID) {
             TableColumn("Category") { categoryCell(for: $0) }
-            TableColumn("Total") { Text($0.totalString) }
+            TableColumn("Total") { row in
+                HStack {
+                    Text(row.totalString)
+                        .font(.system(.body, design: .monospaced))
+                    Spacer()
+                }
+            }
         }
         .onChange(of: selectedCategoryID) { _, newValue in
             if let id = newValue,
@@ -198,6 +229,9 @@ extension CategoriesSummaryView {
             if let recID = appState.selectedReconciliationID,
                let rec = try? viewContext.existingObject(with: recID) as? Reconciliation {
                 report.append(" — \(rec.paymentMethod.description)\n")
+                let periodStr = "\(rec.periodMonth)/\(rec.periodYear)"
+                let statementDateStr = rec.statementDate?.formatted(date: .numeric, time: .omitted) ?? "-"
+                report.append("Period: \(periodStr) | Statement Date: \(statementDateStr)\n")
             } else {
                 report.append("\n")
             }
@@ -215,18 +249,38 @@ extension CategoriesSummaryView {
             
             report.append("\n" + String(repeating: "-", count: 46) + "\n")
             
-            func formatLine(_ label: String, _ amount: Decimal) -> String {
-                let amountStr = String(format: "%.2f", NSDecimalNumber(decimal: amount).doubleValue)
+            func formatLine(_ label: String, _ amount: Decimal, currency: Currency) -> String {
+                
+                // Format the number according to the currency
+                let formatter = NumberFormatter()
+                formatter.numberStyle = .currency
+                formatter.locale = currency.localeForCurrency
+                
+                // Handle zero-minor-unit currencies like JPY
+                switch currency {
+                case .JPY:
+                    formatter.maximumFractionDigits = 0
+                    formatter.minimumFractionDigits = 0
+                default:
+                    formatter.maximumFractionDigits = 2
+                    formatter.minimumFractionDigits = 2
+                }
+                
+                // Construct the number
+                let amountStr = formatter.string(from: amount as NSDecimalNumber) ?? "\(amount)"
                 let paddedLabel = label.padding(toLength: 30, withPad: " ", startingAt: 0)
                 let paddedAmount = String(repeating: " ", count: max(0, 15 - amountStr.count)) + amountStr
                 return "\(paddedLabel)\(paddedAmount)\n"
             }
             
-            report.append(formatLine("Starting Balance", totals.startBalance))
-            report.append(formatLine("Total CR", totals.totalCR))
-            report.append(formatLine("Total DR", totals.totalDR))
-            report.append(formatLine("Net Total", totals.total))
-            report.append(formatLine("Ending Balance", totals.endBalance))
+            // Determine the currency for the report
+            let reportCurrency: Currency = rows.first?.currency ?? .unknown
+            
+            report.append(formatLine("Starting Balance", totals.startBalance, currency: reportCurrency))
+            report.append(formatLine("Total CR", totals.totalCR, currency: reportCurrency))
+            report.append(formatLine("Total DR", totals.totalDR, currency: reportCurrency))
+            report.append(formatLine("Net Total", totals.total, currency: reportCurrency))
+            report.append(formatLine("Ending Balance", totals.endBalance, currency: reportCurrency))
             
             let textView = NSTextView(frame: NSRect(x: 0, y: 0, width: 595, height: 700))
             textView.string = report as String
@@ -239,7 +293,7 @@ extension CategoriesSummaryView {
             let printOp = NSPrintOperation(view: textView)
             printOp.showsPrintPanel = true
             printOp.showsProgressPanel = true
-            printOp.run()
+            printOp.runModal(for: NSApp.mainWindow!, delegate: nil, didRun: nil, contextInfo: nil)
         }
         #endif
     }

@@ -53,7 +53,7 @@ extension MergeField {
         ),
         .splitAmount: MergeFieldInfo(
             displayName: "Split Amount",
-            getter: { $0.splitAmountAsString() ?? "" },
+            getter: { $0.splitAmountAsString() },
             hasValue: { $0.splitAmount != 0 },
             setter: { $0.splitAmount = $1.splitAmount }
         ),

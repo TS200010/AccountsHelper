@@ -164,12 +164,17 @@ extension Transaction {
     }
 }
 
-// MARK: --- Extensions to make Table Viewing much simpler
+// MARK: --- Extensions to return amounts as Strings for easier incorporation into Views and Reports
 extension Transaction {
     
-    func commissionAmountAsString() -> String? {
+    // Commission amount always in GBP
+    func commissionAmountAsString( withSymbol: Bool = false ) -> String? {
         let amount = NSDecimalNumber(decimal: commissionAmount)
-        return String(format: "%.2f", amount.doubleValue)
+        if withSymbol {
+            return amount.decimalValue.formattedAsCurrency(currency)
+        } else {
+            return String(format: "%.2f", amount.doubleValue)
+        }
     }
 
     func exchangeRateAsStringLong() -> String? {
@@ -196,15 +201,36 @@ extension Transaction {
         }
     }
 
-    func splitRemainderAsString() -> String? {
+    func splitRemainderAsString(withSymbol: Bool = false) -> String? {
         let amountNumber = NSDecimalNumber(decimal: splitRemainderAmount)
+
         switch currency {
         case .JPY:
-            return String(format: "%.0f", amountNumber.doubleValue)
+            if withSymbol {
+                return amountNumber.decimalValue.formattedAsCurrency(currency)
+            } else {
+                return String(format: "%.0f", amountNumber.doubleValue)
+            }
+
         default:
-            return String(format: "%.2f", amountNumber.doubleValue)
+            if withSymbol {
+                return amountNumber.decimalValue.formattedAsCurrency(currency)
+            } else {
+                return String(format: "%.2f", amountNumber.doubleValue)
+            }
         }
     }
+
+//    func splitRemainderAsString() -> String? {
+//        let amountNumber = NSDecimalNumber(decimal: splitRemainderAmount)
+//        switch currency {
+//        case .JPY:
+//            return String(format: "%.0f", amountNumber.doubleValue)
+//        default:
+//            return String(format: "%.2f", amountNumber.doubleValue)
+//        }
+//    }
+    
 
     func timestampAsString() -> String? {
         guard let date = timestamp else { return nil }
@@ -216,27 +242,67 @@ extension Transaction {
         return Transaction.dateFormatter.string(from: date)
     }
 
-    func txAmountAsString() -> String? {
+    func txAmountAsString(withSymbol: Bool = false) -> String? {
         let amountNumber = NSDecimalNumber(decimal: txAmount)
 
         switch currency {
         case .JPY:
-            return String(format: "%.0f", amountNumber.doubleValue)
+            if withSymbol {
+                return amountNumber.decimalValue.formattedAsCurrency(currency)
+            } else {
+                return String(format: "%.0f", amountNumber.doubleValue)
+            }
+
         default:
-            return String(format: "%.2f", amountNumber.doubleValue)
+            if withSymbol {
+                return amountNumber.decimalValue.formattedAsCurrency(currency)
+            } else {
+                return String(format: "%.2f", amountNumber.doubleValue)
+            }
         }
     }
 
-    func splitAmountAsString() -> String? {
+//    func txAmountAsString() -> String? {
+//        let amountNumber = NSDecimalNumber(decimal: txAmount)
+//
+//        switch currency {
+//        case .JPY:
+//            return String(format: "%.0f", amountNumber.doubleValue)
+//        default:
+//            return String(format: "%.2f", amountNumber.doubleValue)
+//        }
+//    }
+
+    func splitAmountAsString(withSymbol: Bool = false) -> String {
         let amountNumber = NSDecimalNumber(decimal: splitAmount)
-        
+
         switch currency {
         case .JPY:
-            return String(format: "%.0f", amountNumber.doubleValue)
+            if withSymbol {
+                return amountNumber.decimalValue.formattedAsCurrency(currency)
+            } else {
+                return String(format: "%.0f", amountNumber.doubleValue)
+            }
+
         default:
-            return String(format: "%.2f", amountNumber.doubleValue)
+            if withSymbol {
+                return amountNumber.decimalValue.formattedAsCurrency(currency)
+            } else {
+                return String(format: "%.2f", amountNumber.doubleValue)
+            }
         }
     }
+
+//    func splitAmountAsString() -> String {
+//        let amountNumber = NSDecimalNumber(decimal: splitAmount)
+//        
+//        switch currency {
+//        case .JPY:
+//            return String(format: "%.0f", amountNumber.doubleValue)
+//        default:
+//            return String(format: "%.2f", amountNumber.doubleValue)
+//        }
+//    }
 }
 
 // MARK: --- GenerateRandomTransactions
@@ -328,20 +394,6 @@ extension Transaction {
             return 0
         }
     }
-    
-//    func comparableFieldsRepresentation() -> String {
-//        
-//        var components: [String] = []
-//        let mirror = Mirror(reflecting: self)
-//        print("Mirror children:", Mirror(reflecting: self).children.map { $0.label ?? "nil" })
-//        for child in mirror.children {
-//            guard let label = child.label else { continue }
-//            if label == "id" || label == "timestamp" { continue }
-//            let value = String(describing: child.value)
-//            components.append("\(label)=\(value)")
-//        }
-//        return components.joined(separator: "|")
-//    }
 }
 
 extension Transaction {
@@ -365,24 +417,5 @@ extension Transaction {
         // Sort so order is deterministic
         components.sort()
         return components.joined(separator: "|")
-    }
-}
-
-// MARK: --- DUMP
-extension Transaction {
-    func dump() {
- //       print("--- TX DUMP ---")
-        print("objectID:", objectID)
-        print("currencyCD:", currencyCD)
-        print("exchangeRateCD:", exchangeRateCD)
-        print("decoded exchangeRate:", exchangeRate)
-        print("txAmountCD:", txAmountCD)
-        print("txAmount:", txAmount)
-        print("txAmountInGBP:", txAmountInGBP)
-        print("splitAmountCD:", splitAmountCD)
-        print("splitAmount:", splitAmount)
-        print("splitAmountInGBP:", splitAmountInGBP)
-        print("commissionAmountCD:", commissionAmountCD)
-        print("commissionAmount:", commissionAmount)
     }
 }

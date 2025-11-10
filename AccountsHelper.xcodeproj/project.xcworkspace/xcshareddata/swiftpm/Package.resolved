@@ -1,5 +1,5 @@
 {
-  "originHash" : "bde9f922d25e2b0fbb24e2c9efd4b28406d54c0d08ce56d5ce9160e9e4708182",
+  "originHash" : "a8694f98fa9f35297b3aa7fef13783ccc0c59c2d74cd88c03bd70555f48d131a",
   "pins" : [
     {
       "identity" : "itmklibrary",
@@ -8,6 +8,15 @@
       "state" : {
         "branch" : "main",
         "revision" : "b64a95488db7d8e860874e15d8b51607a2b5cf86"
+      }
+    },
+    {
+      "identity" : "printingkit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/danielsaidi/PrintingKit.git",
+      "state" : {
+        "revision" : "df6b723008b6bc8dbed0cd195edc71b9c89b096c",
+        "version" : "0.8.0"
       }
     }
   ],

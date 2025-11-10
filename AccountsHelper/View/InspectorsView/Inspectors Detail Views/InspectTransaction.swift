@@ -113,9 +113,6 @@ struct InspectTransaction: View {
             }
 
         }
-        .onAppear( ) {
-            transaction?.dump()
-        }
     }
     
     // MARK: --- Section Wrapper
