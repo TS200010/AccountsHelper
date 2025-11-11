@@ -187,6 +187,7 @@ extension AddOrEditReconciliationView {
 extension AddOrEditReconciliationView {
     
     private func saveReconciliation() {
+        #if os(macOS)
         guard let balanceDecimal = Decimal(string: endingBalance) else { return }
         let period = AccountingPeriod(year: selectedYear, month: selectedMonth)
 
@@ -220,6 +221,7 @@ extension AddOrEditReconciliationView {
             print("Error saving reconciliation: \(error)")
             context.rollback()
         }
+        #endif
     }
 }
 

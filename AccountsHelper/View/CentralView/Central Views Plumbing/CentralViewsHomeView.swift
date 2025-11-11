@@ -15,7 +15,7 @@ struct CentralViewsHomeView: View {
         
         VStack ( spacing: 0 ) {
             
-            CentralViewToolbar( ) .if( gViewCheck ) { view in view.border( .pink )}
+//            CentralViewToolbar( ) .if( gViewCheck ) { view in view.border( .pink )}
                 
             CentralViews( ) .if( gViewCheck ) { view in view.border( .cyan )}
             

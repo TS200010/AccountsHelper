@@ -167,18 +167,33 @@ extension Transaction {
 // MARK: --- Extensions to return amounts as Strings for easier incorporation into Views and Reports
 extension Transaction {
     
+    // MARK: --- AnyAmountAsString
+    static func anyAmountAsString( amount: Decimal, currency: Currency, withSymbol: ShowCurrencySymbolsEnum = .always ) -> String {
+        let amount = NSDecimalNumber(decimal: amount)
+        if amount == 0 { return gDefaultZeroAmountRepresentation }
+        if withSymbol.show(currency: currency) {
+            return amount.decimalValue.formattedAsCurrency(currency)
+        } else {
+            return String(format: "%.2f", amount.doubleValue)
+        }
+    }
+    
+    // MARK: --- CommissionAmountAsString
     // Commission amount always in GBP
-    func commissionAmountAsString( withSymbol: Bool = false ) -> String? {
+    func commissionAmountAsString( withSymbol: ShowCurrencySymbolsEnum = .always ) -> String? {
         let amount = NSDecimalNumber(decimal: commissionAmount)
-        if withSymbol {
+        if amount == 0 { return gDefaultZeroAmountRepresentation }
+        if withSymbol.show(currency: currency) {
             return amount.decimalValue.formattedAsCurrency(currency)
         } else {
             return String(format: "%.2f", amount.doubleValue)
         }
     }
 
+    // MARK: --- SxchangeRateAsStringLong
     func exchangeRateAsStringLong() -> String? {
         let fx = NSDecimalNumber(decimal: exchangeRate)
+        if fx == 0 || fx == 1 { return gDefaultZeroAmountRepresentation }
         switch currency {
         case .GBP:
             return String(format: "%.4f", fx.doubleValue)
@@ -189,8 +204,10 @@ extension Transaction {
         }
     }
     
+    // MARK: --- ExchangeRateAsString
     func exchangeRateAsString() -> String? {
         let fx = NSDecimalNumber(decimal: exchangeRate)
+        if fx == 0 || fx == 1 { return gDefaultZeroAmountRepresentation }
         switch currency {
         case .GBP:
             return String(format: "%.2f", fx.doubleValue)
@@ -201,112 +218,108 @@ extension Transaction {
         }
     }
 
-    func splitRemainderAsString(withSymbol: Bool = false) -> String? {
-        let amountNumber = NSDecimalNumber(decimal: splitRemainderAmount)
-
+    // MARK: --- SplitRemainderAsString
+    func splitRemainderAsString( withSymbol: ShowCurrencySymbolsEnum = .always ) -> String? {
+        let amount = NSDecimalNumber(decimal: splitRemainderAmount)
+        if amount == 0 { return gDefaultZeroAmountRepresentation }
         switch currency {
         case .JPY:
-            if withSymbol {
-                return amountNumber.decimalValue.formattedAsCurrency(currency)
+            if withSymbol.show(currency: currency) {
+                return amount.decimalValue.formattedAsCurrency(currency)
             } else {
-                return String(format: "%.0f", amountNumber.doubleValue)
+                return String(format: "%.0f", amount.doubleValue)
             }
 
         default:
-            if withSymbol {
-                return amountNumber.decimalValue.formattedAsCurrency(currency)
+            if withSymbol.show(currency: currency) {
+                return amount.decimalValue.formattedAsCurrency(currency)
             } else {
-                return String(format: "%.2f", amountNumber.doubleValue)
+                return String(format: "%.2f", amount.doubleValue)
             }
         }
     }
 
-//    func splitRemainderAsString() -> String? {
-//        let amountNumber = NSDecimalNumber(decimal: splitRemainderAmount)
-//        switch currency {
-//        case .JPY:
-//            return String(format: "%.0f", amountNumber.doubleValue)
-//        default:
-//            return String(format: "%.2f", amountNumber.doubleValue)
-//        }
-//    }
-    
+    // MARK: --- TxAmountAsString
+    func txAmountAsString( withSymbol: ShowCurrencySymbolsEnum = .always ) -> String {
+        let amount = NSDecimalNumber(decimal: txAmount)
+        if amount == 0 { return "" }
+        switch currency {
+        case .JPY:
+            if withSymbol.show(currency: currency) {
+                return amount.decimalValue.formattedAsCurrency(currency)
+            } else {
+                return String(format: "%.0f", amount.doubleValue)
+            }
 
+        default:
+            if withSymbol.show(currency: currency) {
+                return amount.decimalValue.formattedAsCurrency(currency)
+            } else {
+                return String(format: "%.2f", amount.doubleValue)
+            }
+        }
+    }
+    
+    // MARK: --- TxAmountDualCurrencyAsString
+    func txAmountDualCurrencyAsString( withSymbol: ShowCurrencySymbolsEnum = .always ) -> String {
+        let s1 = txAmountAsString(withSymbol: withSymbol)
+        if currency == .GBP { return s1 }
+        let s2 = Transaction.anyAmountAsString( amount: txAmountInGBP, currency: .GBP, withSymbol: withSymbol )
+#if os(macOS)
+        return "\(s1)\n\(s2)"
+#else
+//            return wip + " " + transaction.totalAmountInGBP.formattedAsCurrency( .GBP )
+        return "\(s1)"
+#endif
+
+    }
+
+    // MARK: --- SplitAmountAsString
+    func splitAmountAsString( withSymbol: ShowCurrencySymbolsEnum = .always ) -> String {
+        let amount = NSDecimalNumber(decimal: splitAmount)
+        if amount == 0 { return gDefaultZeroAmountRepresentation }
+        switch currency {
+        case .JPY:
+            if withSymbol.show(currency: currency) {
+                return amount.decimalValue.formattedAsCurrency(currency)
+            } else {
+                return String(format: "%.0f", amount.doubleValue)
+            }
+
+        default:
+            if withSymbol.show(currency: currency) {
+                return amount.decimalValue.formattedAsCurrency(currency)
+            } else {
+                return String(format: "%.2f", amount.doubleValue)
+            }
+        }
+    }
+    
+    // MARK: --- SplitAmountAndCategoryAsString
+    func splitAmountAndCategoryAsString( withSymbol: ShowCurrencySymbolsEnum = .always ) -> String {
+        guard splitAmount != 0 else { return gDefaultZeroAmountRepresentation }
+        let s1 = splitCategory.description
+        let s2 = splitAmountAsString(withSymbol: withSymbol)
+        return "\(s1) - \(s2)"
+    }
+
+    // MARK: --- TimestampAsString
     func timestampAsString() -> String? {
         guard let date = timestamp else { return nil }
         return Transaction.dateFormatter.string(from: date)
     }
 
+    // MARK: --- TransactionDateAsString
     func transactionDateAsString() -> String? {
         guard let date = transactionDate else { return nil }
         return Transaction.dateFormatter.string(from: date)
     }
 
-    func txAmountAsString(withSymbol: Bool = false) -> String? {
-        let amountNumber = NSDecimalNumber(decimal: txAmount)
-
-        switch currency {
-        case .JPY:
-            if withSymbol {
-                return amountNumber.decimalValue.formattedAsCurrency(currency)
-            } else {
-                return String(format: "%.0f", amountNumber.doubleValue)
-            }
-
-        default:
-            if withSymbol {
-                return amountNumber.decimalValue.formattedAsCurrency(currency)
-            } else {
-                return String(format: "%.2f", amountNumber.doubleValue)
-            }
-        }
-    }
-
-//    func txAmountAsString() -> String? {
-//        let amountNumber = NSDecimalNumber(decimal: txAmount)
-//
-//        switch currency {
-//        case .JPY:
-//            return String(format: "%.0f", amountNumber.doubleValue)
-//        default:
-//            return String(format: "%.2f", amountNumber.doubleValue)
-//        }
-//    }
-
-    func splitAmountAsString(withSymbol: Bool = false) -> String {
-        let amountNumber = NSDecimalNumber(decimal: splitAmount)
-
-        switch currency {
-        case .JPY:
-            if withSymbol {
-                return amountNumber.decimalValue.formattedAsCurrency(currency)
-            } else {
-                return String(format: "%.0f", amountNumber.doubleValue)
-            }
-
-        default:
-            if withSymbol {
-                return amountNumber.decimalValue.formattedAsCurrency(currency)
-            } else {
-                return String(format: "%.2f", amountNumber.doubleValue)
-            }
-        }
-    }
-
-//    func splitAmountAsString() -> String {
-//        let amountNumber = NSDecimalNumber(decimal: splitAmount)
-//        
-//        switch currency {
-//        case .JPY:
-//            return String(format: "%.0f", amountNumber.doubleValue)
-//        default:
-//            return String(format: "%.2f", amountNumber.doubleValue)
-//        }
-//    }
 }
 
 // MARK: --- GenerateRandomTransactions
 extension Transaction {
+    
     
     static func generateRandomTransactions(
         for paymentMethod: PaymentMethod,

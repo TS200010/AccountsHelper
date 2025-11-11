@@ -12,6 +12,9 @@ struct CategoriesSummaryView: View {
     // MARK: --- Environment
     @Environment(\.managedObjectContext) internal var viewContext
     @Environment(AppState.self) internal var appState
+    @AppStorageEnum("showCurrencySymbols", defaultValue: .always)
+    var showCurrencySymbols: ShowCurrencySymbolsEnum
+    
     
     // MARK: --- FetchRequest
     @FetchRequest private var transactions: FetchedResults<Transaction>
@@ -82,35 +85,7 @@ struct CategoriesSummaryView: View {
         let total: Decimal
         let transactionIDs: [NSManagedObjectID]
         let currency: Currency
-        
         var id: Int32 { category.id }
-        
-        var totalString: String {
-            let formatter = NumberFormatter()
-            formatter.numberStyle = .currency
-            formatter.locale = currency.localeForCurrency
-            
-            // Ensure no decimal places for zero-minor-unit currencies like JPY
-            switch currency {
-            case .JPY:
-                formatter.maximumFractionDigits = 0
-                formatter.minimumFractionDigits = 0
-            default:
-                formatter.maximumFractionDigits = 2
-                formatter.minimumFractionDigits = 2
-            }
-            
-            let formatted = formatter.string(from: total as NSDecimalNumber) ?? "\(total)"
-
-            // Pad to fixed width for alignment (matches printout spacing)
-            let paddedLength = 10
-            let padding = String(repeating: " ", count: max(0, paddedLength - formatted.count))
-            return padding + formatted
-        }
-
-//        var totalString: String {
-//            String(format: "%.2f", NSDecimalNumber(decimal: total).doubleValue)
-//        }
     }
 
     // MARK: --- CategoryRows
@@ -136,7 +111,9 @@ struct CategoriesSummaryView: View {
         VStack(alignment: .leading) {
             headerView
             categoriesTable
-                .navigationTitle("Transactions Summary")
+                .frame(minWidth: 300, idealWidth: 500, maxWidth: 600) // adjust as needed
+            
+//                .navigationTitle("Transactions Summary")
         }
         .toolbar { printToolbarItem }
     }
@@ -181,12 +158,13 @@ extension CategoriesSummaryView {
             TableColumn("Category") { categoryCell(for: $0) }
             TableColumn("Total") { row in
                 HStack {
-                    Text(row.totalString)
+                    Text( Transaction.anyAmountAsString(amount: row.total, currency: row.currency, withSymbol: showCurrencySymbols) )
                         .font(.system(.body, design: .monospaced))
                     Spacer()
                 }
             }
         }
+        .id(showCurrencySymbols) // Forces the Table to rebuild when this changes
         .onChange(of: selectedCategoryID) { _, newValue in
             if let id = newValue,
                let row = categoryRows.first(where: { $0.id == id }) {

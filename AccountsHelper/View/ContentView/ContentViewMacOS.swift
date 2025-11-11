@@ -14,6 +14,9 @@ struct ContentViewMacOS: View {
     // MARK: --- Environment
     @EnvironmentObject var gGlobalAlert: GlobalAlert
     @Environment(AppState.self) var appState
+    @AppStorageEnum("showCurrencySymbols", defaultValue: .always)
+    var showCurrencySymbols: ShowCurrencySymbolsEnum
+    
 
     // MARK: --- Local State
     @State fileprivate var showingNavigators = true
@@ -42,7 +45,7 @@ extension ContentViewMacOS {
                 .navigationSplitViewColumnWidth(min: 250, ideal: 300, max: gNavigatorMaxWidth)
         } detail: {
             CentralViewsHomeView()
-                .navigationTitle(gAppName)
+                .navigationTitle(appState.selectedCentralView.asString)
                 .inspector(isPresented: $showingInspectors) {
                     InspectorViewsHomeView()
                         .inspectorColumnWidth(min: 250, ideal: 300, max: gInspectorMaxWidth)
@@ -86,10 +89,10 @@ extension ContentViewMacOS {
             .padding(.horizontal, 8)
         }
     }
-
     
     // MARK: --- ToolbarSection
     private var toolbarSection: some ToolbarContent {
+
         Group {
             // Toggle Inspector Sidebar
             ToolbarItem(placement: .confirmationAction) {
@@ -98,6 +101,16 @@ extension ContentViewMacOS {
                 } label: {
                     Image(systemName: "sidebar.trailing")
                 }
+            }
+            
+            // Cycle through currency display
+            ToolbarItem(placement: .confirmationAction) {
+                Button {
+                    showCurrencySymbols = showCurrencySymbols.next()
+                } label: {
+                    Image(systemName: showCurrencySymbols.iconName)
+                }
+                .help("Toggle currency symbol display")
             }
             
             // Open Settings

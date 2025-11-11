@@ -47,7 +47,7 @@ extension MergeField {
     static let all: [MergeField: MergeFieldInfo] = [
         .txAmount: MergeFieldInfo(
             displayName: "Amount",
-            getter: { $0.txAmountAsString() ?? "" },
+            getter: { $0.txAmountAsString() },
             hasValue: { $0.txAmount != 0 },
             setter: { $0.txAmount = $1.txAmount }
         ),

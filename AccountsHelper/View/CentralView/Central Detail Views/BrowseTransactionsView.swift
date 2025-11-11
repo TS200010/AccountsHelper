@@ -97,6 +97,8 @@ struct BrowseTransactionsView: View {
     @Environment(\.managedObjectContext) internal var viewContext
     @Environment(\.undoManager) private var undoManager
     @Environment(AppState.self) internal var appState
+    @AppStorageEnum("showCurrencySymbols", defaultValue: .always) var showCurrencySymbols: ShowCurrencySymbolsEnum
+    
 
     // MARK: --- State
     // Focus State
@@ -208,7 +210,7 @@ struct BrowseTransactionsView: View {
         }
 #if os(iOS)
         .sheet(isPresented: $showingEditTransactionView) {
-            Text("EDIT HERE\(selectedTransactionIDs.first)")
+            Text("EDIT HERE\(String(describing: selectedTransactionIDs.first))")
             if selectedTransactionIDs.first != nil {
                 AddOrEditTransactionView(transactionID: selectedTransactionIDs.first, context: viewContext )
             } else {
@@ -262,8 +264,9 @@ extension BrowseTransactionsView {
 
     // MARK: --- MultiLineTableCell
     @ViewBuilder
-    private func multiLineTableCell(_ content: String, for row: TransactionRow) -> some View {
+    private func multiLineTableCell(_ content: String, for row: TransactionRow, alignment: Alignment = .leading) -> some View {
         HStack {
+            if alignment == .trailing { Spacer() }
             Text(content)
                 .foregroundColor(
                     selectedTransactionIDs.contains(row.id)
@@ -272,18 +275,23 @@ extension BrowseTransactionsView {
                 )
                 .lineLimit(2)
                 .truncationMode(.tail)
-            Spacer()
+            if alignment == .leading { Spacer() }
         }
-        .padding(.leading, 6)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.leading, alignment == .trailing ? 0 : 6)
+        .padding(.trailing, alignment == .trailing ? 6 : 0)
+        .frame(maxWidth: .infinity,
+               alignment: alignment == .trailing ? .trailing : .leading)
+//        .padding(.leading, 6)
+//        .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
         .contextMenu { contextMenu(for: row) }
     }
 
     // MARK: --- TableCell
     @ViewBuilder
-    private func tableCell(_ content: String, for row: TransactionRow) -> some View {
+    private func tableCell(_ content: String, for row: TransactionRow, alignment: Alignment = .leading) -> some View {
         HStack {
+            if alignment == .trailing { Spacer() }
             Text(content)
                 .foregroundColor(
                     selectedTransactionIDs.contains(row.id)
@@ -296,7 +304,7 @@ extension BrowseTransactionsView {
             #else
                 .lineLimit(2)
             #endif
-            Spacer()
+            if alignment == .leading { Spacer() }
         }
         .padding(.leading, 6)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -314,7 +322,7 @@ extension BrowseTransactionsView {
                     .onAppear {
                         availableWidth = width
                         // Load saved widths
-                        if let saved = UserDefaults.standard.dictionary(forKey: columnWidthsKey) as? [String: Double] {
+                        if let saved = UserDefaults.standard.dictionary(forKey: gColumnWidthsKey) as? [String: Double] {
                             columnWidths = saved.mapValues { CGFloat($0) }
                         }
                         updateScaledWidths(for: availableWidth)
@@ -500,7 +508,7 @@ extension BrowseTransactionsView {
 
         scaledColumnWidths = columnWidths
         // Save
-        UserDefaults.standard.set(columnWidths.mapValues { Double($0) }, forKey: columnWidthsKey)
+        UserDefaults.standard.set(columnWidths.mapValues { Double($0) }, forKey: gColumnWidthsKey)
     }
     #endif
 
@@ -522,15 +530,23 @@ extension BrowseTransactionsView {
                     .if( gViewCheck ) { view in view.border( .yellow )}
                 tableCell(row.transactionDate, for: row)
                     .frame(width: scaledColumnWidths["Date"] ?? 100)
-                multiLineTableCell(row.displayAmount, for: row)
+                multiLineTableCell( row.transaction.txAmountDualCurrencyAsString(withSymbol: showCurrencySymbols), for: row, alignment: .trailing )
+                    .multilineTextAlignment(.trailing)
                     .frame(width: scaledColumnWidths["Amount"] ?? 130)
-                tableCell(row.runningBalance.formattedAsCurrency(.GBP), for: row)
+                tableCell(
+                    Transaction.anyAmountAsString(
+                        amount: row.runningBalance,
+                        currency: .GBP,
+                        withSymbol: showCurrencySymbols
+                    ), for: row, alignment: .trailing
+                )
                     .frame(width: scaledColumnWidths["Balance"] ?? 130)
                 tableCell(row.exchangeRate, for: row)
                     .frame(width: scaledColumnWidths["Fx"] ?? 60)
                 tableCell(row.category, for: row)
                     .frame(width: scaledColumnWidths["Category"] ?? 80)
-                multiLineTableCell(row.displaySplitAmount, for: row)
+                multiLineTableCell( row.transaction.splitAmountAndCategoryAsString(withSymbol: showCurrencySymbols), for: row, alignment: .leading )
+//                multiLineTableCell( row.transaction.splitAmountAsString(withSymbol: showCurrencySymbols), for: row, alignment: .trailing )
                     .frame(width: scaledColumnWidths["Split"] ?? 200)
                 tableCell(row.payee, for: row)
                     .frame(width: scaledColumnWidths["Payee"] ?? 100)

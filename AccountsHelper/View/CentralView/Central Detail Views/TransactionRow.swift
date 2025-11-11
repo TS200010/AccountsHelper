@@ -91,7 +91,7 @@ struct TransactionRow: Identifiable, Hashable {
     var transactionDate: String { transaction.transactionDateAsString() ?? "" }
 
     // MARK: --- TxAmount
-    var txAmount: String { transaction.txAmountAsString() ?? "" }
+    var txAmount: String { transaction.txAmountAsString() }
 
     // MARK: --- ExchangeRate
     var exchangeRate: String { transaction.currency == .GBP ? "" : (transaction.exchangeRateAsString() ?? "") }

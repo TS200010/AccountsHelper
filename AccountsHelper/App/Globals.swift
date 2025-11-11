@@ -36,13 +36,15 @@ let gMaxToolbarHeight:       CGFloat = 30
 let gCentralViewHeadingSize: CGFloat = 170
 let gInvalidReconciliationGap: Decimal = Decimal(999_999)
 let gNumTransactionAttributes = 19 // Number minus one as we do not care about TimeStamp
+let gAmountFieldWidth:       Int    = 10
 
 // MARK: --- Defaults
 let gAppName: String = Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "UnknownAppName"
-let defaultURL: String = "\\NoSourceFile"
+let gDefaultURL: String = "\\NoSourceFile"
+let gDefaultZeroAmountRepresentation: String = ""
 
 // MARK: --- User State Persistence
-let columnWidthsKey = "BrowseTransactionsView_ColumnWidths"
+let gColumnWidthsKey = "BrowseTransactionsView_ColumnWidths"
 
 // MARK: --- Global Alert system
 var gGlobalAlert: GlobalAlert = GlobalAlert()

@@ -10,7 +10,8 @@ import PrintingKit
 import SwiftUI
 
 func printReport(_ report: NSMutableString) {
-    
+
+    #if os(macOS)
     // MARK: --- Create attributes for monospaced font
     let attrs: [NSAttributedString.Key: Any] = [
         .font: NSFont.monospacedSystemFont(ofSize: 10, weight: .regular)
@@ -30,4 +31,5 @@ func printReport(_ report: NSMutableString) {
     } catch {
         print("Failed to print: \(error)")
     }
+    #endif
 }

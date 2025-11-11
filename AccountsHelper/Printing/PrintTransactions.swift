@@ -13,6 +13,10 @@ extension BrowseTransactionsView {
     
     func printTransactions() {
         
+        var totalCR: Decimal = 0
+        var totalDR: Decimal = 0
+
+
         let columnWidths: [String: Int] = [
             "Date":          10,
             "Category":      15,
@@ -31,7 +35,16 @@ extension BrowseTransactionsView {
             return alignRight ? padding + string + space : string + padding + space
         }
         
-        //        var showCurrencySymbol: Bool { }
+        // Compute Totals
+        for tx in transactions {
+            let amount = tx.txAmount
+            if amount < 0 {
+                totalCR += amount
+            } else if amount > 0 {
+                totalDR += amount
+            }
+        }
+        let netTotal = totalCR + totalDR
         
         let report = NSMutableString()
         
@@ -56,9 +69,9 @@ extension BrowseTransactionsView {
         for tx in transactions {
             let dateStr     = tx.transactionDate?.formatted(date: .numeric, time: .omitted) ?? ""
             let categoryStr = tx.category.description
-            let amountStr   = tx.txAmountAsString( withSymbol: true ) ?? ""
+            let amountStr   = tx.txAmountAsString( withSymbol: showCurrencySymbols )
             let fxStr       = tx.currency != .GBP ? (tx.exchangeRateAsString() ?? "") : ""
-            let splitStr    = tx.splitAmount != 0 ?  tx.splitAmountAsString( withSymbol: true ) : ""
+            let splitStr    = tx.splitAmount != 0 ?  tx.splitAmountAsString( withSymbol: showCurrencySymbols ) : ""
             let splitCatStr = tx.splitAmount != 0 ?  tx.splitCategory.description : ""
             let payeeStr    = String((tx.payee ?? "" ).prefix(15))
             
@@ -73,6 +86,30 @@ extension BrowseTransactionsView {
                 "\n"
             )
         }
+        
+        // MARK: --- Add Footer
+        func appendSummaryLine(title: String, amount: Decimal) {
+            let amountStr = Transaction.anyAmountAsString(
+                amount: amount,
+                currency: transactions.first?.currency ?? .GBP,
+                withSymbol: showCurrencySymbols
+            )
+            
+            // Pad for all columns before Amount
+            let line =
+                padded(title, column: "Date") +            // label
+                padded("", column: "Category") +          // empty
+                padded(amountStr, column: "Amount", alignRight: true) + "\n"
+            
+            report.append(line)
+        }
+        
+        report.append(String(repeating: "-", count: columnWidths.values.reduce(0, +)) + "\n")
+
+        appendSummaryLine(title: "Total CR:", amount: totalCR)
+        appendSummaryLine(title: "Total DR:", amount: totalDR)
+        appendSummaryLine(title: "Net Total:", amount: netTotal)
+        
         
         // MARK: --- Print
         printReport( report )

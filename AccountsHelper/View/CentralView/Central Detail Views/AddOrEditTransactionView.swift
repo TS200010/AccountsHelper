@@ -88,7 +88,7 @@ struct AddOrEditTransactionView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 10) {
-                header
+//                header
                 mainFields
                 splitSection
                 actionButtons
@@ -102,13 +102,13 @@ struct AddOrEditTransactionView: View {
     }
     
     // MARK: --- Header
-    private var header: some View {
-        Text(existingTransaction == nil ? "Add Transaction" : "Edit Transaction")
-            .font(.title2)
-            .fontWeight(.semibold)
-            .padding(.top, 16)
-            .padding(.horizontal, 14)
-    }
+//    private var header: some View {
+//        Text(existingTransaction == nil ? "Add Transaction" : "Edit Transaction")
+//            .font(.title2)
+//            .fontWeight(.semibold)
+//            .padding(.top, 16)
+//            .padding(.horizontal, 14)
+//    }
     
     // MARK: --- Main Fields
     private var mainFields: some View {
@@ -181,7 +181,9 @@ struct AddOrEditTransactionView: View {
             CounterTransactionView(
                 transactionData: $transactionData,
                 counterTransaction: $counterTransactionActive,
-                counterPaymentMethod: $counterPaymentMethod
+                counterPaymentMethod: $counterPaymentMethod,
+                counterFXRate:        $counterFXRate
+
             )
         }
     #elseif os(macOS)
