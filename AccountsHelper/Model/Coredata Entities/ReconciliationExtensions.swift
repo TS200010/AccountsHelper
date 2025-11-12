@@ -251,7 +251,7 @@ extension Reconciliation {
             let txs = try fetchTransactions(in: context)
             // Negate the total as we are storing a +ve number for money going out - a Debit
             // If we do not negate it the arithmatic does not work.
-            let sum = -(txs.reduce(Decimal(0)) { $0 + $1.txAmount })
+            let sum = -(txs.reduce(Decimal(0)) { $0 + $1.txAmountInGBP })
 
             let previousBalance: Decimal
             if let prev = try? Reconciliation.fetchPrevious(for: self.paymentMethod, before: self.transactionEndDate, context: context) {

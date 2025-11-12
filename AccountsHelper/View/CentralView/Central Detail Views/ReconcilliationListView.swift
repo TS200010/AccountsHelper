@@ -214,7 +214,7 @@ extension ReconcilliationListView {
                     
 
                     TableColumn("Net Transactions") { row in
-                        Text(row.rec.totalTransactions.formattedAsCurrency(row.rec.currency))
+                        Text(row.rec.totalTransactionsInGBP.formattedAsCurrency(row.rec.currency))
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .foregroundColor(row.rec.closed ? .blue : (hasInvalidTransactions(row) ? .red : .primary))
                             .contentShape(Rectangle())

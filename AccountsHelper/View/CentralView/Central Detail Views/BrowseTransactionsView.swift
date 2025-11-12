@@ -128,6 +128,7 @@ struct BrowseTransactionsView: View {
     @State private var columnWidths: [String: CGFloat] = [
         "Payment Method": 80,
         "Date": 100,
+        "✓": 5,
         "Amount": 130,
         "Balance": 130,
         "Fx": 60,
@@ -136,6 +137,8 @@ struct BrowseTransactionsView: View {
         "Payee": 300
     ]
     #endif
+    // Checked Selection State
+    @State private var selectionActive: Bool = false
 
     // MARK: --- Constants
     private let macOSRowHeight: CGFloat = 28
@@ -347,6 +350,8 @@ extension BrowseTransactionsView {
                                 .if( gViewCheck ) { view in view.border( .green )}
                             TableHeaderCell("Date", width: 100)
                                 .frame(width: scaledColumnWidths["Date"] ?? 100)
+                            TableHeaderCell("✓", width: 5)
+                                .frame(width: scaledColumnWidths["✓"] ?? 5)
                             TableHeaderCell("Amount", width: 130)
                                 .frame(width: scaledColumnWidths["Amount"] ?? 130)
                             TableHeaderCell("Balance", width: 130)
@@ -530,6 +535,31 @@ extension BrowseTransactionsView {
                     .if( gViewCheck ) { view in view.border( .yellow )}
                 tableCell(row.transactionDate, for: row)
                     .frame(width: scaledColumnWidths["Date"] ?? 100)
+ 
+                HStack {
+                    Spacer(minLength: 0)
+//                    Toggle("", isOn: $row.checked)
+//                        .toggleStyle(.checkbox)
+//                        .labelsHidden()
+                    Toggle("", isOn: Binding(
+                        get: { row.checked },
+                        set: { newValue in
+                            if selectionActive {
+                                row.checked = newValue
+                                row.transaction.checked = newValue
+                                try? viewContext.save()
+                            }
+                        }
+                    ))
+                    .toggleStyle(.checkbox)
+                    .labelsHidden()
+                    .frame(width: 20, height: 20)
+                    Spacer(minLength: 0)
+                }
+                .frame(width: scaledColumnWidths["✓"] ?? 30)
+                .disabled(row.transaction.closed)
+
+                
                 multiLineTableCell( row.transaction.txAmountDualCurrencyAsString(withSymbol: showCurrencySymbols), for: row, alignment: .trailing )
                     .multilineTextAlignment(.trailing)
                     .frame(width: scaledColumnWidths["Amount"] ?? 130)
@@ -557,28 +587,35 @@ extension BrowseTransactionsView {
         .if( gViewCheck ) { view in view.border( .green )}
         .onTapGesture {
             #if os(macOS)
-            safeUIUpdate {
-                let modifiers = NSEvent.modifierFlags
-                let rowIndex = index
-
-                if modifiers.contains(.command) {
-                    // Cmd-click toggles selection
-                    if selectedTransactionIDs.wrappedValue.contains(row.id) {
-                        selectedTransactionIDs.wrappedValue.remove(row.id)
+            if selectionActive {
+                // Toggle only the checkbox when selection mode is active
+                row.checked.toggle()
+                row.transaction.checked = row.checked
+                try? viewContext.save()
+            } else {
+                safeUIUpdate {
+                    let modifiers = NSEvent.modifierFlags
+                    let rowIndex = index
+                    
+                    if modifiers.contains(.command) {
+                        // Cmd-click toggles selection
+                        if selectedTransactionIDs.wrappedValue.contains(row.id) {
+                            selectedTransactionIDs.wrappedValue.remove(row.id)
+                        } else {
+                            selectedTransactionIDs.wrappedValue.insert(row.id)
+                        }
+                        lastClickedRowIndex = rowIndex
+                    } else if modifiers.contains(.shift), let lastIndex = lastClickedRowIndex {
+                        // Shift-click selects range
+                        let minIndex = min(lastIndex, rowIndex)
+                        let maxIndex = max(lastIndex, rowIndex)
+                        let rangeIDs = filteredTransactionRows[minIndex...maxIndex].map { $0.id }
+                        selectedTransactionIDs.wrappedValue.formUnion(rangeIDs)
                     } else {
-                        selectedTransactionIDs.wrappedValue.insert(row.id)
+                        // Regular click selects single row
+                        selectedTransactionIDs.wrappedValue = [row.id]
+                        lastClickedRowIndex = rowIndex
                     }
-                    lastClickedRowIndex = rowIndex
-                } else if modifiers.contains(.shift), let lastIndex = lastClickedRowIndex {
-                    // Shift-click selects range
-                    let minIndex = min(lastIndex, rowIndex)
-                    let maxIndex = max(lastIndex, rowIndex)
-                    let rangeIDs = filteredTransactionRows[minIndex...maxIndex].map { $0.id }
-                    selectedTransactionIDs.wrappedValue.formUnion(rangeIDs)
-                } else {
-                    // Regular click selects single row
-                    selectedTransactionIDs.wrappedValue = [row.id]
-                    lastClickedRowIndex = rowIndex
                 }
             }
             #else
@@ -672,6 +709,18 @@ extension BrowseTransactionsView {
     // MARK: --- ToolbarItems
     private var toolbarItems: some ToolbarContent {
         Group {
+            ToolbarItem {
+                Button(action: {
+                    selectionActive.toggle()
+                    if selectionActive {
+                        selectedTransactionIDs.removeAll()
+                    }
+                }) {
+                    Label(selectionActive ? "Done" : "Select", systemImage: selectionActive ? "checkmark.circle.fill" : "checkmark.circle"
+                    )
+                    .foregroundColor(selectionActive ? .orange : .primary)
+                }
+            }
             ToolbarItem {
                 Button(role: .destructive) {
                     safeUIUpdate {
@@ -940,36 +989,42 @@ extension BrowseTransactionsView {
     private func rowBackground(for index: Int, row: TransactionRow) -> some View {
 #if os(macOS)
         let rowWidth = scaledColumnWidths.values.reduce(0, +)
-        if selectedTransactionIDs.contains(row.id) {
-            let prevSelected = index > 0 && selectedTransactionIDs.contains(filteredTransactionRows[index-1].id)
-            let nextSelected = index < filteredTransactionRows.count-1 && selectedTransactionIDs.contains(filteredTransactionRows[index+1].id)
-            if !prevSelected && !nextSelected {
-                // Single row selected — round all corners
-                RoundedRectangle(cornerRadius: 8)
-                    .foregroundColor(.blue)
-                    .frame(width: rowWidth, height: macOSRowHeight)
-            } else if !prevSelected && nextSelected {
-                // Top row of multi-selection — round top corners only
-                Color.blue
-                    .frame(width: rowWidth, height: macOSRowHeight)
-                    .clipShape(RoundedCorner(corners: [.topLeft, .topRight], radius: 8))
-            } else if prevSelected && !nextSelected {
-                // Bottom row of multi-selection — round bottom corners only
-                Color.blue
-                    .frame(width: rowWidth, height: macOSRowHeight)
-                    .clipShape(RoundedCorner(corners: [.bottomLeft, .bottomRight], radius: 8))
-            } else {
-                // Middle row of multi-selection — no rounding
-                Color.blue
-                    .frame(width: rowWidth, height: macOSRowHeight)
-            }
-        } else if index % 2 == 0 {
+        if selectionActive {
+            // In selection mode, no row highlight
             Color.clear
                 .frame(width: rowWidth, height: macOSRowHeight)
         } else {
-            Color.gray.opacity(0.05)
-                .frame(width: rowWidth, height: macOSRowHeight)
-            
+            if selectedTransactionIDs.contains(row.id) {
+                let prevSelected = index > 0 && selectedTransactionIDs.contains(filteredTransactionRows[index-1].id)
+                let nextSelected = index < filteredTransactionRows.count-1 && selectedTransactionIDs.contains(filteredTransactionRows[index+1].id)
+                if !prevSelected && !nextSelected {
+                    // Single row selected — round all corners
+                    RoundedRectangle(cornerRadius: 8)
+                        .foregroundColor(.blue)
+                        .frame(width: rowWidth, height: macOSRowHeight)
+                } else if !prevSelected && nextSelected {
+                    // Top row of multi-selection — round top corners only
+                    Color.blue
+                        .frame(width: rowWidth, height: macOSRowHeight)
+                        .clipShape(RoundedCorner(corners: [.topLeft, .topRight], radius: 8))
+                } else if prevSelected && !nextSelected {
+                    // Bottom row of multi-selection — round bottom corners only
+                    Color.blue
+                        .frame(width: rowWidth, height: macOSRowHeight)
+                        .clipShape(RoundedCorner(corners: [.bottomLeft, .bottomRight], radius: 8))
+                } else {
+                    // Middle row of multi-selection — no rounding
+                    Color.blue
+                        .frame(width: rowWidth, height: macOSRowHeight)
+                }
+            } else if index % 2 == 0 {
+                Color.clear
+                    .frame(width: rowWidth, height: macOSRowHeight)
+            } else {
+                Color.gray.opacity(0.05)
+                    .frame(width: rowWidth, height: macOSRowHeight)
+                
+            }
         }
 #else
         // TODO: Set to frame width

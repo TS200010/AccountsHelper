@@ -8,10 +8,12 @@
 import Foundation
 import CoreData
 
-struct TransactionRow: Identifiable, Hashable {
+@Observable 
+class TransactionRow: Identifiable, Hashable {
     
     let transaction: Transaction
     var id: NSManagedObjectID { transaction.objectID }
+    var checked: Bool = false
 
     // MARK: --- Category
     var category: String { transaction.category.description }
@@ -40,6 +42,14 @@ struct TransactionRow: Identifiable, Hashable {
         }
     }
     
+    // MARK: --- Initialiser
+    init(transaction: Transaction) {
+        self.transaction = transaction
+//        self.id = transaction.objectID
+        self.checked = transaction.checked
+    }
+    
+    // MARK: --- DisplaySplitAmount
     var displaySplitAmount: String {
         if transaction.splitAmount == Decimal(0) { return "" }
 
