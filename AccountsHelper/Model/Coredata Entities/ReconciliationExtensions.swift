@@ -88,14 +88,17 @@ extension Reconciliation {
         return 0
     }
 
-    // MARK: --- TotalTransactionsInGBP
-    var totalTransactionsInGBP: Decimal {
+    // MARK: --- NetTransactionsInGBP
+    var netTransactionsInGBP: Decimal {
         guard let context = self.managedObjectContext else { return 0 }
-        return (try? fetchTransactions(in: context).reduce(Decimal(0)) { $0 + $1.totalAmountInGBP }) ?? 0
+        let sum =  (try? fetchTransactions(in: context).reduce(Decimal(0)) { $0 + $1.totalAmountInGBP }) ?? 0
+        // Negate the total as we are storing a +ve number for money going out ie a Debit
+        // If we do not negate it the arithmatic does not work.
+        return -sum
     }
     
-    // MARK: --- TotalTransactions
-    var totalTransactions: Decimal {
+    // MARK: --- NetTransactions
+    var netTransactions: Decimal {
         guard let context = self.managedObjectContext else { return 0 }
         let sum = (try? fetchTransactions(in: context).reduce(Decimal(0)) { $0 + $1.txAmount }) ?? 0
         // Negate the total as we are storing a +ve number for money going out ie a Debit
@@ -115,6 +118,36 @@ extension Reconciliation {
         }
         return currentStatement
     }
+}
+
+// MARK: --- String Formatters
+extension Reconciliation {
+    
+    // MARK: --- EndingBalanceAsString
+    func endingBalanceAsString() -> String {
+        return AmountFormatter.anyAmountAsString(amount: endingBalance, currency: currency)
+    }
+    
+    // MARK: --- PreviousEndingBalanceAsString
+    func previousEndingBalanceAsString() -> String {
+        return AmountFormatter.anyAmountAsString(amount: previousEndingBalance, currency: currency)
+    }
+    
+    // MARK: --- OpeningBalanceAsString
+    func openingBalanceAsString() -> String {
+        return AmountFormatter.anyAmountAsString(amount: previousEndingBalance, currency: currency)
+    }
+    
+    // MARK: --- NetTransactionsInGBPAsString
+    func netTransactionsInGBPAsString() -> String {
+        return AmountFormatter.anyAmountAsString(amount: netTransactionsInGBP, currency: currency)
+    }
+    
+    // MARK: --- NetTransactionsAsString
+    func netTransactionsAsString() -> String {
+        return AmountFormatter.anyAmountAsString(amount: netTransactions, currency: currency)
+    }
+    
 }
 
 // MARK: --- RECONCILIATION
@@ -274,10 +307,10 @@ extension Reconciliation {
     }
 
     // MARK: --- TransactionsTotalInGBP
-    func transactionsTotalInGBP(in context: NSManagedObjectContext) throws -> Decimal {
-        let txs = try fetchTransactions(in: context)
-        return txs.reduce(Decimal(0)) { $0 + $1.totalAmountInGBP }
-    }
+//    func transactionsTotalInGBP(in context: NSManagedObjectContext) throws -> Decimal {
+//        let txs = try fetchTransactions(in: context)
+//        return txs.reduce(Decimal(0)) { $0 + $1.totalAmountInGBP }
+//    }
 
     // MARK: --- CreateNew
     @discardableResult

@@ -205,7 +205,7 @@ extension ReconcilliationListView {
                     }
                     
                     TableColumn("Opening Balance") { row in
-                        Text(row.rec.previousEndingBalance.formattedAsCurrency(row.rec.currency))
+                        Text( row.rec.openingBalanceAsString() )
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .foregroundColor(row.rec.closed ? .blue : (hasInvalidTransactions(row) ? .red : .primary))
                             .contentShape(Rectangle())
@@ -214,7 +214,7 @@ extension ReconcilliationListView {
                     
 
                     TableColumn("Net Transactions") { row in
-                        Text(row.rec.totalTransactionsInGBP.formattedAsCurrency(row.rec.currency))
+                        Text( row.rec.netTransactionsAsString() )
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .foregroundColor(row.rec.closed ? .blue : (hasInvalidTransactions(row) ? .red : .primary))
                             .contentShape(Rectangle())
@@ -222,7 +222,8 @@ extension ReconcilliationListView {
                     }
                     
                     TableColumn("Ending Balance") { row in
-                        Text(row.rec.endingBalance.formattedAsCurrency(row.rec.currency))
+//                        Text(row.rec.endingBalance.formattedAsCurrency(row.rec.currency))
+                        Text(row.rec.endingBalanceAsString())
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .foregroundColor(row.rec.closed ? .blue : (hasInvalidTransactions(row) ? .red : .primary))
                             .contentShape(Rectangle())
@@ -241,7 +242,8 @@ extension ReconcilliationListView {
                     
                     TableColumn("Gap") { row in
                         if row.gap != 0 {
-                            Text(row.gap.formattedAsCurrency(row.rec.currency))
+                            Text(row.rec.reconciliationGap(in: context).formattedAsCurrency(row.rec.currency))
+//                            Text(row.gap.formattedAsCurrency(row.rec.currency))
                                 .foregroundColor(row.rec.closed ? .blue : .red)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .contentShape(Rectangle())

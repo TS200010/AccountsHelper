@@ -276,6 +276,7 @@ extension BrowseTransactionsView {
                     ? .white // selected row text
                     : (row.transaction.closed ? .blue : (row.transaction.isValid() ? .primary : .red))
                 )
+                .opacity((selectionActive && row.checked) ? 0.5 : 1.0)
                 .lineLimit(2)
                 .truncationMode(.tail)
             if alignment == .leading { Spacer() }
@@ -302,6 +303,7 @@ extension BrowseTransactionsView {
                     : (row.transaction.closed ? .blue : (row.transaction.isValid() ? .primary : .red))
                 )
             #if os(macOS)
+                .opacity((selectionActive && row.checked) ? 0.5 : 1.0)  
                 .lineLimit(1)
                 .truncationMode(.tail)
             #else
@@ -354,6 +356,8 @@ extension BrowseTransactionsView {
                                 .frame(width: scaledColumnWidths["✓"] ?? 5)
                             TableHeaderCell("Amount", width: 130)
                                 .frame(width: scaledColumnWidths["Amount"] ?? 130)
+                            TableHeaderCell("Payee", width: 100)
+                                .frame(width: scaledColumnWidths["Payee"] ?? 100)
                             TableHeaderCell("Balance", width: 130)
                                 .frame(width: scaledColumnWidths["Balance"] ?? 130)
                             TableHeaderCell("Fx", width: 60)
@@ -362,8 +366,7 @@ extension BrowseTransactionsView {
                                 .frame(width: scaledColumnWidths["Category"] ?? 80)
                             TableHeaderCell("Split", width: 200)
                                 .frame(width: scaledColumnWidths["Split"] ?? 200)
-                            TableHeaderCell("Payee", width: 100)
-                                .frame(width: scaledColumnWidths["Payee"] ?? 100)
+
                         }
                         .if( gViewCheck ) { view in view.border( .cyan )}
                     }
@@ -533,14 +536,12 @@ extension BrowseTransactionsView {
                 tableCell(row.paymentMethod, for: row)
                     .frame(width: scaledColumnWidths["Payment Method"] ?? 80)
                     .if( gViewCheck ) { view in view.border( .yellow )}
+                
                 tableCell(row.transactionDate, for: row)
                     .frame(width: scaledColumnWidths["Date"] ?? 100)
  
                 HStack {
                     Spacer(minLength: 0)
-//                    Toggle("", isOn: $row.checked)
-//                        .toggleStyle(.checkbox)
-//                        .labelsHidden()
                     Toggle("", isOn: Binding(
                         get: { row.checked },
                         set: { newValue in
@@ -559,27 +560,32 @@ extension BrowseTransactionsView {
                 .frame(width: scaledColumnWidths["✓"] ?? 30)
                 .disabled(row.transaction.closed)
 
-                
                 multiLineTableCell( row.transaction.txAmountDualCurrencyAsString(withSymbol: showCurrencySymbols), for: row, alignment: .trailing )
                     .multilineTextAlignment(.trailing)
                     .frame(width: scaledColumnWidths["Amount"] ?? 130)
+                
+                tableCell(row.payee, for: row)
+                    .frame(width: scaledColumnWidths["Payee"] ?? 100)
+                
                 tableCell(
-                    Transaction.anyAmountAsString(
+                    AmountFormatter.anyAmountAsString(
                         amount: row.runningBalance,
                         currency: .GBP,
                         withSymbol: showCurrencySymbols
                     ), for: row, alignment: .trailing
                 )
                     .frame(width: scaledColumnWidths["Balance"] ?? 130)
+                
                 tableCell(row.exchangeRate, for: row)
                     .frame(width: scaledColumnWidths["Fx"] ?? 60)
+                
                 tableCell(row.category, for: row)
                     .frame(width: scaledColumnWidths["Category"] ?? 80)
+                
                 multiLineTableCell( row.transaction.splitAmountAndCategoryAsString(withSymbol: showCurrencySymbols), for: row, alignment: .leading )
-//                multiLineTableCell( row.transaction.splitAmountAsString(withSymbol: showCurrencySymbols), for: row, alignment: .trailing )
                     .frame(width: scaledColumnWidths["Split"] ?? 200)
-                tableCell(row.payee, for: row)
-                    .frame(width: scaledColumnWidths["Payee"] ?? 100)
+                
+
             }
             .padding(.leading, 16)
             .contentShape(Rectangle())

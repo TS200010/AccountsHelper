@@ -89,7 +89,7 @@ extension BrowseTransactionsView {
         
         // MARK: --- Add Footer
         func appendSummaryLine(title: String, amount: Decimal) {
-            let amountStr = Transaction.anyAmountAsString(
+            let amountStr = AmountFormatter.anyAmountAsString(
                 amount: amount,
                 currency: transactions.first?.currency ?? .GBP,
                 withSymbol: showCurrencySymbols

@@ -55,12 +55,6 @@ struct AddOrEditReconciliationView: View {
         return existing == nil
     }
 
-//    private var isUniquePeriodValid: Bool {
-//        let period = AccountingPeriod(year: selectedYear, month: selectedMonth)
-//        let existing = try? Reconciliation.fetchOne(for: period, paymentMethod: selectedPaymentMethod, context: context)
-//        return existing == nil
-//    }
-
     private var canSave: Bool {
         isPaymentMethodValid &&
         isStatementDateValid &&
@@ -83,7 +77,7 @@ struct AddOrEditReconciliationView: View {
             if let rec = reconciliationToEdit {
                 selectedPaymentMethod = rec.paymentMethod
                 statementDate = rec.statementDate ?? Date()
-                endingBalance = rec.endingBalance.formatted()  // show as string
+                endingBalance = rec.endingBalanceAsString()  // show as string
                 selectedYear  = Int(rec.periodYear)
                 selectedMonth = Int(rec.periodMonth)
             }

@@ -158,7 +158,7 @@ extension CategoriesSummaryView {
             TableColumn("Category") { categoryCell(for: $0) }
             TableColumn("Total") { row in
                 HStack {
-                    Text( Transaction.anyAmountAsString(amount: row.total, currency: row.currency, withSymbol: showCurrencySymbols) )
+                    Text( AmountFormatter.anyAmountAsString(amount: row.total, currency: row.currency, withSymbol: showCurrencySymbols) )
                         .font(.system(.body, design: .monospaced))
                     Spacer()
                 }

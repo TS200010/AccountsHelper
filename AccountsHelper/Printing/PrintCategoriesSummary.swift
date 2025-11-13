@@ -16,7 +16,7 @@ extension CategoriesSummaryView {
         let symbolSettingRaw = UserDefaults.standard.string(forKey: "showCurrencySymbols") ?? "always"
         let symbolSetting = ShowCurrencySymbolsEnum(rawValue: symbolSettingRaw) ?? .always
         
-        let amountStr = Transaction.anyAmountAsString(amount: amount, currency: currency, withSymbol: symbolSetting )
+        let amountStr = AmountFormatter.anyAmountAsString(amount: amount, currency: currency, withSymbol: symbolSetting )
 //        // Format the number according to the currency
 //        let formatter = NumberFormatter()
 //        formatter.numberStyle = .currency
@@ -61,7 +61,7 @@ extension CategoriesSummaryView {
         // MARK: --- Build Rows
         for row in rows {
             let paddedName = row.category.description.padding(toLength: 30, withPad: " ", startingAt: 0)
-            let totalStr = Transaction.anyAmountAsString(amount: row.total, currency: row.currency, withSymbol: showCurrencySymbols )
+            let totalStr = AmountFormatter.anyAmountAsString(amount: row.total, currency: row.currency, withSymbol: showCurrencySymbols )
             let paddedTotal = String(repeating: " ", count: max(0, 15 - totalStr.count)) + totalStr
             report.append("\(paddedName)\(paddedTotal)\n")
         }
