@@ -139,7 +139,9 @@ struct BrowseTransactionsView: View {
     #endif
     // Checked Selection State
     @State private var selectionActive: Bool = false
-
+    // Running Total
+    @State private var runningTotal: Decimal = 0
+    
     // MARK: --- Constants
     private let macOSRowHeight: CGFloat = 28
     
@@ -174,6 +176,9 @@ struct BrowseTransactionsView: View {
         })
     }
     
+    private func updateRunningTotal() {
+        runningTotal = transactions.filter { $0.checked }.map { $0.txAmountInGBP }.reduce(0, +)
+    }
 
     // MARK: --- Derived Rows
     private var transactionRows: [TransactionRow] {
@@ -188,6 +193,7 @@ struct BrowseTransactionsView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             statusBar
         }
+        .onAppear { updateRunningTotal() }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .toolbar { toolbarItems }
         .onChange(of: selectedAccountingPeriod) { _, _ in
@@ -539,7 +545,7 @@ extension BrowseTransactionsView {
                 
                 tableCell(row.transactionDate, for: row)
                     .frame(width: scaledColumnWidths["Date"] ?? 100)
- 
+                
                 HStack {
                     Spacer(minLength: 0)
                     Toggle("", isOn: Binding(
@@ -548,17 +554,29 @@ extension BrowseTransactionsView {
                             if selectionActive {
                                 row.checked = newValue
                                 row.transaction.checked = newValue
+                                if newValue {
+                                    if let recID = appState.selectedReconciliationID,
+                                       let rec = reconciliations.first(where: { $0.objectID == recID }) {
+                                        row.transaction.periodKey = rec.periodKey
+                                    }
+                                } else {
+                                    row.transaction.periodKey = ""
+                                }
+
                                 try? viewContext.save()
+                                updateRunningTotal()
                             }
                         }
                     ))
                     .toggleStyle(.checkbox)
+                    .disabled( row.transaction.closed )
                     .labelsHidden()
                     .frame(width: 20, height: 20)
                     Spacer(minLength: 0)
                 }
                 .frame(width: scaledColumnWidths["✓"] ?? 30)
                 .disabled(row.transaction.closed)
+            
 
                 multiLineTableCell( row.transaction.txAmountDualCurrencyAsString(withSymbol: showCurrencySymbols), for: row, alignment: .trailing )
                     .multilineTextAlignment(.trailing)
@@ -904,6 +922,12 @@ extension BrowseTransactionsView {
                 }
                 .pickerStyle(MenuPickerStyle())
             }
+            
+            // --- Running Total
+            Text("Running Total: \(runningTotal, format: .currency(code: "GBP"))")
+                .fontWeight(.semibold)
+                .foregroundColor(.orange)
+
             
             Spacer()
         }

@@ -214,7 +214,7 @@ extension ReconcilliationListView {
                     
 
                     TableColumn("Net Transactions") { row in
-                        Text( row.rec.netTransactionsAsString() )
+                        Text( row.rec.sumInNativeCurrencyAsString() )
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .foregroundColor(row.rec.closed ? .blue : (hasInvalidTransactions(row) ? .red : .primary))
                             .contentShape(Rectangle())
@@ -376,8 +376,9 @@ extension ReconcilliationListView {
             newTx.transactionDate = row.rec.statementDate ?? Date()
             newTx.timestamp = Date()
             newTx.category = .ToBalance
-            newTx.txAmount = -gap
+            newTx.txAmount = gap
             newTx.debitCredit = .DR
+            newTx.exchangeRate = 1
             
             print("""
                 Adding balancing transaction:
@@ -453,16 +454,37 @@ extension ReconcilliationListView {
         Button {
             appState.selectedReconciliationID = row.id
             appState.replaceInspectorView(with: .viewReconciliation)
+            
+            let windowDays = 14
+            let calendar = Calendar.current
+            let start = calendar.date(byAdding: .day, value: -windowDays, to: row.rec.transactionStartDate)!
+            let end   = calendar.date(byAdding: .day, value:  windowDays, to: row.rec.transactionEndDate)!
+
             let predicate = NSPredicate(
                 format: "paymentMethodCD == %d AND transactionDate >= %@ AND transactionDate <= %@",
                 row.rec.paymentMethod.rawValue,
-                row.rec.transactionStartDate as NSDate,
-                row.rec.transactionEndDate as NSDate
+                start as NSDate,
+                end as NSDate
             )
             appState.pushCentralView(.browseTransactions(predicate))
         } label: {
             Label("Transactions", systemImage: "list.bullet")
         }
+
+        
+//        Button {
+//            appState.selectedReconciliationID = row.id
+//            appState.replaceInspectorView(with: .viewReconciliation)
+//            let predicate = NSPredicate(
+//                format: "paymentMethodCD == %d AND transactionDate >= %@ AND transactionDate <= %@",
+//                row.rec.paymentMethod.rawValue,
+//                row.rec.transactionStartDate as NSDate,
+//                row.rec.transactionEndDate as NSDate
+//            )
+//            appState.pushCentralView(.browseTransactions(predicate))
+//        } label: {
+//            Label("Transactions", systemImage: "list.bullet")
+//        }
         
         Button {
             let predicate = NSPredicate(

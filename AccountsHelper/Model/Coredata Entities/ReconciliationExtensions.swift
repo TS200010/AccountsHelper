@@ -98,13 +98,13 @@ extension Reconciliation {
     }
     
     // MARK: --- NetTransactions
-    var netTransactions: Decimal {
-        guard let context = self.managedObjectContext else { return 0 }
-        let sum = (try? fetchTransactions(in: context).reduce(Decimal(0)) { $0 + $1.txAmount }) ?? 0
-        // Negate the total as we are storing a +ve number for money going out ie a Debit
-        // If we do not negate it the arithmatic does not work.
-        return -sum
-    }
+//    var netTransactions: Decimal {
+//        guard let context = self.managedObjectContext else { return 0 }
+//        let sum = (try? fetchTransactions(in: context).reduce(Decimal(0)) { $0 + $1.txAmount }) ?? 0
+//        // Negate the total as we are storing a +ve number for money going out ie a Debit
+//        // If we do not negate it the arithmatic does not work.
+//        return -sum
+//    }
 
     // MARK: --- TransactionEndDate
     var transactionEndDate: Date { self.statementDate ?? Date.distantPast }
@@ -139,17 +139,22 @@ extension Reconciliation {
     }
     
     // MARK: --- NetTransactionsInGBPAsString
-    func netTransactionsInGBPAsString() -> String {
-        return AmountFormatter.anyAmountAsString(amount: netTransactionsInGBP, currency: currency)
-    }
+//    func netTransactionsInGBPAsString() -> String {
+//        return AmountFormatter.anyAmountAsString(amount: netTransactionsInGBP, currency: currency)
+//    }
     
     // MARK: --- NetTransactionsAsString
-    func netTransactionsAsString() -> String {
-        return AmountFormatter.anyAmountAsString(amount: netTransactions, currency: currency)
+//    func netTransactionsAsString() -> String {
+//        return AmountFormatter.anyAmountAsString(amount: sumInNativeCurrency, currency: currency)
+//    }
+    
+    // MARK: --- SumInNativeCurrencyAsString
+    func sumInNativeCurrencyAsString(withSymbol: ShowCurrencySymbolsEnum = .always) -> String {
+        AmountFormatter.anyAmountAsString(amount: sumInNativeCurrency, currency: currency, withSymbol: withSymbol)
     }
     
 }
-
+    
 // MARK: --- RECONCILIATION
 extension Reconciliation {
 
@@ -255,47 +260,50 @@ extension Reconciliation {
     }
 
     // MARK: --- ReconciliationGapInGBP
-    func reconciliationGapInGBP(in context: NSManagedObjectContext) -> Decimal {
-
-        if isAnOpeningBalance { return 0 }
-        
-        do {
-            let txs = try fetchTransactions(in: context)
-            let sumInGBP = txs.reduce(Decimal(0)) { $0 + $1.totalAmountInGBP }
-
-            let previousBalance: Decimal
-            if let prev = try? Reconciliation.fetchPrevious(for: self.paymentMethod, before: self.transactionEndDate, context: context) {
-                previousBalance = prev.endingBalance
-            } else { previousBalance = 0 }
-
-            return (previousBalance + sumInGBP) - self.endingBalance
-        } catch {
-            print("Failed to compute reconciliation gap: \(error)")
-            return 0
-        }
-    }
+//    func reconciliationGapInGBP(in context: NSManagedObjectContext) -> Decimal {
+//
+//        if isAnOpeningBalance { return 0 }
+//        
+//        do {
+//            let txs = try fetchTransactions(in: context)
+//            let sumInGBP = txs.reduce(Decimal(0)) { $0 + $1.totalAmountInGBP }
+//
+//            let previousBalance: Decimal
+//            if let prev = try? Reconciliation.fetchPrevious(for: self.paymentMethod, before: self.transactionEndDate, context: context) {
+//                previousBalance = prev.endingBalance
+//            } else { previousBalance = 0 }
+//
+//            return (previousBalance + sumInGBP) - self.endingBalance
+//        } catch {
+//            print("Failed to compute reconciliation gap: \(error)")
+//            return 0
+//        }
+//    }
     
     // MARK: --- ReconciliationGap
     func reconciliationGap(in context: NSManagedObjectContext) -> Decimal {
 
         if isAnOpeningBalance { return 0 }
         
-        do {
-            let txs = try fetchTransactions(in: context)
-            // Negate the total as we are storing a +ve number for money going out - a Debit
-            // If we do not negate it the arithmatic does not work.
-            let sum = -(txs.reduce(Decimal(0)) { $0 + $1.txAmountInGBP })
-
-            let previousBalance: Decimal
-            if let prev = try? Reconciliation.fetchPrevious(for: self.paymentMethod, before: self.transactionEndDate, context: context) {
-                previousBalance = prev.endingBalance
-            } else { previousBalance = 0 }
-
-            return (previousBalance + sum) - self.endingBalance
-        } catch {
-            print("Failed to compute reconciliation gap: \(error)")
-            return 0
-        }
+        let gap = previousEndingBalance + sumInNativeCurrency - endingBalance
+        
+        return gap
+//        do {
+//            let txs = try fetchTransactions(in: context)
+//            // Negate the total as we are storing a +ve number for money going out - a Debit
+//            // If we do not negate it the arithmatic does not work.
+//            let sum = -(txs.reduce(Decimal(0)) { $0 + $1.txAmountInGBP })
+//
+//            let previousBalance: Decimal
+//            if let prev = try? Reconciliation.fetchPrevious(for: self.paymentMethod, before: self.transactionEndDate, context: context) {
+//                previousBalance = prev.endingBalance
+//            } else { previousBalance = 0 }
+//
+//            return (previousBalance + sum) - self.endingBalance
+//        } catch {
+//            print("Failed to compute reconciliation gap: \(error)")
+//            return 0
+//        }
     }
 
     // MARK: --- Reopen
@@ -311,6 +319,31 @@ extension Reconciliation {
 //        let txs = try fetchTransactions(in: context)
 //        return txs.reduce(Decimal(0)) { $0 + $1.totalAmountInGBP }
 //    }
+    
+    // MARK: --- SumInNativeCurrency
+    var sumInNativeCurrency: Decimal {
+        guard let context = managedObjectContext else { return 0 }
+        
+        do {
+            let txs = try fetchTransactions(in: context)
+            
+            let total: Decimal
+            switch currency {
+            case .GBP:
+                // Sum all transactions in GBP
+                total = txs.reduce(Decimal(0)) { $0 + $1.txAmountInGBP }
+            default:
+                // Sum all transactions in their native currency
+                total = txs.reduce(Decimal(0)) { $0 + $1.txAmount }
+            }
+            
+            // Apply existing convention: positive = money going out / debit
+            return -total
+        } catch {
+            print("Failed to fetch transactions for sumInNativeCurrency: \(error)")
+            return 0
+        }
+    }
 
     // MARK: --- CreateNew
     @discardableResult

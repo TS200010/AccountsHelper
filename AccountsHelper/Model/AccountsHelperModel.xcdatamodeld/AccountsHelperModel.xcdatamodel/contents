@@ -31,6 +31,7 @@
         <attribute name="payee" optional="YES" attributeType="String"/>
         <attribute name="payerCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="paymentMethodCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
+        <attribute name="periodKey" optional="YES" attributeType="String"/>
         <attribute name="reference" optional="YES" attributeType="String"/>
         <attribute name="splitAmountCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
         <attribute name="splitCategoryCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>

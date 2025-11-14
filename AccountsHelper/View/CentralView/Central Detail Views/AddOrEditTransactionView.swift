@@ -73,7 +73,7 @@ struct AddOrEditTransactionView: View {
         self.onSave = onSave
     }
     
-    // MARK: --- Validation
+    // MARK: --- CanSave
     private var canSave: Bool {
         guard let txDate = transactionData.transactionDate else { return false }
         return txDate <= Date() &&
