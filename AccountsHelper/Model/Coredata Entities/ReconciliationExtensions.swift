@@ -285,7 +285,7 @@ extension Reconciliation {
 
         if isAnOpeningBalance { return 0 }
         
-        let gap = previousEndingBalance + sumInNativeCurrency - endingBalance
+        let gap = previousEndingBalance - sumInNativeCurrency - endingBalance
         
         return gap
 //        do {
@@ -338,7 +338,7 @@ extension Reconciliation {
             }
             
             // Apply existing convention: positive = money going out / debit
-            return -total
+            return total
         } catch {
             print("Failed to fetch transactions for sumInNativeCurrency: \(error)")
             return 0
