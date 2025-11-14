@@ -58,8 +58,8 @@ struct CentralViews: View {
         case .editTransaction(let tx):
             AddOrEditTransactionView(transaction: tx)
             
-        case .browseTransactions(let predicate):
-            BrowseTransactionsView(predicate: predicate)
+        case .browseTransactions(let predicate, let mode):
+            BrowseTransactionsView(predicate: predicate, mode: mode)
             
         case .browseCategories:
             #if os(macOS)
@@ -104,8 +104,8 @@ struct CentralViews: View {
         case .reconcilliationListView:
             ReconcilliationListView()
             
-        case .reconciliationTransactionDetail(let predicate):
-            BrowseTransactionsView(predicate: predicate)
+        case .reconciliationTransactionDetail(let predicate, let mode):
+            BrowseTransactionsView(predicate: predicate, mode: mode)
             
         case .browseCurrencies:
             Text("Browse Currencies View")

@@ -87,6 +87,20 @@ extension Reconciliation {
         }
         return 0
     }
+    
+    // MARK: --- previousStatementDate
+    func previousStatementDate() -> Date? {
+        if let context = self.managedObjectContext,
+           let previous = try? Reconciliation.fetchPrevious(for: self.paymentMethod, before: self.statementDate ?? Date.distantPast, context: context) {
+            return previous.statementDate
+        }
+        return Date.distantFuture
+    }
+    
+    // MARK: --- OpeningBalance
+    var openingBalance: Decimal {
+        previousEndingBalance
+    }
 
     // MARK: --- NetTransactionsInGBP
     var netTransactionsInGBP: Decimal {
@@ -137,16 +151,6 @@ extension Reconciliation {
     func openingBalanceAsString() -> String {
         return AmountFormatter.anyAmountAsString(amount: previousEndingBalance, currency: currency)
     }
-    
-    // MARK: --- NetTransactionsInGBPAsString
-//    func netTransactionsInGBPAsString() -> String {
-//        return AmountFormatter.anyAmountAsString(amount: netTransactionsInGBP, currency: currency)
-//    }
-    
-    // MARK: --- NetTransactionsAsString
-//    func netTransactionsAsString() -> String {
-//        return AmountFormatter.anyAmountAsString(amount: sumInNativeCurrency, currency: currency)
-//    }
     
     // MARK: --- SumInNativeCurrencyAsString
     func sumInNativeCurrencyAsString(withSymbol: ShowCurrencySymbolsEnum = .always) -> String {
@@ -258,27 +262,26 @@ extension Reconciliation {
             return false
         }
     }
+    
 
-    // MARK: --- ReconciliationGapInGBP
-//    func reconciliationGapInGBP(in context: NSManagedObjectContext) -> Decimal {
-//
-//        if isAnOpeningBalance { return 0 }
-//        
-//        do {
-//            let txs = try fetchTransactions(in: context)
-//            let sumInGBP = txs.reduce(Decimal(0)) { $0 + $1.totalAmountInGBP }
-//
-//            let previousBalance: Decimal
-//            if let prev = try? Reconciliation.fetchPrevious(for: self.paymentMethod, before: self.transactionEndDate, context: context) {
-//                previousBalance = prev.endingBalance
-//            } else { previousBalance = 0 }
-//
-//            return (previousBalance + sumInGBP) - self.endingBalance
-//        } catch {
-//            print("Failed to compute reconciliation gap: \(error)")
-//            return 0
-//        }
-//    }
+    // MARK: --- TransactionsPredicate
+    func transactionsPredicate() -> NSPredicate {
+        var predicates: [NSPredicate] = []
+        
+        // --- Date range filter
+        if let start = previousStatementDate(), let end = statementDate {
+            predicates.append(NSPredicate(format: "transactionDate >= %@ AND transactionDate <= %@", start as NSDate, end as NSDate))
+        }
+        
+        // --- Payment method filter
+            predicates.append(NSPredicate(format: "paymentMethodCD == %@", NSNumber(value: paymentMethod.rawValue)))
+        
+        guard !predicates.isEmpty else { return NSPredicate(value: true) } // matches all if nothing to filter
+        
+        return NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+    }
+    
+
     
     // MARK: --- ReconciliationGap
     func reconciliationGap(in context: NSManagedObjectContext) -> Decimal {

@@ -466,7 +466,7 @@ extension ReconcilliationListView {
                 start as NSDate,
                 end as NSDate
             )
-            appState.pushCentralView(.browseTransactions(predicate))
+            appState.pushCentralView(.reconciliationTransactionDetail(predicate) )
         } label: {
             Label("Transactions", systemImage: "list.bullet")
         }

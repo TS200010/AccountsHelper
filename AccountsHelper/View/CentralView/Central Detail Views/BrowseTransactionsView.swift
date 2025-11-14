@@ -17,6 +17,11 @@ typealias UIRectCorner = CACornerMask
 import UIKit
 #endif
 
+// MARK: --- BrowseTransactionsMode
+enum BrowseTransactionsMode {
+    case generalBrowsing
+    case reconciliationAssignmentBrowsing
+}
 
 // MARK: --- To work aroound a SwiftUI bug
 fileprivate func safeUIUpdate(_ action: @escaping () -> Void) {
@@ -92,6 +97,15 @@ enum SortColumn: CaseIterable, Identifiable {
 
 // MARK: --- BrowseTransactionsView
 struct BrowseTransactionsView: View {
+    
+    // MARK: --- Passed in
+    let mode: BrowseTransactionsMode
+//    let predicateIn: NSPredicate?
+    
+    // MARK: --- Computed Properties
+    var showReconciliationFigures: Bool { mode == .reconciliationAssignmentBrowsing }
+    var allowSelection:   Bool { mode == .reconciliationAssignmentBrowsing }
+    var allowFiltering:   Bool { mode == .generalBrowsing}
 
     // MARK: --- Environment
     @Environment(\.managedObjectContext) internal var viewContext
@@ -140,7 +154,7 @@ struct BrowseTransactionsView: View {
     // Checked Selection State
     @State private var selectionActive: Bool = false
     // Running Total
-    @State private var runningTotal: Decimal = 0
+    @State private var checkedTotal: Decimal = 0
     
     // MARK: --- Constants
     private let macOSRowHeight: CGFloat = 28
@@ -149,11 +163,13 @@ struct BrowseTransactionsView: View {
     @FetchRequest internal var transactions: FetchedResults<Transaction>
 
     // MARK: --- Initialiser
-    init(predicate: NSPredicate? = nil) {
+    init(predicate: NSPredicate? = nil, mode: BrowseTransactionsMode ) {
         _transactions = FetchRequest(
             sortDescriptors: [NSSortDescriptor(keyPath: \Transaction.transactionDate, ascending: true)],
             predicate: predicate
         )
+//        self.predicateIn = predicate
+        self.mode = mode
     }
     
     @FetchRequest(
@@ -177,7 +193,8 @@ struct BrowseTransactionsView: View {
     }
     
     private func updateRunningTotal() {
-        runningTotal = transactions.filter { $0.checked }.map { $0.txAmountInGBP }.reduce(0, +)
+        guard allowSelection else { return } // Do nothing if selection Not allowed. We have no checked total.
+        checkedTotal = transactions.filter { $0.checked }.map { $0.txAmountInGBP }.reduce(0, +)
     }
 
     // MARK: --- Derived Rows
@@ -554,7 +571,7 @@ extension BrowseTransactionsView {
                             if selectionActive {
                                 row.checked = newValue
                                 row.transaction.checked = newValue
-                                if newValue {
+                                if allowSelection && newValue {
                                     if let recID = appState.selectedReconciliationID,
                                        let rec = reconciliations.first(where: { $0.objectID == recID }) {
                                         row.transaction.periodKey = rec.periodKey
@@ -569,7 +586,7 @@ extension BrowseTransactionsView {
                         }
                     ))
                     .toggleStyle(.checkbox)
-                    .disabled( row.transaction.closed )
+                    .disabled(!allowSelection || row.transaction.closed)
                     .labelsHidden()
                     .frame(width: 20, height: 20)
                     Spacer(minLength: 0)
@@ -744,6 +761,8 @@ extension BrowseTransactionsView {
                     )
                     .foregroundColor(selectionActive ? .orange : .primary)
                 }
+                .disabled( !allowSelection )
+                .opacity(allowSelection ? 1 : 0.5) // Manual opacity for this one TLDR
             }
             ToolbarItem {
                 Button(role: .destructive) {
@@ -868,8 +887,8 @@ extension BrowseTransactionsView {
 // MARK: --- FILTERING
 extension BrowseTransactionsView {
     
-    // MARK: --- BuildPredicate
-    private func buildPredicate() -> NSPredicate? {
+    // MARK: --- BuildFilteredPredicate
+    private func buildFilteredPredicate() -> NSPredicate? {
         var predicates: [NSPredicate] = []
         
         // --- Payment Method Filter
@@ -894,41 +913,74 @@ extension BrowseTransactionsView {
     // MARK: --- RefreshFetchRequest
     private func refreshFetchRequest() {
         safeUIUpdate {
-            transactions.nsPredicate = buildPredicate()
+            transactions.nsPredicate = buildFilteredPredicate()
         }
     }
     
     // MARK: --- FilterBar
     private var filterBar: some View {
-        HStack(spacing: 16) {
-            // --- Payment Method Picker
-            Picker("Payment Method", selection: $selectedPaymentMethod) {
-                Text("All").tag(nil as PaymentMethod?)
-                ForEach(PaymentMethod.allCases.filter { $0 != .unknown }, id: \.self) { method in
-                    Text(method.description).tag(method as PaymentMethod?)
-                }
-            }
-            .pickerStyle(MenuPickerStyle())
+        
+        let openingBalance: Decimal = {
+            guard let recID = appState.selectedReconciliationID,
+                  let rec = reconciliations.first(where: { $0.objectID == recID }) else { return 0 }
+            return rec.openingBalance
+        }()
+        
+        let reconciliationTarget: Decimal = 0
+        
+        let reconciliationGap: Decimal = 0
+        
+        return HStack(spacing: 16) {
             
-            // --- Accounting Period Picker (only show if a payment method is selected)
-            if let method = selectedPaymentMethod {
-                Picker("Period", selection: $selectedAccountingPeriod) {
-                    Text("All").tag(nil as AccountingPeriod?)
-                    
-                    // Only show periods that have reconciliations for this method
-                    ForEach(accountingPeriodsForPaymentMethod(method), id: \.self) { period in
-                        Text(period.displayStringWithOpening).tag(Optional(period))
+            // --- Filtering
+            if allowFiltering {
+                // --- Payment Method Picker
+                Picker("Payment Method", selection: $selectedPaymentMethod) {
+                    Text("All").tag(nil as PaymentMethod?)
+                    ForEach(PaymentMethod.allCases.filter { $0 != .unknown }, id: \.self) { method in
+                        Text(method.description).tag(method as PaymentMethod?)
                     }
                 }
                 .pickerStyle(MenuPickerStyle())
+                
+                // --- Accounting Period Picker (only show if a payment method is selected)
+                if let method = selectedPaymentMethod {
+                    Picker("Period", selection: $selectedAccountingPeriod) {
+                        Text("All").tag(nil as AccountingPeriod?)
+                        
+                        // Only show periods that have reconciliations for this method
+                        ForEach(accountingPeriodsForPaymentMethod(method), id: \.self) { period in
+                            Text(period.displayStringWithOpening).tag(Optional(period))
+                        }
+                    }
+                    .pickerStyle(MenuPickerStyle())
+                }
             }
             
-            // --- Running Total
-            Text("Running Total: \(runningTotal, format: .currency(code: "GBP"))")
-                .fontWeight(.semibold)
-                .foregroundColor(.orange)
+            // --- Checked Total
+            if showReconciliationFigures {
+                
+                // Opening Balance
+                Text("Opening: \(openingBalance, format: .currency(code: "GBP"))")
+                    .fontWeight(.semibold)
+                    .foregroundColor(.gray)
+                
+                // Checked Total
+                Text("Checked: \(checkedTotal, format: .currency(code: "GBP"))")
+                    .fontWeight(.semibold)
+                    .foregroundColor(.orange)
 
-            
+                // Target / Ending Balance
+                Text("Target: \(reconciliationTarget, format: .currency(code: "GBP"))")
+                    .fontWeight(.semibold)
+                    .foregroundColor(.blue)
+
+                // Gap
+                Text("Gap: \(reconciliationGap, format: .currency(code: "GBP"))")
+                    .fontWeight(.semibold)
+                    .foregroundColor(reconciliationGap < 0 ? .red : .green)
+            }
+
             Spacer()
         }
         .padding(.horizontal)
@@ -961,7 +1013,7 @@ extension BrowseTransactionsView {
     
     // MARK: --- FilteredTransactionRows
     private var filteredTransactionRows: [TransactionRow] {
-        let predicate = buildPredicate()
+        let predicate = buildFilteredPredicate()
         let allTransactions = Array(transactions)
         let filtered = predicate == nil ? allTransactions : allTransactions.filter { predicate!.evaluate(with: $0) }
         

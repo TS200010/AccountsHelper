@@ -23,8 +23,8 @@ enum CentralViewsEnum: Hashable {
     case BofSCSVImport
     case VISAPNGImport
     case reconcilliationListView
-    case reconciliationTransactionDetail(NSPredicate?)
-    case browseTransactions(NSPredicate?)   // optional predicate
+    case reconciliationTransactionDetail(NSPredicate?, BrowseTransactionsMode = .reconciliationAssignmentBrowsing)
+    case browseTransactions(NSPredicate?, BrowseTransactionsMode = .generalBrowsing)
     case mergeTransactionsView([Transaction], onComplete: ((MergeResult) -> Void)? = nil)
     case categoriesSummary(NSPredicate?)
     case browseCategories
@@ -36,8 +36,15 @@ enum CentralViewsEnum: Hashable {
     // MARK: --- Hashable
     func hash(into hasher: inout Hasher) {
         switch self {
-        case .browseTransactions(let predicate):
+        case .browseTransactions(let predicate, let mode):
             hasher.combine("browseTransactions")
+            hasher.combine(mode)
+            if let pred = predicate {
+                hasher.combine(pred.predicateFormat) // NSPredicate is not Hashable; use predicateFormat
+            }
+        case .reconciliationTransactionDetail(let predicate, let mode):
+            hasher.combine("reconciliationTransactionDetail")
+            hasher.combine(mode)
             if let pred = predicate {
                 hasher.combine(pred.predicateFormat) // NSPredicate is not Hashable; use predicateFormat
             }
@@ -49,7 +56,7 @@ enum CentralViewsEnum: Hashable {
     // MARK: --- Equatable
     static func == (lhs: CentralViewsEnum, rhs: CentralViewsEnum) -> Bool {
         switch (lhs, rhs) {
-        case (.browseTransactions(let lp), .browseTransactions(let rp)):
+        case (.browseTransactions(let lp, let lMode), .browseTransactions(let rp, let rMode)):
             return lp?.predicateFormat == rp?.predicateFormat
         default:
             return lhs.asString == rhs.asString
