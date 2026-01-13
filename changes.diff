@@ -1,0 +1,689 @@
+diff --git a/AccountsHelper.xcodeproj/xcuserdata/anthonystanners.xcuserdatad/xcdebugger/Breakpoints_v2.xcbkptlist b/AccountsHelper.xcodeproj/xcuserdata/anthonystanners.xcuserdatad/xcdebugger/Breakpoints_v2.xcbkptlist
+index 303b708..7bd5b66 100644
+--- a/AccountsHelper.xcodeproj/xcuserdata/anthonystanners.xcuserdatad/xcdebugger/Breakpoints_v2.xcbkptlist
++++ b/AccountsHelper.xcodeproj/xcuserdata/anthonystanners.xcuserdatad/xcdebugger/Breakpoints_v2.xcbkptlist
+@@ -24,21 +24,5 @@
+             </Actions>
+          </BreakpointContent>
+       </BreakpointProxy>
+-      <BreakpointProxy
+-         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+-         <BreakpointContent
+-            uuid = "DE3F37BF-B6F5-43D5-A8D5-9D511FA52F3C"
+-            shouldBeEnabled = "Yes"
+-            ignoreCount = "0"
+-            continueAfterRunningActions = "No"
+-            filePath = "AccountsHelper/Model/Coredata Entities/ReconciliationExtensions.swift"
+-            startingColumnNumber = "9223372036854775807"
+-            endingColumnNumber = "9223372036854775807"
+-            startingLineNumber = "286"
+-            endingLineNumber = "286"
+-            landmarkName = "Reconciliation"
+-            landmarkType = "21">
+-         </BreakpointContent>
+-      </BreakpointProxy>
+    </Breakpoints>
+ </Bucket>
+diff --git a/AccountsHelper/Model/AccountsHelperModel.xcdatamodeld/.xccurrentversion b/AccountsHelper/Model/AccountsHelperModel.xcdatamodeld/.xccurrentversion
+new file mode 100644
+index 0000000..99aca6e
+--- /dev/null
++++ b/AccountsHelper/Model/AccountsHelperModel.xcdatamodeld/.xccurrentversion
+@@ -0,0 +1,8 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
++<plist version="1.0">
++<dict>
++	<key>_XCCurrentVersionName</key>
++	<string>AccountsHelperModelv3.xcdatamodel</string>
++</dict>
++</plist>
+diff --git a/AccountsHelper/Model/AccountsHelperModel.xcdatamodeld/AccountsHelperModelv2.xcdatamodel/contents b/AccountsHelper/Model/AccountsHelperModel.xcdatamodeld/AccountsHelperModelv2.xcdatamodel/contents
+new file mode 100644
+index 0000000..b5f4606
+--- /dev/null
++++ b/AccountsHelper/Model/AccountsHelperModel.xcdatamodeld/AccountsHelperModelv2.xcdatamodel/contents
+@@ -0,0 +1,44 @@
++<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
++<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="24299" systemVersion="25A362" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithCloudKit="YES" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
++    <entity name="CategoryMapping" representedClassName="AccountsHelper.CategoryMapping" syncable="YES" codeGenerationType="class">
++        <attribute name="categoryRawValue" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
++        <attribute name="inputString" optional="YES" attributeType="String"/>
++        <attribute name="usageCount" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
++    </entity>
++    <entity name="Reconciliation" representedClassName="AccountsHelper.Reconciliation" syncable="YES" codeGenerationType="class">
++        <attribute name="closed" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
++        <attribute name="currencyCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
++        <attribute name="endingBalanceCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
++        <attribute name="paymentMethodCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
++        <attribute name="periodKey" optional="YES" attributeType="String"/>
++        <attribute name="periodMonth" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
++        <attribute name="periodYear" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
++        <attribute name="statementDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
++        <relationship name="transactions" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Transaction" inverseName="reconciliation" inverseEntity="Transaction"/>
++    </entity>
++    <entity name="Transaction" representedClassName="AccountsHelper.Transaction" syncable="YES" codeGenerationType="class">
++        <attribute name="accountingPeriod" optional="YES" attributeType="String"/>
++        <attribute name="accountNumber" optional="YES" attributeType="String"/>
++        <attribute name="address" optional="YES" attributeType="String"/>
++        <attribute name="categoryCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
++        <attribute name="checked" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
++        <attribute name="closed" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
++        <attribute name="commissionAmountCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
++        <attribute name="currencyCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
++        <attribute name="debitCreditCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
++        <attribute name="exchangeRateCD" optional="YES" attributeType="Integer 32" defaultValueString="100" usesScalarValueType="YES"/>
++        <attribute name="explanation" optional="YES" attributeType="String"/>
++        <attribute name="extendedDetails" optional="YES" attributeType="String"/>
++        <attribute name="payee" optional="YES" attributeType="String"/>
++        <attribute name="payerCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
++        <attribute name="paymentMethodCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
++        <attribute name="periodKey" optional="YES" attributeType="String"/>
++        <attribute name="reference" optional="YES" attributeType="String"/>
++        <attribute name="splitAmountCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
++        <attribute name="splitCategoryCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
++        <attribute name="timestamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
++        <attribute name="transactionDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
++        <attribute name="txAmountCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
++        <relationship name="reconciliation" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Reconciliation" inverseName="transactions" inverseEntity="Reconciliation"/>
++    </entity>
++</model>
+\ No newline at end of file
+diff --git a/AccountsHelper/Model/AccountsHelperModel.xcdatamodeld/AccountsHelperModelv3.xcdatamodel/contents b/AccountsHelper/Model/AccountsHelperModel.xcdatamodeld/AccountsHelperModelv3.xcdatamodel/contents
+new file mode 100644
+index 0000000..276c382
+--- /dev/null
++++ b/AccountsHelper/Model/AccountsHelperModel.xcdatamodeld/AccountsHelperModelv3.xcdatamodel/contents
+@@ -0,0 +1,42 @@
++<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
++<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="24299" systemVersion="25A362" minimumToolsVersion="Automatic" sourceLanguage="Swift" usedWithCloudKit="YES" usedWithSwiftData="YES" userDefinedModelVersionIdentifier="">
++    <entity name="CategoryMapping" representedClassName="AccountsHelper.CategoryMapping" syncable="YES" codeGenerationType="class">
++        <attribute name="categoryRawValue" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
++        <attribute name="inputString" optional="YES" attributeType="String"/>
++        <attribute name="usageCount" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
++    </entity>
++    <entity name="Reconciliation" representedClassName="AccountsHelper.Reconciliation" syncable="YES" codeGenerationType="class">
++        <attribute name="closed" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
++        <attribute name="currencyCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
++        <attribute name="endingBalanceCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
++        <attribute name="paymentMethodCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
++        <attribute name="periodKey" optional="YES" attributeType="String"/>
++        <attribute name="periodMonth" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
++        <attribute name="periodYear" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
++        <attribute name="statementDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
++        <relationship name="transactions" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Transaction" inverseName="reconciliation" inverseEntity="Transaction"/>
++    </entity>
++    <entity name="Transaction" representedClassName="AccountsHelper.Transaction" syncable="YES" codeGenerationType="class">
++        <attribute name="accountNumber" optional="YES" attributeType="String"/>
++        <attribute name="address" optional="YES" attributeType="String"/>
++        <attribute name="categoryCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
++        <attribute name="checked" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
++        <attribute name="closed" optional="YES" attributeType="Boolean" defaultValueString="NO" usesScalarValueType="YES"/>
++        <attribute name="commissionAmountCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
++        <attribute name="currencyCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
++        <attribute name="debitCreditCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
++        <attribute name="exchangeRateCD" optional="YES" attributeType="Integer 32" defaultValueString="100" usesScalarValueType="YES"/>
++        <attribute name="explanation" optional="YES" attributeType="String"/>
++        <attribute name="extendedDetails" optional="YES" attributeType="String"/>
++        <attribute name="payee" optional="YES" attributeType="String"/>
++        <attribute name="payerCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
++        <attribute name="paymentMethodCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
++        <attribute name="reference" optional="YES" attributeType="String"/>
++        <attribute name="splitAmountCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
++        <attribute name="splitCategoryCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
++        <attribute name="timestamp" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
++        <attribute name="transactionDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
++        <attribute name="txAmountCD" optional="YES" attributeType="Integer 32" defaultValueString="0" usesScalarValueType="YES"/>
++        <relationship name="reconciliation" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Reconciliation" inverseName="transactions" inverseEntity="Reconciliation"/>
++    </entity>
++</model>
+\ No newline at end of file
+diff --git a/AccountsHelper/Model/Coredata Entities/ReconciliationExtensions.swift b/AccountsHelper/Model/Coredata Entities/ReconciliationExtensions.swift
+index 0a10663..8d1224c 100644
+--- a/AccountsHelper/Model/Coredata Entities/ReconciliationExtensions.swift	
++++ b/AccountsHelper/Model/Coredata Entities/ReconciliationExtensions.swift	
+@@ -56,12 +56,6 @@ extension Reconciliation {
+         }
+     }
+ 
+-    // MARK: --- EndingBalance
+-    var endingBalance: Decimal {
+-        get { Decimal(endingBalanceCD) / 100 }
+-        set { endingBalanceCD = decimalToCents(newValue) }
+-    }
+-
+     // MARK: --- IsClosed
+     var isClosed: Bool { closed }
+ 
+@@ -78,6 +72,17 @@ extension Reconciliation {
+         get { PaymentMethod(rawValue: paymentMethodCD) ?? .unknown }
+         set { paymentMethodCD = newValue.rawValue }
+     }
++    
++    // MARK: --- OpeningBalance
++    var openingBalance: Decimal {
++        previousEndingBalance
++    }
++    
++    // MARK: --- EndingBalance
++    var endingBalance: Decimal {
++        get { Decimal(endingBalanceCD) / 100 }
++        set { endingBalanceCD = decimalToCents(newValue) }
++    }
+ 
+     // MARK: --- PreviousEndingBalance
+     var previousEndingBalance: Decimal {
+@@ -97,11 +102,16 @@ extension Reconciliation {
+         return Date.distantFuture
+     }
+     
+-    // MARK: --- OpeningBalance
+-    var openingBalance: Decimal {
+-        previousEndingBalance
+-    }
++    // MARK: --- ReconciliationGap
++    func reconciliationGap() -> Decimal {
+ 
++        if isAnOpeningBalance { return 0 }
++        
++        let gap = previousEndingBalance - sumInNativeCurrency( mode: .checked ) - endingBalance
++        
++        return gap
++    }
++    
+     // MARK: --- NetTransactionsInGBP
+     var netTransactionsInGBP: Decimal {
+         guard let context = self.managedObjectContext else { return 0 }
+@@ -149,12 +159,22 @@ extension Reconciliation {
+     
+     // MARK: --- OpeningBalanceAsString
+     func openingBalanceAsString() -> String {
+-        return AmountFormatter.anyAmountAsString(amount: previousEndingBalance, currency: currency)
++        return AmountFormatter.anyAmountAsString(amount: openingBalance, currency: currency)
++    }
++    
++    // MARK: --- OpeningBalanceAsString
++    func reconciliationGapAsString() -> String {
++        return AmountFormatter.anyAmountAsString(amount: reconciliationGap(), currency: currency)
+     }
+     
+     // MARK: --- SumInNativeCurrencyAsString
+     func sumInNativeCurrencyAsString(withSymbol: ShowCurrencySymbolsEnum = .always) -> String {
+-        AmountFormatter.anyAmountAsString(amount: sumInNativeCurrency, currency: currency, withSymbol: withSymbol)
++        AmountFormatter.anyAmountAsString(amount: sumInNativeCurrency( mode: .all ), currency: currency, withSymbol: withSymbol)
++    }
++    
++    // MARK: --- SumCheckedInNativeCurrencyAsString
++    func sumCheckedInNativeCurrencyAsString(withSymbol: ShowCurrencySymbolsEnum = .always) -> String {
++        AmountFormatter.anyAmountAsString(amount: sumInNativeCurrency( mode: .checked ), currency: currency, withSymbol: withSymbol)
+     }
+     
+ }
+@@ -185,7 +205,7 @@ extension Reconciliation {
+ 
+     // MARK: --- CanCloseAccountingPeriod
+     func canCloseAccountingPeriod(in context: NSManagedObjectContext) -> Bool {
+-        reconciliationGap(in: context) == 0
++        reconciliationGap( ) == 0
+             && isValid(in: context)
+             && isPreviousClosed(in: context)
+     }
+@@ -242,7 +262,7 @@ extension Reconciliation {
+     }
+ 
+     // MARK: --- IsBalanced
+-    func isBalanced(in context: NSManagedObjectContext) -> Bool { reconciliationGap(in: context) == 0 }
++    func isBalanced(in context: NSManagedObjectContext) -> Bool { reconciliationGap() == 0 }
+ 
+     // MARK: --- IsPreviousClosed
+     func isPreviousClosed(in context: NSManagedObjectContext) -> Bool {
+@@ -268,46 +288,43 @@ extension Reconciliation {
+     func transactionsPredicate() -> NSPredicate {
+         var predicates: [NSPredicate] = []
+         
+-        // --- Date range filter
+-        if let start = previousStatementDate(), let end = statementDate {
+-            predicates.append(NSPredicate(format: "transactionDate >= %@ AND transactionDate <= %@", start as NSDate, end as NSDate))
++        if isClosed {
++            // Closed: all transactions for the periodKey
++            predicates.append(NSPredicate(format: "periodKey == %@", periodKey ?? ""))
++        } else {
++            // Open: transactions within reconciliation date range ±14 days
++            if let start = previousStatementDate(), let end = statementDate {
++                let adjustedStart = Calendar.current.date(byAdding: .day, value: -14, to: start)! as NSDate
++                let adjustedEnd   = Calendar.current.date(byAdding: .day, value: 14, to: end)! as NSDate
++                predicates.append(NSPredicate(format: "transactionDate >= %@ AND transactionDate <= %@", adjustedStart, adjustedEnd))
++            }
++            // Exclude transactions that are already closed (assigned to another reconciliation)
++            predicates.append(NSPredicate(format: "closed == NO"))
+         }
+         
+-        // --- Payment method filter
+-            predicates.append(NSPredicate(format: "paymentMethodCD == %@", NSNumber(value: paymentMethod.rawValue)))
+-        
+-        guard !predicates.isEmpty else { return NSPredicate(value: true) } // matches all if nothing to filter
++        // Always filter by payment method
++        predicates.append(NSPredicate(format: "paymentMethodCD == %@", NSNumber(value: paymentMethod.rawValue)))
+         
+         return NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+     }
+-    
+ 
++//    func transactionsPredicate() -> NSPredicate {
++//        var predicates: [NSPredicate] = []
++//        
++//        // --- Date range filter
++//        if let start = previousStatementDate(), let end = statementDate {
++//            predicates.append(NSPredicate(format: "transactionDate >= %@ AND transactionDate <= %@", start as NSDate, end as NSDate))
++//        }
++//        
++//        // --- Payment method filter
++//            predicates.append(NSPredicate(format: "paymentMethodCD == %@", NSNumber(value: paymentMethod.rawValue)))
++//        
++//        guard !predicates.isEmpty else { return NSPredicate(value: true) } // matches all if nothing to filter
++//        
++//        return NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
++//    }
+     
+-    // MARK: --- ReconciliationGap
+-    func reconciliationGap(in context: NSManagedObjectContext) -> Decimal {
+ 
+-        if isAnOpeningBalance { return 0 }
+-        
+-        let gap = previousEndingBalance - sumInNativeCurrency - endingBalance
+-        
+-        return gap
+-//        do {
+-//            let txs = try fetchTransactions(in: context)
+-//            // Negate the total as we are storing a +ve number for money going out - a Debit
+-//            // If we do not negate it the arithmatic does not work.
+-//            let sum = -(txs.reduce(Decimal(0)) { $0 + $1.txAmountInGBP })
+-//
+-//            let previousBalance: Decimal
+-//            if let prev = try? Reconciliation.fetchPrevious(for: self.paymentMethod, before: self.transactionEndDate, context: context) {
+-//                previousBalance = prev.endingBalance
+-//            } else { previousBalance = 0 }
+-//
+-//            return (previousBalance + sum) - self.endingBalance
+-//        } catch {
+-//            print("Failed to compute reconciliation gap: \(error)")
+-//            return 0
+-//        }
+-    }
+ 
+     // MARK: --- Reopen
+     func reopen(in context: NSManagedObjectContext) throws {
+@@ -324,30 +341,72 @@ extension Reconciliation {
+ //    }
+     
+     // MARK: --- SumInNativeCurrency
+-    var sumInNativeCurrency: Decimal {
++//    var sumInNativeCurrency: Decimal {
++//        guard let context = managedObjectContext else { return 0 }
++//        
++//        do {
++//            let txs = try fetchTransactions(in: context)
++//            
++//            let total: Decimal
++//            switch currency {
++//            case .GBP:
++//                // Sum all transactions in GBP
++//                total = txs.reduce(Decimal(0)) { $0 + $1.txAmountInGBP }
++//            default:
++//                // Sum all transactions in their native currency
++//                total = txs.reduce(Decimal(0)) { $0 + $1.txAmount }
++//            }
++//            
++//            // Apply existing convention: positive = money going out / debit
++//            return total
++//        } catch {
++//            print("Failed to fetch transactions for sumInNativeCurrency: \(error)")
++//            return 0
++//        }
++//    }
++    
++    // MARK: --- TransactionSumMode
++    enum TransactionSumMode {
++        case all
++        case checked
++    }
++
++    // MARK: --- SumInNativeCurrency
++    func sumInNativeCurrency(mode: TransactionSumMode) -> Decimal {
+         guard let context = managedObjectContext else { return 0 }
+-        
++
+         do {
++            // Fetch using the reconciliation’s predicate
+             let txs = try fetchTransactions(in: context)
+-            
++
++            // Optional filter
++            let filtered: [Transaction]
++            switch mode {
++            case .all:
++                filtered = txs
++            case .checked:
++                filtered = txs.filter { $0.checked }
++            }
++
++            // Currency-sensitive summing
+             let total: Decimal
+             switch currency {
+             case .GBP:
+-                // Sum all transactions in GBP
+-                total = txs.reduce(Decimal(0)) { $0 + $1.txAmountInGBP }
++                total = filtered.reduce(0) { $0 + $1.txAmountInGBP }
+             default:
+-                // Sum all transactions in their native currency
+-                total = txs.reduce(Decimal(0)) { $0 + $1.txAmount }
++                total = filtered.reduce(0) { $0 + $1.txAmount }
+             }
+-            
+-            // Apply existing convention: positive = money going out / debit
++
++//            print(total)
+             return total
++
+         } catch {
+             print("Failed to fetch transactions for sumInNativeCurrency: \(error)")
+             return 0
+         }
+     }
+ 
++
+     // MARK: --- CreateNew
+     @discardableResult
+     static func createNew(
+diff --git a/AccountsHelper/Model/Persistence/Persistence.swift b/AccountsHelper/Model/Persistence/Persistence.swift
+index 9b033c2..c8331b7 100644
+--- a/AccountsHelper/Model/Persistence/Persistence.swift
++++ b/AccountsHelper/Model/Persistence/Persistence.swift
+@@ -127,7 +127,7 @@ extension PersistenceController {
+             let transactions = try context.fetch(fetchRequest)
+             guard !transactions.isEmpty else { return 0 }
+ 
+-            var csvText = "accountingPeriod,accountNumber,address,categoryCD,closed,commissionAmountCD,currencyCD,debitCreditCD,exchangeRateCD,explanation,extendedDetails,payee,payerCD,paymentMethodCD,reference,splitAmountCD,splitCategoryCD,timestamp,transactionDate,txAmountCD\n"
++            var csvText = "accountNumber,address,categoryCD,checked,closed,commissionAmountCD,currencyCD,debitCreditCD,exchangeRateCD,explanation,extendedDetails,payee,payerCD,paymentMethodCD,reference,splitAmountCD,splitCategoryCD,timestamp,transactionDate,txAmountCD\n"
+ 
+             let dateFormatter = ISO8601DateFormatter()
+ 
+@@ -140,7 +140,7 @@ extension PersistenceController {
+                 }
+ 
+                 let fields: [String] = [
+-                    f(tx.accountingPeriod),
++//                    f(tx.accountingPeriod),
+                     f(tx.accountNumber),
+                     f(tx.address),
+                     f(tx.categoryCD),
+@@ -205,7 +205,7 @@ extension PersistenceController {
+                 guard components.count >= 20 else { continue }
+ 
+                 let tx = Transaction(context: context)
+-                tx.accountingPeriod = components[0]
++//                tx.accountingPeriod = components[0]
+                 tx.accountNumber = components[1]
+                 tx.address = components[2]
+                 tx.categoryCD = Int32(components[3]) ?? 0
+diff --git a/AccountsHelper/View/CentralView/Central Detail Views/BrowseTransactionsView.swift b/AccountsHelper/View/CentralView/Central Detail Views/BrowseTransactionsView.swift
+index 2b7ab3c..c4297ac 100644
+--- a/AccountsHelper/View/CentralView/Central Detail Views/BrowseTransactionsView.swift	
++++ b/AccountsHelper/View/CentralView/Central Detail Views/BrowseTransactionsView.swift	
+@@ -161,6 +161,14 @@ struct BrowseTransactionsView: View {
+     
+     // MARK: --- CoreData
+     @FetchRequest internal var transactions: FetchedResults<Transaction>
++//    @FetchRequest(sortDescriptors: []) private var reconciliations: FetchedResults<Reconciliation>
++
++    var selectedReconciliation: Reconciliation? {
++        if let id = appState.selectedReconciliationID {
++            return reconciliations.first { $0.objectID == id }
++        }
++        return nil
++    }
+ 
+     // MARK: --- Initialiser
+     init(predicate: NSPredicate? = nil, mode: BrowseTransactionsMode ) {
+@@ -205,7 +213,7 @@ struct BrowseTransactionsView: View {
+     // MARK: --- Body
+     var body: some View {
+         VStack(spacing: 0) {
+-            filterBar
++            workingToolbar
+             transactionsTable
+                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+             statusBar
+@@ -574,10 +582,12 @@ extension BrowseTransactionsView {
+                                 if allowSelection && newValue {
+                                     if let recID = appState.selectedReconciliationID,
+                                        let rec = reconciliations.first(where: { $0.objectID == recID }) {
+-                                        row.transaction.periodKey = rec.periodKey
++                                        row.transaction.reconciliation = rec
++//                                        row.transaction.periodKey = rec.periodKey
+                                     }
+                                 } else {
+-                                    row.transaction.periodKey = ""
++//                                    row.transaction.periodKey = ""
++                                    row.transaction.reconciliation = nil
+                                 }
+ 
+                                 try? viewContext.save()
+@@ -917,19 +927,67 @@ extension BrowseTransactionsView {
+         }
+     }
+     
+-    // MARK: --- FilterBar
+-    private var filterBar: some View {
++    // MARK: --- WorkingToolbar
++    private var workingToolbar: some View {
+         
+-        let openingBalance: Decimal = {
++        var openingBalanceAsString: String {
++            guard
++                let recID = appState.selectedReconciliationID,
++                let rec = reconciliations.first(where: { $0.objectID == recID })
++            else { return "" }
++            return rec.openingBalanceAsString()
++        }
++//
++//        var checkedTotalAsString: String {
++//            guard
++//                let recID = appState.selectedReconciliationID,
++//                let rec = reconciliations.first(where: { $0.objectID == recID })
++//            else { return "" }
++//            return rec.sumCheckedInNativeCurrencyAsString()
++//        }
++//
++//        var endingBalanceAsString: String {
++//            guard
++//                let recID = appState.selectedReconciliationID,
++//                let rec = reconciliations.first(where: { $0.objectID == recID })
++//            else { return "" }
++//            return rec.endingBalanceAsString()
++//        }
++//
++        var reconciliationGapAsString: String {
++            guard
++                let recID = appState.selectedReconciliationID,
++                let rec = reconciliations.first(where: { $0.objectID == recID })
++            else { return "" }
++            return rec.reconciliationGapAsString()
++        }
++//
++//        
++//        
++//        let openingBalanceAsStringX: String = {
++//            guard let recID = appState.selectedReconciliationID,
++//                  let rec = reconciliations.first(where: { $0.objectID == recID }) else { return "" }
++//            return rec.openingBalanceAsString()
++//        }()
++//        
++//        let checkedTotalAsStringX: String = {
++//            guard let recID = appState.selectedReconciliationID,
++//                  let rec = reconciliations.first(where: { $0.objectID == recID }) else { return ""}
++//            return rec.sumCheckedInNativeCurrencyAsString()
++//        }()
++//        
++//        let endingBalanceAsStringX: String = {
++//            guard let recID = appState.selectedReconciliationID,
++//                  let rec = reconciliations.first(where: { $0.objectID == recID }) else { return ""}
++//            return rec.endingBalanceAsString()
++//        }()
++//        
++        let reconciliationGapAsStringX: String = {
+             guard let recID = appState.selectedReconciliationID,
+-                  let rec = reconciliations.first(where: { $0.objectID == recID }) else { return 0 }
+-            return rec.openingBalance
++                  let rec = reconciliations.first(where: { $0.objectID == recID }) else { return "" }
++            return rec.reconciliationGapAsString()
+         }()
+         
+-        let reconciliationTarget: Decimal = 0
+-        
+-        let reconciliationGap: Decimal = 0
+-        
+         return HStack(spacing: 16) {
+             
+             // --- Filtering
+@@ -958,27 +1016,28 @@ extension BrowseTransactionsView {
+             }
+             
+             // --- Checked Total
+-            if showReconciliationFigures {
++            if showReconciliationFigures,
++             let rec = selectedReconciliation {
+                 
+                 // Opening Balance
+-                Text("Opening: \(openingBalance, format: .currency(code: "GBP"))")
++                Text("Opening: \(openingBalanceAsString)")
+                     .fontWeight(.semibold)
+                     .foregroundColor(.gray)
+                 
+                 // Checked Total
+-                Text("Checked: \(checkedTotal, format: .currency(code: "GBP"))")
++                Text("Checked: \(rec.sumCheckedInNativeCurrencyAsString())")
+                     .fontWeight(.semibold)
+                     .foregroundColor(.orange)
+ 
+                 // Target / Ending Balance
+-                Text("Target: \(reconciliationTarget, format: .currency(code: "GBP"))")
++                Text("Target: \(rec.endingBalanceAsString())")
+                     .fontWeight(.semibold)
+                     .foregroundColor(.blue)
+ 
+                 // Gap
+-                Text("Gap: \(reconciliationGap, format: .currency(code: "GBP"))")
++                Text("Gap: \(reconciliationGapAsStringX)")
+                     .fontWeight(.semibold)
+-                    .foregroundColor(reconciliationGap < 0 ? .red : .green)
++//                    .foregroundColor(reconciliationGap < 0 ? .red : .green)
+             }
+ 
+             Spacer()
+@@ -1012,6 +1071,7 @@ extension BrowseTransactionsView {
+     }
+     
+     // MARK: --- FilteredTransactionRows
++    // This filters the Transactions that were passed in with whatever predicate was supplied
+     private var filteredTransactionRows: [TransactionRow] {
+         let predicate = buildFilteredPredicate()
+         let allTransactions = Array(transactions)
+diff --git a/AccountsHelper/View/CentralView/Central Detail Views/MergeTransactionsView.swift b/AccountsHelper/View/CentralView/Central Detail Views/MergeTransactionsView.swift
+index 4d77bad..34f38d2 100644
+--- a/AccountsHelper/View/CentralView/Central Detail Views/MergeTransactionsView.swift	
++++ b/AccountsHelper/View/CentralView/Central Detail Views/MergeTransactionsView.swift	
+@@ -111,12 +111,12 @@ extension MergeField {
+             hasValue: { $0.transactionDate != nil },
+             setter: { $0.transactionDate = $1.transactionDate }
+         ),
+-        .accountingPeriod: MergeFieldInfo(
+-            displayName: "Accounting Period",
+-            getter: { $0.accountingPeriod ?? "" },
+-            hasValue: { ($0.accountingPeriod ?? "").isEmpty == false },
+-            setter: { $0.accountingPeriod = $1.accountingPeriod }
+-        ),
++//        .accountingPeriod: MergeFieldInfo(
++//            displayName: "Accounting Period",
++//            getter: { $0.accountingPeriod ?? "" },
++//            hasValue: { ($0.accountingPeriod ?? "").isEmpty == false },
++//            setter: { $0.accountingPeriod = $1.accountingPeriod }
++//        ),
+         .accountNumber: MergeFieldInfo(
+             displayName: "External Account Number",
+             getter: { $0.accountNumber ?? "" },
+diff --git a/AccountsHelper/View/CentralView/Central Detail Views/ReconcilliationListView.swift b/AccountsHelper/View/CentralView/Central Detail Views/ReconcilliationListView.swift
+index 7c5d21b..bfe4afc 100644
+--- a/AccountsHelper/View/CentralView/Central Detail Views/ReconcilliationListView.swift	
++++ b/AccountsHelper/View/CentralView/Central Detail Views/ReconcilliationListView.swift	
+@@ -214,7 +214,7 @@ extension ReconcilliationListView {
+                     
+ 
+                     TableColumn("Net Transactions") { row in
+-                        Text( row.rec.sumInNativeCurrencyAsString() )
++                        Text( row.rec.sumCheckedInNativeCurrencyAsString() )
+                             .frame(maxWidth: .infinity, alignment: .leading)
+                             .foregroundColor(row.rec.closed ? .blue : (hasInvalidTransactions(row) ? .red : .primary))
+                             .contentShape(Rectangle())
+@@ -242,7 +242,7 @@ extension ReconcilliationListView {
+                     
+                     TableColumn("Gap") { row in
+                         if row.gap != 0 {
+-                            Text(row.rec.reconciliationGap(in: context).formattedAsCurrency(row.rec.currency))
++                            Text(row.rec.reconciliationGap().formattedAsCurrency(row.rec.currency))
+ //                            Text(row.gap.formattedAsCurrency(row.rec.currency))
+                                 .foregroundColor(row.rec.closed ? .blue : .red)
+                                 .frame(maxWidth: .infinity, alignment: .leading)
+@@ -271,7 +271,7 @@ extension ReconcilliationListView {
+             let recs = try context.fetch(request)
+             
+             reconciliationRows = recs.map { rec in
+-                let gap = rec.reconciliationGap(in: context)
++                let gap = rec.reconciliationGap()
+                 return ReconciliationRow(rec: rec, gap: gap)
+             }
+         } catch {
+@@ -362,7 +362,7 @@ extension ReconcilliationListView {
+     // MARK: --- AddBalancingTransaction
+     private func addBalancingTransaction(for row: ReconciliationRow, in context: NSManagedObjectContext) {
+         do {
+-            var gap = row.rec.reconciliationGap(in: context)
++            var gap = row.rec.reconciliationGap()
+             if !gap.isFinite { gap = 0 }
+             if abs(gap) < 0.01 { gap = 0 }
+             guard gap != 0 else { return }
+@@ -444,7 +444,7 @@ extension ReconcilliationListView {
+     private func rowContextMenu(_ row: ReconciliationRow) -> some View {
+         
+         var canAddBalancingTransaction: Bool {
+-            row.rec.reconciliationGap(in: context) == 0 || row.rec.closed || row.rec.isAnOpeningBalance
++            row.rec.reconciliationGap() == 0 || row.rec.closed || row.rec.isAnOpeningBalance
+         }
+         
+         var canAddEndingBalance: Bool {
+diff --git a/AccountsHelper/View/InspectorsView/Inspectors Detail Views/InspectTransaction.swift b/AccountsHelper/View/InspectorsView/Inspectors Detail Views/InspectTransaction.swift
+index 47a9cfc..71753ec 100644
+--- a/AccountsHelper/View/InspectorsView/Inspectors Detail Views/InspectTransaction.swift	
++++ b/AccountsHelper/View/InspectorsView/Inspectors Detail Views/InspectTransaction.swift	
+@@ -100,7 +100,7 @@ struct InspectTransaction: View {
+                         // MARK: --- Status Section
+                         inspectorSection("Status") {
+                             transactionRow("Closed:", transaction.closed.description)
+-                            transactionRow("PeriodKey:", transaction.periodKey ?? "N/A")
++//                            transactionRow("PeriodKey:", transaction.periodKey ?? "N/A")
+                         }
+                         
+                         Spacer(minLength: 20)
+diff --git a/AccountsHelper/View/InspectorsView/Inspectors Detail Views/InspectorReconciliation.swift b/AccountsHelper/View/InspectorsView/Inspectors Detail Views/InspectorReconciliation.swift
+index f2f7cd4..7ed2444 100644
+--- a/AccountsHelper/View/InspectorsView/Inspectors Detail Views/InspectorReconciliation.swift	
++++ b/AccountsHelper/View/InspectorsView/Inspectors Detail Views/InspectorReconciliation.swift	
+@@ -30,7 +30,7 @@ struct InspectorReconciliation: View {
+     }
+     
+     private var reconciliationGap: Decimal {
+-        reconciliation?.reconciliationGap(in: viewContext) ?? 0
++        reconciliation?.reconciliationGap() ?? 0
+     }
+     
+     private var isBalanced: Bool {

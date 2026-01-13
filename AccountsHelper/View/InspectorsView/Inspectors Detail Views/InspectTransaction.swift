@@ -45,6 +45,8 @@ struct InspectTransaction: View {
                             transactionRow("Timestamp:", transaction.timestamp.map { dateOnlyFormatter.string(from: $0) } ?? "N/A")
                             Divider()
                             transactionRow("TX Date:", transaction.transactionDate.map { dateOnlyFormatter.string(from: $0) } ?? "N/A")
+                            Divider()
+                            transactionRow("Reconcilition:", transaction.reconciliation?.accountingPeriod.description ?? "N/A")
                         }
                         
                         // MARK: --- Categories Section
@@ -100,7 +102,7 @@ struct InspectTransaction: View {
                         // MARK: --- Status Section
                         inspectorSection("Status") {
                             transactionRow("Closed:", transaction.closed.description)
-                            transactionRow("PeriodKey:", transaction.periodKey ?? "N/A")
+//                            transactionRow("PeriodKey:", transaction.periodKey ?? "N/A")
                         }
                         
                         Spacer(minLength: 20)

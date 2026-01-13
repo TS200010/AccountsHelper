@@ -111,12 +111,12 @@ extension MergeField {
             hasValue: { $0.transactionDate != nil },
             setter: { $0.transactionDate = $1.transactionDate }
         ),
-        .accountingPeriod: MergeFieldInfo(
-            displayName: "Accounting Period",
-            getter: { $0.accountingPeriod ?? "" },
-            hasValue: { ($0.accountingPeriod ?? "").isEmpty == false },
-            setter: { $0.accountingPeriod = $1.accountingPeriod }
-        ),
+//        .accountingPeriod: MergeFieldInfo(
+//            displayName: "Accounting Period",
+//            getter: { $0.accountingPeriod ?? "" },
+//            hasValue: { ($0.accountingPeriod ?? "").isEmpty == false },
+//            setter: { $0.accountingPeriod = $1.accountingPeriod }
+//        ),
         .accountNumber: MergeFieldInfo(
             displayName: "External Account Number",
             getter: { $0.accountNumber ?? "" },

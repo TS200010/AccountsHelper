@@ -127,7 +127,7 @@ extension PersistenceController {
             let transactions = try context.fetch(fetchRequest)
             guard !transactions.isEmpty else { return 0 }
 
-            var csvText = "accountingPeriod,accountNumber,address,categoryCD,closed,commissionAmountCD,currencyCD,debitCreditCD,exchangeRateCD,explanation,extendedDetails,payee,payerCD,paymentMethodCD,reference,splitAmountCD,splitCategoryCD,timestamp,transactionDate,txAmountCD\n"
+            var csvText = "accountNumber,address,categoryCD,checked,closed,commissionAmountCD,currencyCD,debitCreditCD,exchangeRateCD,explanation,extendedDetails,payee,payerCD,paymentMethodCD,reference,splitAmountCD,splitCategoryCD,timestamp,transactionDate,txAmountCD\n"
 
             let dateFormatter = ISO8601DateFormatter()
 
@@ -140,7 +140,7 @@ extension PersistenceController {
                 }
 
                 let fields: [String] = [
-                    f(tx.accountingPeriod),
+//                    f(tx.accountingPeriod),
                     f(tx.accountNumber),
                     f(tx.address),
                     f(tx.categoryCD),
@@ -205,7 +205,7 @@ extension PersistenceController {
                 guard components.count >= 20 else { continue }
 
                 let tx = Transaction(context: context)
-                tx.accountingPeriod = components[0]
+//                tx.accountingPeriod = components[0]
                 tx.accountNumber = components[1]
                 tx.address = components[2]
                 tx.categoryCD = Int32(components[3]) ?? 0

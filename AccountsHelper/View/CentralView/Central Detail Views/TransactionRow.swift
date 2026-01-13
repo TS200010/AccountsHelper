@@ -13,7 +13,12 @@ class TransactionRow: Identifiable, Hashable {
     
     let transaction: Transaction
     var id: NSManagedObjectID { transaction.objectID }
+    
+    // MARK: --- Checked
     var checked: Bool = false
+//    var checked: Bool {
+//        transaction.reconciliation != nil
+//    }
 
     // MARK: --- Category
     var category: String { transaction.category.description }
@@ -26,6 +31,18 @@ class TransactionRow: Identifiable, Hashable {
     
     // MARK: --- RunningBalance
     var runningBalance: Decimal = 0
+    
+    // MARK: --- ReconciliationPeriod
+    var reconciliationPeriod: String {
+        guard let reconciliation = transaction.reconciliation else { return "" }
+        return reconciliation.accountingPeriod.displayStringWithOpening
+    }
+    
+    // MARK: --- ReconciliationPeriodShortDescription
+    var reconciliationPeriodShortDescription: String {
+        guard let reconciliation = transaction.reconciliation else { return "" }
+        return reconciliation.accountingPeriod.shortDescription
+    }
 
     // MARK: --- DisplayAmount
     var displayAmount: String {
@@ -46,8 +63,10 @@ class TransactionRow: Identifiable, Hashable {
     init(transaction: Transaction) {
         self.transaction = transaction
 //        self.id = transaction.objectID
-        self.checked = transaction.checked
+//        self.checked = transaction.checked
+        self.checked = transaction.reconciliation != nil
     }
+    
     
     // MARK: --- DisplaySplitAmount
     var displaySplitAmount: String {

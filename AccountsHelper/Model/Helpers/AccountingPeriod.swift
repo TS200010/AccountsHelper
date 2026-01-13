@@ -17,6 +17,8 @@ struct AccountingPeriod: Hashable, Equatable, CustomStringConvertible {
     // MARK: --- Display Strings
     
     var description: String { displayString }
+    
+    var shortDescription: String { "\(month)/\(year)" }
 
     /// Returns a localized display string for the period, e.g., "September 2025"
     var displayString: String {

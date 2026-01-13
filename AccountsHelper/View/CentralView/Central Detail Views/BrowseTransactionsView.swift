@@ -48,13 +48,12 @@ struct RectCorner: OptionSet {
 // MARK: --- SortColumn
 enum SortColumn: CaseIterable, Identifiable {
     case category, currency, debitCredit, exchangeRate,
-         payee, payer, paymentMethod, transactionDate, txAmount
+         payee, payer, paymentMethod, reconciliation, transactionDate, txAmount
 
     var id: Self { self }
 
     var systemImage: String {
         switch self {
-        case .transactionDate: return "calendar"
         case .category:        return "folder"
         case .currency:        return "dollarsign.circle"
         case .debitCredit:     return "arrow.left.arrow.right"
@@ -62,6 +61,8 @@ enum SortColumn: CaseIterable, Identifiable {
         case .paymentMethod:   return "creditcard"
         case .payee:           return "person"
         case .payer:           return "person.crop.circle"
+        case .reconciliation:  return "checkmark.seal"
+        case .transactionDate: return "calendar"
         case .txAmount:        return "sum"
         }
     }
@@ -75,6 +76,7 @@ enum SortColumn: CaseIterable, Identifiable {
         case .payee:           return "Payee"
         case .payer:           return "Payer"
         case .paymentMethod:   return "Payment Method"
+        case .reconciliation:  return "Reconciliation"
         case .transactionDate: return "Date"
         case .txAmount:        return "Amount"
         }
@@ -85,12 +87,13 @@ enum SortColumn: CaseIterable, Identifiable {
         case .category:        return row.category
         case .currency:        return row.currency
         case .debitCredit:     return row.debitCredit
+        case .exchangeRate:    return row.exchangeRate
         case .payee:           return row.payee
         case .payer:           return row.payer
         case .paymentMethod:   return row.paymentMethod
+        case .reconciliation:  return row.reconciliationPeriod
         case .transactionDate: return row.transactionDate
         case .txAmount:        return row.txAmount
-        case .exchangeRate:    return row.exchangeRate
         }
     }
 }
@@ -148,7 +151,8 @@ struct BrowseTransactionsView: View {
         "Fx": 60,
         "Category": 80,
         "Split": 200,
-        "Payee": 300
+        "Payee": 300,
+        "Reconciliation": 60
     ]
     #endif
     // Checked Selection State
@@ -161,6 +165,14 @@ struct BrowseTransactionsView: View {
     
     // MARK: --- CoreData
     @FetchRequest internal var transactions: FetchedResults<Transaction>
+//    @FetchRequest(sortDescriptors: []) private var reconciliations: FetchedResults<Reconciliation>
+
+    var selectedReconciliation: Reconciliation? {
+        if let id = appState.selectedReconciliationID {
+            return reconciliations.first { $0.objectID == id }
+        }
+        return nil
+    }
 
     // MARK: --- Initialiser
     init(predicate: NSPredicate? = nil, mode: BrowseTransactionsMode ) {
@@ -194,7 +206,8 @@ struct BrowseTransactionsView: View {
     
     private func updateRunningTotal() {
         guard allowSelection else { return } // Do nothing if selection Not allowed. We have no checked total.
-        checkedTotal = transactions.filter { $0.checked }.map { $0.txAmountInGBP }.reduce(0, +)
+//        checkedTotal = transactions.filter { $0.checked }.map { $0.txAmountInGBP }.reduce(0, +)
+        checkedTotal = transactions.filter { $0.reconciliation == appState.selectedReconciliationID }.map { $0.txAmountInGBP }.reduce(0, +)
     }
 
     // MARK: --- Derived Rows
@@ -205,7 +218,7 @@ struct BrowseTransactionsView: View {
     // MARK: --- Body
     var body: some View {
         VStack(spacing: 0) {
-            filterBar
+            workingToolbar
             transactionsTable
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             statusBar
@@ -377,6 +390,8 @@ extension BrowseTransactionsView {
                                 .frame(width: scaledColumnWidths["Date"] ?? 100)
                             TableHeaderCell("✓", width: 5)
                                 .frame(width: scaledColumnWidths["✓"] ?? 5)
+                            TableHeaderCell("Reconciliation", width: 60)
+                                .frame(width: scaledColumnWidths["Reconciliation"] ?? 60)
                             TableHeaderCell("Amount", width: 130)
                                 .frame(width: scaledColumnWidths["Amount"] ?? 130)
                             TableHeaderCell("Payee", width: 100)
@@ -568,33 +583,77 @@ extension BrowseTransactionsView {
                     Toggle("", isOn: Binding(
                         get: { row.checked },
                         set: { newValue in
-                            if selectionActive {
-                                row.checked = newValue
-                                row.transaction.checked = newValue
-                                if allowSelection && newValue {
-                                    if let recID = appState.selectedReconciliationID,
-                                       let rec = reconciliations.first(where: { $0.objectID == recID }) {
-                                        row.transaction.periodKey = rec.periodKey
-                                    }
+                            guard selectionActive else { return }
+                            row.checked = newValue
+                            if let recID = appState.selectedReconciliationID,
+                               let rec = reconciliations.first(where: { $0.objectID == recID }) {
+                                
+                                if newValue {
+                                    // Assign transaction to reconciliation
+                                    row.transaction.reconciliation = rec
                                 } else {
-                                    row.transaction.periodKey = ""
+                                    // Remove only if it currently belongs to this reconciliation
+                                    if row.transaction.reconciliation == rec {
+                                        row.transaction.reconciliation = nil
+                                    }
                                 }
-
+                                
+                                // Save changes and update totals
                                 try? viewContext.save()
                                 updateRunningTotal()
                             }
                         }
-                    ))
+                ))
+                    
+//                    Toggle("", isOn: Binding(
+//                        get: { row.checked },
+//                        set: { newValue in
+//                            if selectionActive {
+//                                if let recID = appState.selectedReconciliationID,
+//                                   let rec = reconciliations.first(where: { $0.objectID == recID }) {
+//                                    if newValue {
+//                                        row.transaction.reconciliation = rec
+//                                    } else {
+//                                        // Remove only if it currently belongs to this reconciliation
+//                                        if row.transaction.reconciliation == rec {
+//                                            row.transaction.reconciliation = nil
+//                                        }
+//                                    }
+//                                    try? viewContext.save()
+//                                    updateRunningTotal()
+//                                }
+//                            }
+////                            if selectionActive {
+////                                row.checked = newValue
+////                                row.transaction.checked = newValue
+////                                if allowSelection && newValue {
+////                                    if let recID = appState.selectedReconciliationID,
+////                                       let rec = reconciliations.first(where: { $0.objectID == recID }) {
+////                                        row.transaction.reconciliation = rec
+//////                                        row.transaction.periodKey = rec.periodKey
+////                                    }
+////                                } else {
+//////                                    row.transaction.periodKey = ""
+////                                    row.transaction.reconciliation = nil
+////                                }
+////
+////                                try? viewContext.save()
+////                                updateRunningTotal()
+////                            }
+//                        }
+//                    ))
                     .toggleStyle(.checkbox)
                     .disabled(!allowSelection || row.transaction.closed)
                     .labelsHidden()
                     .frame(width: 20, height: 20)
                     Spacer(minLength: 0)
                 }
-                .frame(width: scaledColumnWidths["✓"] ?? 30)
+                .frame(width: scaledColumnWidths["✓"] ?? 5)
                 .disabled(row.transaction.closed)
+                
+                tableCell(row.reconciliationPeriodShortDescription, for: row)
+                    .frame(width: scaledColumnWidths["Reconciliation"] ?? 60)
             
-
                 multiLineTableCell( row.transaction.txAmountDualCurrencyAsString(withSymbol: showCurrencySymbols), for: row, alignment: .trailing )
                     .multilineTextAlignment(.trailing)
                     .frame(width: scaledColumnWidths["Amount"] ?? 130)
@@ -629,10 +688,24 @@ extension BrowseTransactionsView {
         .onTapGesture {
             #if os(macOS)
             if selectionActive {
-                // Toggle only the checkbox when selection mode is active
-                row.checked.toggle()
-                row.transaction.checked = row.checked
+                guard let recID = appState.selectedReconciliationID,
+                      let rec = reconciliations.first(where: { $0.objectID == recID }) else { return }
+
+                if row.transaction.reconciliation == rec {
+                    // Unassign transaction from reconciliation
+                    row.transaction.reconciliation = nil
+                } else {
+                    // Assign transaction to reconciliation
+                    row.transaction.reconciliation = rec
+                }
+
                 try? viewContext.save()
+                updateRunningTotal()  // This now uses reconciliation as the source of truth
+                
+//                // Toggle only the checkbox when selection mode is active
+//                row.checked.toggle()
+//                row.transaction.checked = row.checked
+//                try? viewContext.save()
             } else {
                 safeUIUpdate {
                     let modifiers = NSEvent.modifierFlags
@@ -917,18 +990,66 @@ extension BrowseTransactionsView {
         }
     }
     
-    // MARK: --- FilterBar
-    private var filterBar: some View {
+    // MARK: --- WorkingToolbar
+    private var workingToolbar: some View {
         
-        let openingBalance: Decimal = {
+        var openingBalanceAsString: String {
+            guard
+                let recID = appState.selectedReconciliationID,
+                let rec = reconciliations.first(where: { $0.objectID == recID })
+            else { return "" }
+            return rec.openingBalanceAsString()
+        }
+//
+//        var checkedTotalAsString: String {
+//            guard
+//                let recID = appState.selectedReconciliationID,
+//                let rec = reconciliations.first(where: { $0.objectID == recID })
+//            else { return "" }
+//            return rec.sumCheckedInNativeCurrencyAsString()
+//        }
+//
+//        var endingBalanceAsString: String {
+//            guard
+//                let recID = appState.selectedReconciliationID,
+//                let rec = reconciliations.first(where: { $0.objectID == recID })
+//            else { return "" }
+//            return rec.endingBalanceAsString()
+//        }
+//
+        var reconciliationGapAsString: String {
+            guard
+                let recID = appState.selectedReconciliationID,
+                let rec = reconciliations.first(where: { $0.objectID == recID })
+            else { return "" }
+            return rec.reconciliationGapAsString()
+        }
+//
+//        
+//        
+//        let openingBalanceAsStringX: String = {
+//            guard let recID = appState.selectedReconciliationID,
+//                  let rec = reconciliations.first(where: { $0.objectID == recID }) else { return "" }
+//            return rec.openingBalanceAsString()
+//        }()
+//        
+//        let checkedTotalAsStringX: String = {
+//            guard let recID = appState.selectedReconciliationID,
+//                  let rec = reconciliations.first(where: { $0.objectID == recID }) else { return ""}
+//            return rec.sumCheckedInNativeCurrencyAsString()
+//        }()
+//        
+//        let endingBalanceAsStringX: String = {
+//            guard let recID = appState.selectedReconciliationID,
+//                  let rec = reconciliations.first(where: { $0.objectID == recID }) else { return ""}
+//            return rec.endingBalanceAsString()
+//        }()
+//        
+        let reconciliationGapAsStringX: String = {
             guard let recID = appState.selectedReconciliationID,
-                  let rec = reconciliations.first(where: { $0.objectID == recID }) else { return 0 }
-            return rec.openingBalance
+                  let rec = reconciliations.first(where: { $0.objectID == recID }) else { return "" }
+            return rec.reconciliationGapAsString()
         }()
-        
-        let reconciliationTarget: Decimal = 0
-        
-        let reconciliationGap: Decimal = 0
         
         return HStack(spacing: 16) {
             
@@ -958,27 +1079,28 @@ extension BrowseTransactionsView {
             }
             
             // --- Checked Total
-            if showReconciliationFigures {
+            if showReconciliationFigures,
+             let rec = selectedReconciliation {
                 
                 // Opening Balance
-                Text("Opening: \(openingBalance, format: .currency(code: "GBP"))")
+                Text("Opening: \(openingBalanceAsString)")
                     .fontWeight(.semibold)
                     .foregroundColor(.gray)
                 
                 // Checked Total
-                Text("Checked: \(checkedTotal, format: .currency(code: "GBP"))")
+                Text("Checked: \(rec.sumCheckedInNativeCurrencyAsString())")
                     .fontWeight(.semibold)
                     .foregroundColor(.orange)
 
                 // Target / Ending Balance
-                Text("Target: \(reconciliationTarget, format: .currency(code: "GBP"))")
+                Text("Target: \(rec.endingBalanceAsString())")
                     .fontWeight(.semibold)
                     .foregroundColor(.blue)
 
                 // Gap
-                Text("Gap: \(reconciliationGap, format: .currency(code: "GBP"))")
+                Text("Gap: \(reconciliationGapAsStringX)")
                     .fontWeight(.semibold)
-                    .foregroundColor(reconciliationGap < 0 ? .red : .green)
+//                    .foregroundColor(reconciliationGap < 0 ? .red : .green)
             }
 
             Spacer()
@@ -1012,6 +1134,7 @@ extension BrowseTransactionsView {
     }
     
     // MARK: --- FilteredTransactionRows
+    // This filters the Transactions that were passed in with whatever predicate was supplied
     private var filteredTransactionRows: [TransactionRow] {
         let predicate = buildFilteredPredicate()
         let allTransactions = Array(transactions)

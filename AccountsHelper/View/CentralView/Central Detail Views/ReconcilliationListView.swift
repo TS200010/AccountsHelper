@@ -214,7 +214,7 @@ extension ReconcilliationListView {
                     
 
                     TableColumn("Net Transactions") { row in
-                        Text( row.rec.sumInNativeCurrencyAsString() )
+                        Text( row.rec.sumCheckedInNativeCurrencyAsString() )
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .foregroundColor(row.rec.closed ? .blue : (hasInvalidTransactions(row) ? .red : .primary))
                             .contentShape(Rectangle())
@@ -242,7 +242,7 @@ extension ReconcilliationListView {
                     
                     TableColumn("Gap") { row in
                         if row.gap != 0 {
-                            Text(row.rec.reconciliationGap(in: context).formattedAsCurrency(row.rec.currency))
+                            Text(row.rec.reconciliationGap().formattedAsCurrency(row.rec.currency))
 //                            Text(row.gap.formattedAsCurrency(row.rec.currency))
                                 .foregroundColor(row.rec.closed ? .blue : .red)
                                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -271,7 +271,7 @@ extension ReconcilliationListView {
             let recs = try context.fetch(request)
             
             reconciliationRows = recs.map { rec in
-                let gap = rec.reconciliationGap(in: context)
+                let gap = rec.reconciliationGap()
                 return ReconciliationRow(rec: rec, gap: gap)
             }
         } catch {
@@ -362,7 +362,7 @@ extension ReconcilliationListView {
     // MARK: --- AddBalancingTransaction
     private func addBalancingTransaction(for row: ReconciliationRow, in context: NSManagedObjectContext) {
         do {
-            var gap = row.rec.reconciliationGap(in: context)
+            var gap = row.rec.reconciliationGap()
             if !gap.isFinite { gap = 0 }
             if abs(gap) < 0.01 { gap = 0 }
             guard gap != 0 else { return }
@@ -444,7 +444,7 @@ extension ReconcilliationListView {
     private func rowContextMenu(_ row: ReconciliationRow) -> some View {
         
         var canAddBalancingTransaction: Bool {
-            row.rec.reconciliationGap(in: context) == 0 || row.rec.closed || row.rec.isAnOpeningBalance
+            row.rec.reconciliationGap() == 0 || row.rec.closed || row.rec.isAnOpeningBalance
         }
         
         var canAddEndingBalance: Bool {
