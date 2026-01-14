@@ -451,6 +451,7 @@ extension ReconcilliationListView {
             row.rec.closed
         }
         
+        
         Button {
             appState.selectedReconciliationID = row.id
             appState.replaceInspectorView(with: .viewReconciliation)
@@ -469,6 +470,38 @@ extension ReconcilliationListView {
             appState.pushCentralView(.reconciliationTransactionDetail(predicate) )
         } label: {
             Label("Transactions", systemImage: "list.bullet")
+        }
+
+        Button {
+            appState.selectedReconciliationID = row.id
+            context.perform {
+                do {
+                    // Remove all transactions from this reconciliation
+                    for tx in row.rec.transactions?.allObjects as? [Transaction] ?? [] {
+                        tx.reconciliation = nil
+                    }
+                    try context.save()
+                    
+                    DispatchQueue.main.async {
+                        refreshRows()
+                        appState.refreshInspector()
+                    }
+                    
+                    // Optional: register undo
+                    undoManager?.registerUndo(withTarget: context) { ctx in
+                        for tx in row.rec.transactions?.allObjects as? [Transaction] ?? [] {
+                            tx.reconciliation = row.rec
+                        }
+                        try? ctx.save()
+                    }
+                    undoManager?.setActionName("Reset Checked Transactions")
+                } catch {
+                    print("Failed to reset transactions: \(error)")
+                    context.rollback()
+                }
+            }
+        } label: {
+            Label("Reset Checked", systemImage: "arrow.uturn.backward.circle")
         }
 
         
@@ -521,7 +554,7 @@ extension ReconcilliationListView {
         } label: {
             Label("Close Period", systemImage: "checkmark.square.fill")
         }
-        .disabled(!row.rec.canCloseAccountingPeriod( ) || row.rec.closed)
+        .disabled(!row.rec.canClose( ) || row.rec.closed)
         
         Button {
             appState.selectedReconciliationID = row.id

@@ -228,9 +228,9 @@ extension Reconciliation {
         }
     }
 
-    // MARK: --- CanCloseAccountingPeriod
-    func canCloseAccountingPeriod( ) -> Bool {
-        guard let context = self.managedObjectContext else { return false }
+    // MARK: --- CanClose
+    func canClose( ) -> Bool {
+//            guard let context = self.managedObjectContext else { return false }
         return reconciliationGap( ) == 0
             && isValid( )
             && isPreviousClosed( )
@@ -238,7 +238,7 @@ extension Reconciliation {
 
     // MARK: --- CanDelete
     func canDelete( ) -> Bool {
-        guard let context = self.managedObjectContext,
+        guard /*let context = self.managedObjectContext,*/
               !closed else { return false }
         
         if previousEndingBalance == 0 && hasLaterReconciliation( ) {
