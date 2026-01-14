@@ -157,8 +157,11 @@ struct BrowseTransactionsView: View {
     #endif
     // Checked Selection State
     @State private var selectionActive: Bool = false
-    // Running Total
-    @State private var checkedTotal: Decimal = 0
+    // Running Totals
+    private var checkedTotal: Decimal {  positiveCheckedTotal + negativeCheckedTotal }
+    @State private var positiveCheckedTotal: Decimal = 0
+    @State private var negativeCheckedTotal: Decimal = 0
+
     
     // MARK: --- Constants
     private let macOSRowHeight: CGFloat = 28
@@ -204,10 +207,14 @@ struct BrowseTransactionsView: View {
         })
     }
     
-    private func updateRunningTotal() {
+   
+    private func updateRunningTotals() {
         guard allowSelection else { return } // Do nothing if selection Not allowed. We have no checked total.
 //        checkedTotal = transactions.filter { $0.checked }.map { $0.txAmountInGBP }.reduce(0, +)
-        checkedTotal = transactions.filter { $0.reconciliation == appState.selectedReconciliationID }.map { $0.txAmountInGBP }.reduce(0, +)
+//        checkedTotal = transactions.filter { $0.reconciliation == appState.selectedReconciliationID }.map { $0.txAmountInGBP }.reduce(0, +)
+//        checkedTotal = selectedReconciliation?.sumInNativeCurrency() ?? 0
+        negativeCheckedTotal = selectedReconciliation?.sumNegativeAmountsInNativeCurrency() ?? 0
+        positiveCheckedTotal = selectedReconciliation?.sumPositiveAmountsInNativeCurrency() ?? 0
     }
 
     // MARK: --- Derived Rows
@@ -223,7 +230,7 @@ struct BrowseTransactionsView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             statusBar
         }
-        .onAppear { updateRunningTotal() }
+        .onAppear { updateRunningTotals() }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .toolbar { toolbarItems }
         .onChange(of: selectedAccountingPeriod) { _, _ in
@@ -590,17 +597,19 @@ extension BrowseTransactionsView {
                                 
                                 if newValue {
                                     // Assign transaction to reconciliation
-                                    row.transaction.reconciliation = rec
+                                    rec.addToTransactions(row.transaction)
+//                                    row.transaction.reconciliation = rec
                                 } else {
                                     // Remove only if it currently belongs to this reconciliation
                                     if row.transaction.reconciliation == rec {
-                                        row.transaction.reconciliation = nil
+                                        rec.removeFromTransactions(row.transaction)
+//                                        row.transaction.reconciliation = nil
                                     }
                                 }
                                 
                                 // Save changes and update totals
                                 try? viewContext.save()
-                                updateRunningTotal()
+                                updateRunningTotals()
                             }
                         }
                 ))
@@ -700,7 +709,7 @@ extension BrowseTransactionsView {
                 }
 
                 try? viewContext.save()
-                updateRunningTotal()  // This now uses reconciliation as the source of truth
+                updateRunningTotals()  // This now uses reconciliation as the source of truth
                 
 //                // Toggle only the checkbox when selection mode is active
 //                row.checked.toggle()
@@ -993,6 +1002,32 @@ extension BrowseTransactionsView {
     // MARK: --- WorkingToolbar
     private var workingToolbar: some View {
         
+        // Compute checked totals as strings
+        
+        var checkedTotalAsString: String {
+            return AmountFormatter.anyAmountAsString(amount: checkedTotal, currency: .GBP, withSymbol: showCurrencySymbols)
+        }
+        
+        var positiveCheckedTotalAsString: String {
+            return AmountFormatter.anyAmountAsString(amount: positiveCheckedTotal, currency: .GBP, withSymbol: showCurrencySymbols)
+//            let total = transactions
+//                .filter { $0.reconciliation == appState.selectedReconciliationID }
+//                .map { $0.txAmountInGBP }
+//                .filter { $0 > 0 }
+//                .reduce(0, +)
+//            return AmountFormatter.anyAmountAsString(amount: total, currency: .GBP, withSymbol: showCurrencySymbols)
+        }
+
+        var negativeCheckedTotalAsString: String {
+            return AmountFormatter.anyAmountAsString(amount: negativeCheckedTotal, currency: .GBP, withSymbol: showCurrencySymbols)
+//            let total = transactions
+//                .filter { $0.reconciliation == appState.selectedReconciliationID }
+//                .map { $0.txAmountInGBP }
+//                .filter { $0 < 0 }
+//                .reduce(0, +)
+//            return AmountFormatter.anyAmountAsString(amount: total, currency: .GBP, withSymbol: showCurrencySymbols)
+        }
+        
         var openingBalanceAsString: String {
             guard
                 let recID = appState.selectedReconciliationID,
@@ -1000,23 +1035,7 @@ extension BrowseTransactionsView {
             else { return "" }
             return rec.openingBalanceAsString()
         }
-//
-//        var checkedTotalAsString: String {
-//            guard
-//                let recID = appState.selectedReconciliationID,
-//                let rec = reconciliations.first(where: { $0.objectID == recID })
-//            else { return "" }
-//            return rec.sumCheckedInNativeCurrencyAsString()
-//        }
-//
-//        var endingBalanceAsString: String {
-//            guard
-//                let recID = appState.selectedReconciliationID,
-//                let rec = reconciliations.first(where: { $0.objectID == recID })
-//            else { return "" }
-//            return rec.endingBalanceAsString()
-//        }
-//
+
         var reconciliationGapAsString: String {
             guard
                 let recID = appState.selectedReconciliationID,
@@ -1024,32 +1043,6 @@ extension BrowseTransactionsView {
             else { return "" }
             return rec.reconciliationGapAsString()
         }
-//
-//        
-//        
-//        let openingBalanceAsStringX: String = {
-//            guard let recID = appState.selectedReconciliationID,
-//                  let rec = reconciliations.first(where: { $0.objectID == recID }) else { return "" }
-//            return rec.openingBalanceAsString()
-//        }()
-//        
-//        let checkedTotalAsStringX: String = {
-//            guard let recID = appState.selectedReconciliationID,
-//                  let rec = reconciliations.first(where: { $0.objectID == recID }) else { return ""}
-//            return rec.sumCheckedInNativeCurrencyAsString()
-//        }()
-//        
-//        let endingBalanceAsStringX: String = {
-//            guard let recID = appState.selectedReconciliationID,
-//                  let rec = reconciliations.first(where: { $0.objectID == recID }) else { return ""}
-//            return rec.endingBalanceAsString()
-//        }()
-//        
-        let reconciliationGapAsStringX: String = {
-            guard let recID = appState.selectedReconciliationID,
-                  let rec = reconciliations.first(where: { $0.objectID == recID }) else { return "" }
-            return rec.reconciliationGapAsString()
-        }()
         
         return HStack(spacing: 16) {
             
@@ -1083,24 +1076,35 @@ extension BrowseTransactionsView {
              let rec = selectedReconciliation {
                 
                 // Opening Balance
-                Text("Opening: \(openingBalanceAsString)")
+                Text("Opening:\n \(openingBalanceAsString)")
                     .fontWeight(.semibold)
-                    .foregroundColor(.gray)
+
                 
                 // Checked Total
-                Text("Checked: \(rec.sumCheckedInNativeCurrencyAsString())")
+//                Text("Checked total: \(rec.sumCheckedInNativeCurrencyAsString())")
+                Text ("Checked total:\n \( checkedTotalAsString )")
+                    .fontWeight(.semibold)
+                    .foregroundColor(.orange)
+                
+                // Checked Positive
+                Text("Checked positive:\n \( positiveCheckedTotalAsString )")
+                    .fontWeight(.semibold)
+                    .foregroundColor(.orange)
+                
+                // Checked Negative
+                Text("Checked negative:\n \( negativeCheckedTotalAsString )")
                     .fontWeight(.semibold)
                     .foregroundColor(.orange)
 
                 // Target / Ending Balance
-                Text("Target: \(rec.endingBalanceAsString())")
+                Text("Target:\n \(rec.endingBalanceAsString())")
                     .fontWeight(.semibold)
                     .foregroundColor(.blue)
 
                 // Gap
-                Text("Gap: \(reconciliationGapAsStringX)")
+                Text("Gap:\n \(reconciliationGapAsString)")
                     .fontWeight(.semibold)
-//                    .foregroundColor(reconciliationGap < 0 ? .red : .green)
+//                    .foregroundColor(rec.reconciliationGap < 0 ? .red : .green)
             }
 
             Spacer()

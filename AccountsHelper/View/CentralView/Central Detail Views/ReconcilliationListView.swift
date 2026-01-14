@@ -291,7 +291,7 @@ extension ReconcilliationListView {
     
     // MARK: --- HasInvalidTransactions
     private func hasInvalidTransactions(_ row: ReconciliationRow) -> Bool {
-        !(row.rec.isValid(in: context))
+        !(row.rec.isValid( ))
     }
     
     // MARK: --- DeleteReconciliation
@@ -333,7 +333,7 @@ extension ReconcilliationListView {
                 let keys = Array(rec.entity.attributesByName.keys)
                 let savedData = rec.dictionaryWithValues(forKeys: keys)
 
-                try rec.close(in: context)
+                try rec.close( )
                 try context.save()
                 DispatchQueue.main.async {
                     refreshRows()
@@ -521,12 +521,12 @@ extension ReconcilliationListView {
         } label: {
             Label("Close Period", systemImage: "checkmark.square.fill")
         }
-        .disabled(!row.rec.canCloseAccountingPeriod(in: context) || row.rec.closed)
+        .disabled(!row.rec.canCloseAccountingPeriod( ) || row.rec.closed)
         
         Button {
             appState.selectedReconciliationID = row.id
             do {
-                try row.rec.reopen(in: context)
+                try row.rec.reopen( )
                 refreshRows()
                 appState.refreshInspector()
             } catch {
@@ -535,7 +535,7 @@ extension ReconcilliationListView {
         } label: {
             Label("Reopen Period", systemImage: "arrow.uturn.left.square.fill")
         }
-        .disabled(!row.rec.isClosed || !row.rec.canReopenAccountingPeriod(in: context))
+        .disabled(!row.rec.isClosed || !row.rec.canReopenAccountingPeriod( ))
         
         Divider()
         
@@ -545,6 +545,6 @@ extension ReconcilliationListView {
         } label: {
             Label("Delete", systemImage: "trash")
         }
-        .disabled(!row.rec.canDelete(in: context))
+        .disabled(!row.rec.canDelete( ))
     }
 }
