@@ -109,6 +109,10 @@ struct BrowseTransactionsView: View {
     var showReconciliationFigures: Bool { mode == .reconciliationAssignmentBrowsing }
     var allowSelection:   Bool { mode == .reconciliationAssignmentBrowsing }
     var allowFiltering:   Bool { mode == .generalBrowsing}
+    private var canActivateSelection: Bool {
+        guard let rec = selectedReconciliation else { return false }
+        return !rec.closed
+    }
 
     // MARK: --- Environment
     @Environment(\.managedObjectContext) internal var viewContext
@@ -834,6 +838,7 @@ extension BrowseTransactionsView {
         Group {
             ToolbarItem {
                 Button(action: {
+                    guard canActivateSelection || selectionActive else { return }
                     selectionActive.toggle()
                     if selectionActive {
                         selectedTransactionIDs.removeAll()
