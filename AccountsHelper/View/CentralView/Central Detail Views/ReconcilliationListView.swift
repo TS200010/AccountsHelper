@@ -182,81 +182,83 @@ extension ReconcilliationListView {
     
     // MARK: --- reconciliationTableView
     private var reconciliationTableView: some View {
-        VStack(alignment: .leading) {
-            ForEach(groupedReconciliationRows, id: \.period) { period, rows in
-                Text(period.displayStringWithOpening)
-                    .font(.headline)
-                    .padding(.top, 4)
-                
-                Table(rows, selection: Binding(get: {
-                    appState.selectedReconciliationID.map { Set([$0]) } ?? Set()
-                }, set: { newSelection in
-                    if let selectedID = newSelection.first {
-                        appState.selectedReconciliationID = selectedID
-                        appState.replaceInspectorView(with: .viewReconciliation)
-                    }
-                })) {
-                    TableColumn("Payment Method") { row in
-                        Text(row.rec.paymentMethod.description)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .foregroundColor(row.rec.closed ? .blue : (hasInvalidTransactions(row) ? .red : .primary))
-                            .contentShape(Rectangle())
-                            .contextMenu { rowContextMenu(row) }
-                    }
+        ScrollView {
+            VStack(alignment: .leading) {
+                ForEach(groupedReconciliationRows, id: \.period) { period, rows in
+                    Text(period.displayStringWithOpening)
+                        .font(.headline)
+                        .padding(.top, 4)
                     
-                    TableColumn("Opening Balance") { row in
-                        Text( row.rec.openingBalanceAsString() )
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .foregroundColor(row.rec.closed ? .blue : (hasInvalidTransactions(row) ? .red : .primary))
-                            .contentShape(Rectangle())
-                            .contextMenu { rowContextMenu(row) }
-                    }
-                    
-
-                    TableColumn("Net Transactions") { row in
-                        Text( row.rec.sumCheckedInNativeCurrencyAsString() )
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .foregroundColor(row.rec.closed ? .blue : (hasInvalidTransactions(row) ? .red : .primary))
-                            .contentShape(Rectangle())
-                            .contextMenu { rowContextMenu(row) }
-                    }
-                    
-                    TableColumn("Ending Balance") { row in
-//                        Text(row.rec.endingBalance.formattedAsCurrency(row.rec.currency))
-                        Text(row.rec.endingBalanceAsString())
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .foregroundColor(row.rec.closed ? .blue : (hasInvalidTransactions(row) ? .red : .primary))
-                            .contentShape(Rectangle())
-                            .contextMenu { rowContextMenu(row) }
-                    }
-                    
-                    TableColumn("Statement Date") { row in
-                        if let date = row.rec.statementDate {
-                            Text(date, style: .date)
-                                .foregroundColor(row.rec.closed ? .blue : .gray)
+                    Table(rows, selection: Binding(get: {
+                        appState.selectedReconciliationID.map { Set([$0]) } ?? Set()
+                    }, set: { newSelection in
+                        if let selectedID = newSelection.first {
+                            appState.selectedReconciliationID = selectedID
+                            appState.replaceInspectorView(with: .viewReconciliation)
+                        }
+                    })) {
+                        TableColumn("Payment Method") { row in
+                            Text(row.rec.paymentMethod.description)
                                 .frame(maxWidth: .infinity, alignment: .leading)
+                                .foregroundColor(row.rec.closed ? .blue : (hasInvalidTransactions(row) ? .red : .primary))
                                 .contentShape(Rectangle())
                                 .contextMenu { rowContextMenu(row) }
                         }
-                    }
-                    
-                    TableColumn("Gap") { row in
-                        if row.gap != 0 {
-                            Text(row.rec.reconciliationGap().formattedAsCurrency(row.rec.currency))
-//                            Text(row.gap.formattedAsCurrency(row.rec.currency))
-                                .foregroundColor(row.rec.closed ? .blue : .red)
+                        
+                        TableColumn("Opening Balance") { row in
+                            Text( row.rec.openingBalanceAsString() )
                                 .frame(maxWidth: .infinity, alignment: .leading)
+                                .foregroundColor(row.rec.closed ? .blue : (hasInvalidTransactions(row) ? .red : .primary))
                                 .contentShape(Rectangle())
                                 .contextMenu { rowContextMenu(row) }
                         }
+                        
+                        
+                        TableColumn("Net Transactions") { row in
+                            Text( row.rec.sumCheckedInNativeCurrencyAsString() )
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .foregroundColor(row.rec.closed ? .blue : (hasInvalidTransactions(row) ? .red : .primary))
+                                .contentShape(Rectangle())
+                                .contextMenu { rowContextMenu(row) }
+                        }
+                        
+                        TableColumn("Ending Balance") { row in
+                            //                        Text(row.rec.endingBalance.formattedAsCurrency(row.rec.currency))
+                            Text(row.rec.endingBalanceAsString())
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .foregroundColor(row.rec.closed ? .blue : (hasInvalidTransactions(row) ? .red : .primary))
+                                .contentShape(Rectangle())
+                                .contextMenu { rowContextMenu(row) }
+                        }
+                        
+                        TableColumn("Statement Date") { row in
+                            if let date = row.rec.statementDate {
+                                Text(date, style: .date)
+                                    .foregroundColor(row.rec.closed ? .blue : .gray)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .contentShape(Rectangle())
+                                    .contextMenu { rowContextMenu(row) }
+                            }
+                        }
+                        
+                        TableColumn("Gap") { row in
+                            if row.gap != 0 {
+                                Text(row.rec.reconciliationGap().formattedAsCurrency(row.rec.currency))
+                                //                            Text(row.gap.formattedAsCurrency(row.rec.currency))
+                                    .foregroundColor(row.rec.closed ? .blue : .red)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .contentShape(Rectangle())
+                                    .contextMenu { rowContextMenu(row) }
+                            }
+                        }
                     }
+                    .tableStyle(.inset)
+                    .frame(minHeight: CGFloat(rows.count + 1) * 34)
+                    
                 }
-                .tableStyle(.inset)
-                .frame(minHeight: CGFloat(rows.count) * 28)
-
             }
+            .padding(.horizontal)
         }
-        .padding(.horizontal)
     }
 }
 
