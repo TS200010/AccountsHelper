@@ -119,8 +119,9 @@ struct CentralViews: View {
         case .mergeTransactionsView(let txs, let onComplete):
             MergeTransactionsView(transactions: txs, onComplete: onComplete)
             
+            // TODO: Remove the let here
         case .categoriesSummary(let predicate):
-            CategoriesSummaryView(predicate: predicate)
+            CategoriesSummaryView( /*predicate: predicate*/ )
             
         case .exportCD:
             ExportCD()

@@ -37,12 +37,12 @@ extension Reconciliation {
 
 // MARK: --- COMPUTED PROPERTIES
 extension Reconciliation {
-
+    
     // MARK: --- AccountingPeriod
     var accountingPeriod: AccountingPeriod {
         AccountingPeriod(year: Int(periodYear), month: Int(periodMonth))
     }
-
+    
     // MARK: --- Currency
     var currency: Currency {
         get { Currency(rawValue: currencyCD) ?? .unknown }
@@ -62,11 +62,11 @@ extension Reconciliation {
             .sorted(by: { $0.transactionDate ?? Date.distantPast < $1.transactionDate ?? Date.distantPast })
         ?? []
     }
-
-
+    
+    
     // MARK: --- IsClosed
     var isClosed: Bool { closed }
-
+    
     // MARK: --- IsAnOpeningBalance
     var isAnOpeningBalance: Bool {
         guard let date = statementDate else { return false }
@@ -74,7 +74,7 @@ extension Reconciliation {
         let sentinel = calendar.date(from: DateComponents(year: 1, month: 1, day: 2))!
         return date < sentinel
     }
-
+    
     // MARK: --- PaymentMethod
     var paymentMethod: PaymentMethod {
         get { PaymentMethod(rawValue: paymentMethodCD) ?? .unknown }
@@ -91,7 +91,7 @@ extension Reconciliation {
         get { Decimal(endingBalanceCD) / 100 }
         set { endingBalanceCD = decimalToCents(newValue) }
     }
-
+    
     // MARK: --- PreviousEndingBalance
     var previousEndingBalance: Decimal {
         if let context = self.managedObjectContext,
@@ -112,11 +112,16 @@ extension Reconciliation {
     
     // MARK: --- ReconciliationGap
     func reconciliationGap() -> Decimal {
-
+        
         if isAnOpeningBalance { return 0 }
         
         let gap = previousEndingBalance - sumInNativeCurrency( /*mode: .checked*/ ) - endingBalance
         
+//        if gap > 0.00 || gap < 0.00 { return 0 }
+        let tolerance: Decimal = 0.01
+        if gap.magnitude <= tolerance {
+            return 0
+        }
         return gap
     }
     
@@ -255,13 +260,14 @@ extension Reconciliation {
         try context.save()
     }
 
+    // MARK: --- KEEP AS WE REALLY SHOULD BE USING THIS I THINK BUT IN THE VIEW WE ARE MAKING OUR OWN
     // MARK: --- FetchCandidateTransactions
     // This fetch returns the superset of transactions in the period/payment method,
     // used to offer candidate transactions for adding/removing from this reconciliation.
-    func fetchCandidateTransactions( ) throws -> [Transaction] {
+    func fetchCandidateTransactions_NOT_USED( ) throws -> [Transaction] {
         guard let context = self.managedObjectContext else { return [] }
         let request: NSFetchRequest<Transaction> = Transaction.fetchRequest()
-        request.predicate = self.transactionsPredicate()
+        request.predicate = self.transactionsPredicate_NOT_USED()
         request.sortDescriptors = [NSSortDescriptor(key: "transactionDate", ascending: true)]
         return try context.fetch(request)
 //        let request: NSFetchRequest<Transaction> = Transaction.fetchRequest()
@@ -321,8 +327,9 @@ extension Reconciliation {
     }
     
 
+    // MARK: --- KEEP AS WE REALLY SHOULD BE USING THIS I THINK BUT IN THE VIEW WE ARE MAKING OUR OWN
     // MARK: --- TransactionsPredicate
-    func transactionsPredicate( ) -> NSPredicate {
+    func transactionsPredicate_NOT_USED( ) -> NSPredicate {
         var predicates: [NSPredicate] = []
         
         if isClosed {
@@ -365,10 +372,18 @@ extension Reconciliation {
 
     // MARK: --- Reopen
     func reopen( ) throws {
-        guard let context = self.managedObjectContext else { return }
+        guard let context = self.managedObjectContext else {
+            print("No managed object context found!")
+            return
+        }
+
+        print("Transactions in context:")
+        for tx in transactionsArray {
+            print("Transaction \(tx.objectID): closed = \(tx.closed)")
+        }
+        
+        for tx in transactionsArray { tx.closed = false }
         closed = false
-//        let txs = try fetchCandidateTransactions(in: context)
-        for tx in transactionsArray { tx.closed = closed }
         try context.save()
     }
 

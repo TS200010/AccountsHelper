@@ -503,21 +503,6 @@ extension ReconcilliationListView {
         } label: {
             Label("Reset Checked", systemImage: "arrow.uturn.backward.circle")
         }
-
-        
-//        Button {
-//            appState.selectedReconciliationID = row.id
-//            appState.replaceInspectorView(with: .viewReconciliation)
-//            let predicate = NSPredicate(
-//                format: "paymentMethodCD == %d AND transactionDate >= %@ AND transactionDate <= %@",
-//                row.rec.paymentMethod.rawValue,
-//                row.rec.transactionStartDate as NSDate,
-//                row.rec.transactionEndDate as NSDate
-//            )
-//            appState.pushCentralView(.browseTransactions(predicate))
-//        } label: {
-//            Label("Transactions", systemImage: "list.bullet")
-//        }
         
         Button {
             let predicate = NSPredicate(

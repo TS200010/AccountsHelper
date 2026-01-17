@@ -15,20 +15,39 @@ struct CategoriesSummaryView: View {
     @AppStorageEnum("showCurrencySymbols", defaultValue: .always)
     var showCurrencySymbols: ShowCurrencySymbolsEnum
     
-    
-    // MARK: --- FetchRequest
-    @FetchRequest private var transactions: FetchedResults<Transaction>
-    
     // MARK: --- State
     @State private var selectedCategoryID: Int32?
     
-    // MARK: --- Init
-    init(predicate: NSPredicate? = nil, isPrinting: Bool = false) {
-        _transactions = FetchRequest(
-            sortDescriptors: [NSSortDescriptor(keyPath: \Transaction.transactionDate, ascending: true)],
-            predicate: predicate
-        )
+    // MARK: --- FetchRequest
+//    @FetchRequest private var transactions: FetchedResults<Transaction>
+
+    // MARK: --- Resolved aggregate
+    private var reconciliation: Reconciliation? {
+        guard let id = appState.selectedReconciliationID else { return nil }
+        return try? viewContext.existingObject(with: id) as? Reconciliation
     }
+    
+    // MARK: --- Derived data
+    private var transactions: [Transaction] {
+        guard
+            let reconciliation,
+            let set = reconciliation.transactions as? Set<Transaction>
+        else {
+            return []
+        }
+        return set.sorted {
+            ($0.transactionDate ?? .distantPast) <
+            ($1.transactionDate ?? .distantPast)
+        }
+    }
+    
+//    // MARK: --- Init
+//    init(predicate: NSPredicate? = nil, isPrinting: Bool = false) {
+//        _transactions = FetchRequest(
+//            sortDescriptors: [NSSortDescriptor(keyPath: \Transaction.transactionDate, ascending: true)],
+//            predicate: predicate
+//        )
+//    }
     
     // MARK: --- Local Variables
     private var currency: Currency? {
@@ -65,14 +84,19 @@ struct CategoriesSummaryView: View {
         }
         
         // Sum all tx amounts
-        for tx in transactions {
-            let amount = tx.txAmount
-            if amount < 0 {
-                result.totalCR += amount
-            } else if amount > 0 {
-                result.totalDR += amount
-            }
+        for posting in transactions.postings {
+            let amount = posting.amount
+            if amount < 0 { result.totalCR += amount }
+            else if amount > 0 { result.totalDR += amount }
         }
+//        for tx in transactions {
+//            let amount = tx.txAmountInGBP
+//            if amount < 0 {
+//                result.totalCR += amount
+//            } else if amount > 0 {
+//                result.totalDR += amount
+//            }
+//        }
         
         // Compute ending balance
         result.endBalance = result.startBalance - result.total

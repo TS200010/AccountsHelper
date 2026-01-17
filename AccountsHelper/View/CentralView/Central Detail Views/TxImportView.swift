@@ -34,7 +34,7 @@ struct TxImportView<Importer: TxImporter>: View {
         VStack(spacing: 20) {
             
             // MARK: --- Header
-            Text("\(Importer.displayName) Importer")
+            Text("\(Importer.displayName)")
                 .font(.title)
             
             Text(statusMessage)

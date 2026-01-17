@@ -36,6 +36,7 @@ extension BrowseTransactionsView {
         }
         
         // Compute Totals
+        
         for tx in transactions {
             let amount = tx.txAmount
             if amount < 0 {
@@ -106,6 +107,7 @@ extension BrowseTransactionsView {
         
         report.append(String(repeating: "-", count: columnWidths.values.reduce(0, +)) + "\n")
 
+        // TODO: --- Make this work for mixed currencies
         appendSummaryLine(title: "Total CR:", amount: totalCR)
         appendSummaryLine(title: "Total DR:", amount: totalDR)
         appendSummaryLine(title: "Net Total:", amount: netTotal)

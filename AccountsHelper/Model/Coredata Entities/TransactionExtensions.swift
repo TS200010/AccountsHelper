@@ -54,8 +54,6 @@ extension   Transaction {
     static func totalTxAmount<T: Sequence>(for transactions: T) -> Decimal where T.Element == Transaction {
         transactions.reduce(0) { $0 + $1.txAmount }
     }
-    
-    
 }
 
 // MARK: --- Computed properties for Transaction
