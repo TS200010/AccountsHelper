@@ -43,8 +43,10 @@ import ItMkLibrary
     case ToYokko            = 40
     case ToAJBell           = 41
     
-    case TFBofSToCash       = 50
-    case TFGBPToYen         = 51
+    case ToGBPCash          = 50
+    case ToYenCash          = 51
+    case ToBofSCA           = 52
+    case ToBofSPV           = 53
     
     case IntDivIncome       = 60
     case OtherIncome        = 61
@@ -107,8 +109,10 @@ import ItMkLibrary
         case .CouncilTax:       return String(localized: "CouncilTax")
         case .ToYokko:          return String(localized: "ToYokko")
         case .ToAJBell:         return String(localized: "ToAJBell")
-        case .TFBofSToCash:     return String(localized: "TFBofSToCash")
-        case .TFGBPToYen:       return String(localized: "TFGBPToYen")
+        case .ToGBPCash:        return String(localized: "ToGBPCash")
+        case .ToYenCash:        return String(localized: "ToYenCash")
+        case .ToBofSCA:         return String(localized: "ToBofSCA")
+        case .ToBofSPV:         return String(localized: "ToBofSPV")
         case .IntDivIncome:     return String(localized: "IntDivIncome")
         case .OtherIncome:      return String(localized: "OtherIncome")
         case .StatePensionT:    return String(localized: "StatePensionT")

@@ -114,21 +114,46 @@ struct CategoriesSummaryView: View {
 
     // MARK: --- CategoryRows
     internal var categoryRows: [CategoryRow] {
-        let grouped = Dictionary(grouping: transactions) { (tx: Transaction) in
-            tx.category
-        }
         let currentCurrency = currency ?? .unknown
-        
+
+        // Group postings by category
+        let groupedPostings = Dictionary(grouping: transactions.postings, by: { $0.category })
+
         return Category.allCases.map { category in
-            let txs = grouped[category] ?? []
-            let total = txs.reduce(Decimal(0)) { sum, tx in
-                sum + tx.txAmount
+            let postingsForCategory = groupedPostings[category] ?? []
+            let total = postingsForCategory.reduce(Decimal(0)) { sum, posting in
+                sum + posting.amount
             }
-            let ids = txs.map { $0.objectID }
-            
-            return CategoryRow(category: category, total: total, transactionIDs: ids, currency: currentCurrency )
+            let ids = postingsForCategory.compactMap { posting in
+                // Find all transaction IDs for this category
+                transactions.first(where: { tx in
+                    // Check if transaction contributes to this posting
+                    tx.splitCategory == posting.category || tx.splitRemainderCategory == posting.category
+                })?.objectID
+            }
+
+            return CategoryRow(category: category,
+                               total: total,
+                               transactionIDs: ids,
+                               currency: currentCurrency)
         }
     }
+//    internal var categoryRows: [CategoryRow] {
+//        let grouped = Dictionary(grouping: transactions) { (tx: Transaction) in
+//            tx.category
+//        }
+//        let currentCurrency = currency ?? .unknown
+//        
+//        return Category.allCases.map { category in
+//            let txs = grouped[category] ?? []
+//            let total = txs.reduce(Decimal(0)) { sum, tx in
+//                sum + tx.txAmount
+//            }
+//            let ids = txs.map { $0.objectID }
+//            
+//            return CategoryRow(category: category, total: total, transactionIDs: ids, currency: currentCurrency )
+//        }
+//    }
     
     // MARK: --- Body
     var body: some View {

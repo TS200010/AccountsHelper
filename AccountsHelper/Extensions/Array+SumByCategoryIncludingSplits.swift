@@ -11,7 +11,7 @@ import Foundation
 extension Array where Element == Transaction {
     
     // MARK: --- Sum by Category including Splits (GBP)
-    func sumByCategoryIncludingSplitsInGBP() -> [Category: Decimal] {
+    func sumByCategoryIncludingSplitsInGBPXXX() -> [Category: Decimal] {
         var result: [Category: Decimal] = [:]
         
         // Initialize all categories to 0

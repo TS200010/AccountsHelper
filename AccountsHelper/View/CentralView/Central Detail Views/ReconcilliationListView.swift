@@ -400,23 +400,30 @@ extension ReconcilliationListView {
     
     // MARK: --- CategoryTotals
     fileprivate func categoryTotals(for row: ReconciliationRow) -> [Category: Decimal] {
-        do {
-            let predicate = NSPredicate(
-                format: "paymentMethodCD == %d AND transactionDate >= %@ AND transactionDate <= %@",
-                row.rec.paymentMethod.rawValue,
-                row.rec.transactionStartDate as NSDate,
-                row.rec.transactionEndDate as NSDate
-            )
-            let fetchRequest: NSFetchRequest<Transaction> = Transaction.fetchRequest()
-            fetchRequest.predicate = predicate
-            let transactions = try context.fetch(fetchRequest)
-
-            return transactions.sumByCategoryIncludingSplitsInGBP()
-
-        } catch {
-            print("Failed to fetch category totals for reconciliation: \(error)")
-            return [:]
+        var totals: [Category: Decimal] = [:]
+        
+        for posting in row.rec.transactionsArray.postings {
+            totals[posting.category, default: 0] += posting.amount
         }
+
+        return totals
+//        do {
+//            let predicate = NSPredicate(
+//                format: "paymentMethodCD == %d AND transactionDate >= %@ AND transactionDate <= %@",
+//                row.rec.paymentMethod.rawValue,
+//                row.rec.transactionStartDate as NSDate,
+//                row.rec.transactionEndDate as NSDate
+//            )
+//            let fetchRequest: NSFetchRequest<Transaction> = Transaction.fetchRequest()
+//            fetchRequest.predicate = predicate
+//            let transactions = try context.fetch(fetchRequest)
+//
+//            return transactions.sumByCategoryIncludingSplitsInGBP()
+//
+//        } catch {
+//            print("Failed to fetch category totals for reconciliation: \(error)")
+//            return [:]
+//        }
     }
     
     // MARK: --- ExportXLSSummary
@@ -426,7 +433,14 @@ extension ReconcilliationListView {
 
         let text = Category.allCases.map { category in
             let total = totals[category] ?? 0
-            return "\(category.description)\t\(total.string2f)"
+            return """
+            \(category.description)\t\(AmountFormatter.anyAmountAsString(
+                amount: total,
+                currency: row.rec.paymentMethod.currency,
+                withSymbol: .never
+            ))
+"""
+//            return "\(category.description)\t\(total.string2f)"
         }.joined(separator: "\n")
 
         let pasteboard = NSPasteboard.general

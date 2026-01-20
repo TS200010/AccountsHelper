@@ -13,6 +13,43 @@ extension Reconciliation: CentsConvertible {}
 
 // MARK: --- INITIALISATION
 extension Reconciliation {
+    
+    func resetPayPalCategoriesToUnknownX() {
+        return 
+        
+        let context = self.managedObjectContext!
+            context.performAndWait {
+                let request: NSFetchRequest<Transaction> = Transaction.fetchRequest()
+                
+                // Filter for Bank of Scotland only (adjust this predicate if needed)
+                request.predicate = NSPredicate(format: "paymentMethodCD == %d", PaymentMethod.BofSCA.rawValue)
+                
+                do {
+                    let transactions = try context.fetch(request)
+                    var changed = false
+                    
+                    for tx in transactions {
+                        guard let payee = tx.payee, !payee.isEmpty else { continue }
+                        
+                        let trimmed = payee.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if trimmed.uppercased().hasPrefix("PAYPAL") {
+                            if tx.category != .unknown {
+                                tx.category = .unknown
+                                changed = true
+                            }
+                        }
+                    }
+                    
+                    if changed {
+                        try context.save()
+                    }
+                } catch {
+                    NSLog("Failed to reset PayPal categories: \(error)")
+                }
+            }
+        
+    }
+
 
     // MARK: --- ConvenienceInit
     convenience init(
@@ -372,6 +409,9 @@ extension Reconciliation {
 
     // MARK: --- Reopen
     func reopen( ) throws {
+        
+//        resetPayPalCategoriesToUnknown()
+        
         guard let context = self.managedObjectContext else {
             print("No managed object context found!")
             return
@@ -421,46 +461,36 @@ extension Reconciliation {
 
     // MARK: --- SumInNativeCurrency
     func sumInNativeCurrency( ) -> Decimal {
-        
-        let txs = self.transactionsArray
-        // Currency-sensitive summing
-        let total: Decimal
-        switch currency {
-        case .GBP:
-            total = txs.reduce(0) { $0 + $1.txAmountInGBP }
-        default:
-            total = txs.reduce(0) { $0 + $1.txAmount }
+        // Sum all postings, already converted to the reconciliation currency
+        return transactionsArray.postings.reduce(0) { sum, posting in
+            sum + posting.amount
         }
-        return total
     }
 
     // MARK: --- SumPositiveAmountsInNativeCurrency
     func sumPositiveAmountsInNativeCurrency() -> Decimal {
-        
-        let txs = self.transactionsArray
-        let total: Decimal
-        switch currency {
-        case .GBP:
-            total = txs.reduce(0) { $0 + max($1.txAmountInGBP, 0) }
-        default:
-            total = txs.reduce(0) { $0 + max($1.txAmount, 0) }
-        }
-        return total
+        return transactionsArray.postings
+            .reduce(0) { sum, posting in
+                if posting.amount > 0 {
+                    return sum + posting.amount
+                } else {
+                    return sum
+                }
+            }
     }
 
     // MARK: --- Sum Negative Amounts In Native Currency
     func sumNegativeAmountsInNativeCurrency() -> Decimal {
-        let txs = self.transactionsArray
-
-        let total: Decimal
-        switch currency {
-        case .GBP:
-            total = txs.reduce(0) { $0 + min($1.txAmountInGBP, 0) }
-        default:
-            total = txs.reduce(0) { $0 + min($1.txAmount, 0) }
-        }
-        return total
+        return transactionsArray.postings
+            .reduce(0) { sum, posting in
+                if posting.amount < 0 {
+                    return sum + posting.amount
+                } else {
+                    return sum
+                }
+            }
     }
+
 
     // MARK: --- CreateNew
     @discardableResult

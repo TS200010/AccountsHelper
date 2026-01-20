@@ -115,7 +115,6 @@ extension Transaction {
         set { splitCategoryCD = newValue.rawValue }
     }
     
-
     var splitRemainderCategory: Category {
         get { Category(rawValue: categoryCD) ?? .unknown }
     }
@@ -138,48 +137,60 @@ extension Transaction {
         get { Decimal(splitAmountCD) / 100 }
         set { splitAmountCD = decimalToCents(newValue) }
     }
-
+    
     // Computed Amounts
-    var splitAmountInGBP: Decimal {
-        assert(exchangeRate != 0)
-        let converted = splitAmount / exchangeRate   // convert to GBP
-        let value = converted + commissionAmount     // add commission
-        if value.isNaN { return Decimal(0) }
-        return value
-    }
-
     var splitRemainderAmount: Decimal {
         get { txAmount - splitAmount }
     }
 
-    var splitRemainderAmountInGBP: Decimal {
+    // Raw Amounts in GBP
+    var splitAmountInGBP: Decimal {
         assert(exchangeRate != 0)
-        let value = splitRemainderAmount / exchangeRate
-        if value.isNaN { return Decimal(0) }
-        return value
+        let converted = splitAmount / exchangeRate   // convert to GBP
+//        let value = converted + commissionAmount     // add commission
+        if converted.isNaN { return Decimal(0) }
+        return converted
     }
     
     var txAmountInGBP: Decimal {
         assert(exchangeRate != 0)
-        let value = txAmount / exchangeRate + commissionAmount
+        let value = txAmount / exchangeRate
+//        let value = txAmount / exchangeRate + commissionAmount
+        if value.isNaN { return Decimal(0) }
+        return value
+    }
+
+    // Computed Amounts in GBP
+    var splitRemainderAmountInGBP: Decimal {
+        assert(exchangeRate != 0)
+        let converted = splitRemainderAmount / exchangeRate
+        let value = converted// + commissionAmount     // add commission
         if value.isNaN { return Decimal(0) }
         return value
     }
 
     var totalAmountInGBP: Decimal {
-        let total = splitAmountInGBP + splitRemainderAmountInGBP
+        let total = splitAmountInGBP + splitRemainderAmountInGBP + commissionAmount
         var roundedTotal = Decimal()
         var totalCopy = total
         NSDecimalRound(&roundedTotal, &totalCopy, 2, .plain)
         return roundedTotal
+    }
+    
+    func convertToPaymentCurrency(amount: Decimal) -> Decimal {
+        // Safety fallback
+        guard exchangeRate != 0 else { return amount }
+
+        // No conversion if transaction currency matches payment method
+        if currency == paymentMethod.currency { return amount }
+
+        return amount / exchangeRate
     }
 }
 
 // MARK: --- Extensions to return amounts as Strings for easier incorporation into Views and Reports
 extension Transaction {
     
-    // MARK: --- AnyAmountAsString
-    // Moved to AmountFormatter
     
     // MARK: --- CommissionAmountAsString
     // Commission amount always in GBP
@@ -264,12 +275,15 @@ extension Transaction {
     }
     
     // MARK: --- TxAmountDualCurrencyAsString
-    func txAmountDualCurrencyAsString( withSymbol: ShowCurrencySymbolsEnum = .always ) -> String {
+    func totalAmountDualCurrencyAsString( withSymbol: ShowCurrencySymbolsEnum = .always ) -> String {
+        // NOTE: Here we are correctly mixin txAmount and totalAmount as we want to display the original transaction amount in say Yen and also the GBP amount posted on statements.
         var s1 = txAmountAsString(withSymbol: withSymbol)
+        // There should be no commission in this case so it is safe to retrun txAmountAsString
         if currency == .GBP { return s1 }
         if withSymbol == .never { s1 = "" }
         if s1 != "" { s1 += "\n" }
-        let s2 = AmountFormatter.anyAmountAsString( amount: txAmountInGBP, currency: .GBP, withSymbol: withSymbol )
+        // Now we convert the totalAmount for display as stated earlier.
+        let s2 = AmountFormatter.anyAmountAsString( amount: totalAmountInGBP, currency: .GBP, withSymbol: withSymbol )
 #if os(macOS)
         return "\(s1)\(s2)"
 #else

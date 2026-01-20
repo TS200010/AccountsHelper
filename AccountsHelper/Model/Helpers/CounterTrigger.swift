@@ -18,7 +18,8 @@ struct CounterTriggers {
     static let all: [CounterTrigger] = [
         .init(paymentMethod: .BofSPV, category: .VisaPayment, suggestedCounterPayment: .VISA),
         .init(paymentMethod: .BofSPV, category: .AMEXPayment, suggestedCounterPayment: .AMEX),
-        .init(paymentMethod: .BofSPV, category: .TFBofSToCash, suggestedCounterPayment: .CashGBP)
+        .init(paymentMethod: .BofSPV, category: .ToYenCash,   suggestedCounterPayment: .CashYEN),
+        .init(paymentMethod: .BofSPV, category: .ToGBPCash,   suggestedCounterPayment: .CashGBP)
     ]
     
     static func trigger(for paymentMethod: PaymentMethod, category: Category) -> PaymentMethod? {

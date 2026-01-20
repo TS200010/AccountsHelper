@@ -667,7 +667,7 @@ extension BrowseTransactionsView {
                 tableCell(row.reconciliationPeriodShortDescription, for: row)
                     .frame(width: scaledColumnWidths["Reconciliation"] ?? 60)
             
-                multiLineTableCell( row.transaction.txAmountDualCurrencyAsString(withSymbol: showCurrencySymbols), for: row, alignment: .trailing )
+                multiLineTableCell( row.transaction.totalAmountDualCurrencyAsString(withSymbol: showCurrencySymbols), for: row, alignment: .trailing )
                     .multilineTextAlignment(.trailing)
                     .frame(width: scaledColumnWidths["Amount"] ?? 130)
                 
