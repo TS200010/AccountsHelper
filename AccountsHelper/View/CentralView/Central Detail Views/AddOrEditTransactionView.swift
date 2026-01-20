@@ -37,7 +37,7 @@ struct AddOrEditTransactionView: View {
     @FocusState private var focusedField: AmountFieldIdentifier?
     // Counter Transaction
     @State private var counterTransactionActive: Bool = false
-    @State private var counterPaymentMethod: PaymentMethod? = nil
+    @State private var counterPaymentMethod: ReconcilableAccounts? = nil
     @State private var counterFXRate: Decimal = 0
     
     // MARK: --- External
@@ -271,11 +271,11 @@ struct AddOrEditTransactionView: View {
     struct CounterTransactionView: View {
         @Binding var transactionData: TransactionStruct
         @Binding var counterTransaction: Bool
-        @Binding var counterPaymentMethod: PaymentMethod?
+        @Binding var counterPaymentMethod: ReconcilableAccounts?
         @Binding var counterFXRate: Decimal
         
         // Suggested counter methods based on PaymentMethod + Category
-        private var suggestedCounterMethods: [PaymentMethod] {
+        private var suggestedCounterMethods: [ReconcilableAccounts] {
             if let suggested = CounterTriggers.trigger(
                 for: transactionData.paymentMethod,
                 category: transactionData.category

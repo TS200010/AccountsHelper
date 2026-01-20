@@ -17,7 +17,7 @@ struct ReconciliationExtensionsTests {
 
     // MARK: --- Helper Methods
     private func makeReconciliation(
-        paymentMethod: PaymentMethod = .VISA,
+        paymentMethod: ReconcilableAccounts = .VISA,
         year: Int32 = 2025,
         month: Int32 = 10,
         statementDate: Date = Date(),
@@ -68,7 +68,7 @@ struct ReconciliationExtensionsTests {
         )
         #expect(rec.periodYear == 2025)
         #expect(rec.periodMonth == 10)
-        #expect(rec.paymentMethodCD == PaymentMethod.VISA.rawValue)
+        #expect(rec.paymentMethodCD == ReconcilableAccounts.VISA.rawValue)
         #expect(rec.statementDate == date)
         #expect(rec.endingBalance == 123.45)
         #expect(rec.currency == .USD)

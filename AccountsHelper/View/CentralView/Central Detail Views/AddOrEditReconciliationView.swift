@@ -19,7 +19,7 @@ struct AddOrEditReconciliationView: View {
     @Environment(\.dismiss) private var dismiss
     
     // MARK: --- Local State
-    @State private var selectedPaymentMethod: PaymentMethod = .unknown
+    @State private var selectedPaymentMethod: ReconcilableAccounts = .unknown
     @State private var statementDate = Date()
     @State private var endingBalance: String = ""
     @State private var selectedYear = Calendar.current.component(.year, from: Date())
@@ -101,7 +101,7 @@ extension AddOrEditReconciliationView {
                 Text("Payment Method:")
                     .frame(width: 140, alignment: .trailing)
                 Picker("", selection: $selectedPaymentMethod) {
-                    ForEach(PaymentMethod.allCases, id: \.self) { method in
+                    ForEach(ReconcilableAccounts.allCases, id: \.self) { method in
                         Text(method.description).tag(method)
                     }
                 }

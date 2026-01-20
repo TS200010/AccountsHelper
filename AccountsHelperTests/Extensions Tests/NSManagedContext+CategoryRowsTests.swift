@@ -66,7 +66,7 @@ struct NSManagedContextCategoryRowsTests {
         tx.txAmountCD = 1500               // total 15 GBP
         tx.exchangeRateCD = 100
         tx.commissionAmountCD = 0
-        tx.paymentMethodCD = PaymentMethod.CashGBP.rawValue
+        tx.paymentMethodCD = ReconcilableAccounts.CashGBP.rawValue
         tx.transactionDate = Date()
 
         try context.save()
@@ -90,7 +90,7 @@ struct NSManagedContextCategoryRowsTests {
         tx1.categoryCD = remainderCat.rawValue
         tx1.txAmountCD = 1200                // total 12 GBP
         tx1.exchangeRateCD = 100
-        tx1.paymentMethodCD = PaymentMethod.CashGBP.rawValue
+        tx1.paymentMethodCD = ReconcilableAccounts.CashGBP.rawValue
         tx1.transactionDate = Date()
 
         let tx2 = Transaction(context: context)
@@ -99,12 +99,12 @@ struct NSManagedContextCategoryRowsTests {
         tx2.categoryCD = remainderCat.rawValue
         tx2.txAmountCD = 800                  // total 8 GBP
         tx2.exchangeRateCD = 100
-        tx2.paymentMethodCD = PaymentMethod.AMEX.rawValue
+        tx2.paymentMethodCD = ReconcilableAccounts.AMEX.rawValue
         tx2.transactionDate = Date()
 
         try context.save()
 
-        let predicate = NSPredicate(format: "paymentMethodCD == %d", PaymentMethod.CashGBP.rawValue)
+        let predicate = NSPredicate(format: "paymentMethodCD == %d", ReconcilableAccounts.CashGBP.rawValue)
         let result = context.categoryTotals(for: predicate)
 
         #expect(result[splitCat] == 10)      // only tx1 counted

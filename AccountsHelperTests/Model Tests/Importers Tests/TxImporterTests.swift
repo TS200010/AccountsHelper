@@ -12,7 +12,7 @@ struct MockImporter: TxImporter {
     }
     
     static var displayName: String = "Mock"
-    static var paymentMethod: PaymentMethod = .CashGBP
+    static var paymentMethod: ReconcilableAccounts = .CashGBP
     static var importType: ImportType = .csv
 
 //    @MainActor

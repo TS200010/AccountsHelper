@@ -29,7 +29,7 @@ enum MergeResult {
 @MainActor
 protocol TxImporter {
     static var displayName: String { get }
-    static var paymentMethod: PaymentMethod { get }
+    static var paymentMethod: ReconcilableAccounts { get }
     static var importType: ImportType { get }
 
     /// Import CSV and return Transactions, using the mergeHandler when duplicates are found.

@@ -19,7 +19,7 @@ struct TransactionExtensionsTests {
         splitAmount: Decimal = 40,
         commission: Decimal = 5,
         currency: Currency = .GBP,
-        paymentMethod: PaymentMethod = .VISA,
+        paymentMethod: ReconcilableAccounts = .VISA,
         date: Date = Date(),
         context: NSManagedObjectContext
     ) -> Transaction {

@@ -36,7 +36,7 @@ struct TransactionStruct {
     var extendedDetails: String?
     var payee: String?
     var payer: Payer
-    var paymentMethod: PaymentMethod
+    var paymentMethod: ReconcilableAccounts
     
     var reference: String?
     
@@ -88,7 +88,7 @@ struct TransactionStruct {
         extendedDetails: String? = nil,
         payee: String? = nil,
         payer: Payer = .tony,
-        paymentMethod: PaymentMethod = .AMEX,
+        paymentMethod: ReconcilableAccounts = .AMEX,
         reference: String? = nil,
         splitAmount: Decimal = 0,
         splitCategory: Category = .unknown,

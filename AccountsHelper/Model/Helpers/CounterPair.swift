@@ -9,15 +9,15 @@ import Foundation
 
 struct CounterPair: Identifiable, Hashable {
     let id = UUID()
-    let from: PaymentMethod
-    let to: PaymentMethod
+    let from: ReconcilableAccounts
+    let to: ReconcilableAccounts
     let name: String
 
-    func involves(_ method: PaymentMethod) -> Bool {
+    func involves(_ method: ReconcilableAccounts) -> Bool {
         from == method || to == method
     }
 
-    func counterparty(for method: PaymentMethod) -> PaymentMethod? {
+    func counterparty(for method: ReconcilableAccounts) -> ReconcilableAccounts? {
         if from == method { return to }
         if to == method { return from }
         return nil

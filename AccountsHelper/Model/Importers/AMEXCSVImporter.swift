@@ -11,7 +11,7 @@ import CoreData
 class AMEXCSVImporter: TxImporter {
     
     static var displayName: String = "AMEX CSV Importer"
-    static var paymentMethod: PaymentMethod = .AMEX
+    static var paymentMethod: ReconcilableAccounts = .AMEX
     static var importType: ImportType = .csv
 
     @MainActor

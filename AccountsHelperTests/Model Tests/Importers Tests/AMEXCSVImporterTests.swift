@@ -89,7 +89,7 @@ struct AMEXCSVImporterParsingTests {
     func testFindMergeCandidate_snapshotLogic() {
         struct TxMock {
             let txAmount: Decimal
-            let paymentMethod: PaymentMethod
+            let paymentMethod: ReconcilableAccounts
             let transactionDate: Date
         }
 
@@ -117,7 +117,7 @@ struct AMEXCSVImporterParsingTests {
     func testFindMergeCandidate_noMatch() {
         struct TxMock {
             let txAmount: Decimal
-            let paymentMethod: PaymentMethod
+            let paymentMethod: ReconcilableAccounts
             let transactionDate: Date
         }
 

@@ -11,7 +11,7 @@ import CoreData
 class BofSCSVImporter: TxImporter {
 
     static var displayName: String = "BofS CSV Importer"
-    static var paymentMethod: PaymentMethod = .BofSPV
+    static var paymentMethod: ReconcilableAccounts = .BofSPV
     static var importType: ImportType = .csv
 
     @MainActor

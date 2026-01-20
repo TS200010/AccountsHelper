@@ -22,7 +22,7 @@ extension Reconciliation {
                 let request: NSFetchRequest<Transaction> = Transaction.fetchRequest()
                 
                 // Filter for Bank of Scotland only (adjust this predicate if needed)
-                request.predicate = NSPredicate(format: "paymentMethodCD == %d", PaymentMethod.BofSCA.rawValue)
+                request.predicate = NSPredicate(format: "paymentMethodCD == %d", ReconcilableAccounts.BofSCA.rawValue)
                 
                 do {
                     let transactions = try context.fetch(request)
@@ -56,7 +56,7 @@ extension Reconciliation {
         context: NSManagedObjectContext,
         year: Int32,
         month: Int32,
-        paymentMethod: PaymentMethod,
+        paymentMethod: ReconcilableAccounts,
         statementDate: Date,
         endingBalance: Decimal,
         currency: Currency
@@ -113,8 +113,8 @@ extension Reconciliation {
     }
     
     // MARK: --- PaymentMethod
-    var paymentMethod: PaymentMethod {
-        get { PaymentMethod(rawValue: paymentMethodCD) ?? .unknown }
+    var paymentMethod: ReconcilableAccounts {
+        get { ReconcilableAccounts(rawValue: paymentMethodCD) ?? .unknown }
         set { paymentMethodCD = newValue.rawValue }
     }
     
@@ -495,7 +495,7 @@ extension Reconciliation {
     // MARK: --- CreateNew
     @discardableResult
     static func createNew(
-        paymentMethod: PaymentMethod,
+        paymentMethod: ReconcilableAccounts,
         period: AccountingPeriod,
         statementDate: Date,
         endingBalance: Decimal,
@@ -519,7 +519,7 @@ extension Reconciliation {
     }
 
     // MARK: --- EnsureBaseline
-    static func ensureBaseline(for paymentMethod: PaymentMethod, in context: NSManagedObjectContext) throws -> Reconciliation {
+    static func ensureBaseline(for paymentMethod: ReconcilableAccounts, in context: NSManagedObjectContext) throws -> Reconciliation {
         let request: NSFetchRequest<Reconciliation> = Reconciliation.fetchRequest()
         request.predicate = NSPredicate(format: "paymentMethodCD == %d", paymentMethod.rawValue)
         request.fetchLimit = 1
@@ -544,7 +544,7 @@ extension Reconciliation {
 
     // MARK: --- FetchPrevious
     static func fetchPrevious(
-        for paymentMethod: PaymentMethod,
+        for paymentMethod: ReconcilableAccounts,
         before date: Date,
         context: NSManagedObjectContext
     ) throws -> Reconciliation? {
@@ -560,7 +560,7 @@ extension Reconciliation {
     }
 
     // MARK: --- MakePeriodKey
-    static func makePeriodKey(year: Int32, month: Int32, paymentMethod: PaymentMethod) -> String {
+    static func makePeriodKey(year: Int32, month: Int32, paymentMethod: ReconcilableAccounts) -> String {
         "\(year)-\(String(format: "%02d", month))-\(paymentMethod.code)"
     }
 }
@@ -586,7 +586,7 @@ extension Reconciliation {
 
     static func fetch(
         for period: AccountingPeriod,
-        paymentMethod: PaymentMethod,
+        paymentMethod: ReconcilableAccounts,
         context: NSManagedObjectContext
     ) throws -> [Reconciliation] {
         let request: NSFetchRequest<Reconciliation> = Reconciliation.fetchRequest()
@@ -600,7 +600,7 @@ extension Reconciliation {
 
     static func fetchOne(
         for period: AccountingPeriod,
-        paymentMethod: PaymentMethod,
+        paymentMethod: ReconcilableAccounts,
         context: NSManagedObjectContext
     ) throws -> Reconciliation? {
         let request: NSFetchRequest<Reconciliation> = Reconciliation.fetchRequest()

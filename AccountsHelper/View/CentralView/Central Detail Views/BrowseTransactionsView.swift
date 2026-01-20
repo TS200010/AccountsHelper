@@ -17,6 +17,7 @@ typealias UIRectCorner = CACornerMask
 import UIKit
 #endif
 
+
 // MARK: --- BrowseTransactionsMode
 enum BrowseTransactionsMode {
     case generalBrowsing
@@ -141,7 +142,7 @@ struct BrowseTransactionsView: View {
     @State private var transactionsToDelete: Set<NSManagedObjectID> = []
     // Filter State
     @State private var selectedAccountingPeriod: AccountingPeriod? = nil
-    @State private var selectedPaymentMethod: PaymentMethod? = nil
+    @State private var selectedPaymentMethod: ReconcilableAccounts? = nil
     // Column Width State
     #if os(macOS)
     @State private var availableWidth: CGFloat = 0
@@ -421,7 +422,7 @@ extension BrowseTransactionsView {
                     }
                     .if( gViewCheck ) { view in view.border( .blue )}
                     
-                    // --- Rows
+//                  --- Rows
                     ScrollView(.vertical) {
                         LazyVStack(spacing: 0) {
                             ForEach(Array(filteredTransactionRows.enumerated()), id: \.element.id) { index, row in
@@ -432,7 +433,8 @@ extension BrowseTransactionsView {
                                     appState: appState,
                                     index: index
                                 )
-                                .focusable(false) // Disable blue focusRing
+                                .focusable(true)
+//                                .focusRing(.none) // Disable blue focusRing
                                 .focused($focusedRowIndex, equals: index)
                                 .onTapGesture { focusedRowIndex = index }
                                 .onMoveCommand { direction in
@@ -895,9 +897,9 @@ extension BrowseTransactionsView {
                     
                     // Payment Method Picker
                     Picker("Payment Method", selection: $selectedPaymentMethod) {
-                        Text("All").tag(nil as PaymentMethod?)
-                        ForEach(PaymentMethod.allCases, id: \.self) { method in
-                            Text(method.description).tag(method as PaymentMethod?)
+                        Text("All").tag(nil as ReconcilableAccounts?)
+                        ForEach(ReconcilableAccounts.allCases, id: \.self) { method in
+                            Text(method.description).tag(method as ReconcilableAccounts?)
                         }
                     }
                 } label: {
@@ -1055,9 +1057,9 @@ extension BrowseTransactionsView {
             if allowFiltering {
                 // --- Payment Method Picker
                 Picker("Payment Method", selection: $selectedPaymentMethod) {
-                    Text("All").tag(nil as PaymentMethod?)
-                    ForEach(PaymentMethod.allCases.filter { $0 != .unknown }, id: \.self) { method in
-                        Text(method.description).tag(method as PaymentMethod?)
+                    Text("All").tag(nil as ReconcilableAccounts?)
+                    ForEach(ReconcilableAccounts.allCases.filter { $0 != .unknown }, id: \.self) { method in
+                        Text(method.description).tag(method as ReconcilableAccounts?)
                     }
                 }
                 .pickerStyle(MenuPickerStyle())
@@ -1134,7 +1136,7 @@ extension BrowseTransactionsView {
     }
     
     // MARK: --- Accounting periods per payment method
-    private func accountingPeriodsForPaymentMethod(_ method: PaymentMethod) -> [AccountingPeriod] {
+    private func accountingPeriodsForPaymentMethod(_ method: ReconcilableAccounts) -> [AccountingPeriod] {
         let periods = reconciliations
             .filter { $0.paymentMethod == method }
             .map { $0.accountingPeriod }

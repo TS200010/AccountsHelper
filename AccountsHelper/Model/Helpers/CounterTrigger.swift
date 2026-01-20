@@ -9,9 +9,9 @@ import Foundation
 
 // MARK: - Counter Trigger Model
 struct CounterTrigger {
-    let paymentMethod: PaymentMethod
+    let paymentMethod: ReconcilableAccounts
     let category: Category
-    let suggestedCounterPayment: PaymentMethod
+    let suggestedCounterPayment: ReconcilableAccounts
 }
 
 struct CounterTriggers {
@@ -22,7 +22,7 @@ struct CounterTriggers {
         .init(paymentMethod: .BofSPV, category: .ToGBPCash,   suggestedCounterPayment: .CashGBP)
     ]
     
-    static func trigger(for paymentMethod: PaymentMethod, category: Category) -> PaymentMethod? {
+    static func trigger(for paymentMethod: ReconcilableAccounts, category: Category) -> ReconcilableAccounts? {
         all.first { $0.paymentMethod == paymentMethod && $0.category == category }?.suggestedCounterPayment
     }
 }

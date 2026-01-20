@@ -14,15 +14,15 @@ struct CounterRelationships {
         .init(from: .BofSPV, to: .VISA,    name: "VISA Payment")
     ]
 
-    static func matches(for method: PaymentMethod) -> [CounterPair] {
+    static func matches(for method: ReconcilableAccounts) -> [CounterPair] {
         all.filter { $0.involves(method) }
     }
 
-    static func suggestedCounter(for method: PaymentMethod) -> PaymentMethod? {
+    static func suggestedCounter(for method: ReconcilableAccounts) -> ReconcilableAccounts? {
         matches(for: method).first?.counterparty(for: method)
     }
 
-    static func transactionName(for from: PaymentMethod, to: PaymentMethod) -> String? {
+    static func transactionName(for from: ReconcilableAccounts, to: ReconcilableAccounts) -> String? {
         all.first { ($0.from == from && $0.to == to) || ($0.from == to && $0.to == from) }?.name
     }
 }

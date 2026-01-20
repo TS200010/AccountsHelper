@@ -22,7 +22,7 @@ struct TransactionValidatableTests {
         var exchangeRate: Decimal = 1.0
         var payee: String? = "Tesco"
         var payer: Payer = .tony
-        var paymentMethod: PaymentMethod = .CashGBP
+        var paymentMethod: ReconcilableAccounts = .CashGBP
         var splitRemainderCategory: AccountsHelper.Category = .FoodHousehold
         var transactionDate: Date? = Date()
         

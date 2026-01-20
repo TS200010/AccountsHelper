@@ -105,8 +105,8 @@ extension Transaction {
         set { payerCD = newValue.rawValue }
     }
 
-    var paymentMethod: PaymentMethod {
-        get { PaymentMethod(rawValue: paymentMethodCD) ?? .unknown }
+    var paymentMethod: ReconcilableAccounts {
+        get { ReconcilableAccounts(rawValue: paymentMethodCD) ?? .unknown }
         set { paymentMethodCD = newValue.rawValue }
     }
 
@@ -340,7 +340,7 @@ extension Transaction {
     
     
     static func generateRandomTransactions(
-        for paymentMethod: PaymentMethod,
+        for paymentMethod: ReconcilableAccounts,
         currency: Currency,
         startDate: Date,
         endDate: Date,

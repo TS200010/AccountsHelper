@@ -19,7 +19,7 @@ protocol TransactionValidatable {
     var exchangeRate: Decimal { get }
     var payee: String? { get }
     var payer: Payer { get }
-    var paymentMethod: PaymentMethod { get }
+    var paymentMethod: ReconcilableAccounts { get }
     var splitRemainderCategory: Category { get }
     var transactionDate: Date? { get }
     var splitCategory: Category { get }
