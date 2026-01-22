@@ -37,7 +37,7 @@ struct AddOrEditTransactionView: View {
     @FocusState private var focusedField: AmountFieldIdentifier?
     // Counter Transaction
     @State private var counterTransactionActive: Bool = false
-    @State private var counterPaymentMethod: ReconcilableAccounts? = nil
+    @State private var counterAccount: ReconcilableAccounts? = nil
     @State private var counterFXRate: Decimal = 0
     
     // MARK: --- External
@@ -138,7 +138,7 @@ struct AddOrEditTransactionView: View {
                 LabeledDecimalWithFX(label: "Amount", amount: $transactionData.txAmount, currency: $transactionData.currency, fxRate: $transactionData.exchangeRate, isValid: transactionData.isTXAmountValid(), displayOnly: false)
                     .focused($focusedField, equals: .mainAmountField)
                 
-                LabeledPicker(label: "Account", selection: $transactionData.paymentMethod, isValid: transactionData.isPaymentMethodValid())
+                LabeledPicker(label: "Account", selection: $transactionData.account, isValid: transactionData.isAccountValid())
                 
                 LabeledTextField(label: "Payee", text: Binding(get: { transactionData.payee ?? "" }, set: { transactionData.payee = $0 }), isValid: transactionData.isPayeeValid())
                     .onChange(of: transactionData.payee) { _, newValue in
@@ -181,7 +181,7 @@ struct AddOrEditTransactionView: View {
             CounterTransactionView(
                 transactionData: $transactionData,
                 counterTransaction: $counterTransactionActive,
-                counterPaymentMethod: $counterPaymentMethod,
+                counterAccount: $counterAccount,
                 counterFXRate:        $counterFXRate
 
             )
@@ -198,7 +198,7 @@ struct AddOrEditTransactionView: View {
             CounterTransactionView(
                 transactionData:      $transactionData,
                 counterTransaction:   $counterTransactionActive,
-                counterPaymentMethod: $counterPaymentMethod,
+                counterAccount:       $counterAccount,
                 counterFXRate:        $counterFXRate
             )
             .frame(minWidth: 300)
@@ -271,13 +271,13 @@ struct AddOrEditTransactionView: View {
     struct CounterTransactionView: View {
         @Binding var transactionData: TransactionStruct
         @Binding var counterTransaction: Bool
-        @Binding var counterPaymentMethod: ReconcilableAccounts?
+        @Binding var counterAccount: ReconcilableAccounts?
         @Binding var counterFXRate: Decimal
         
-        // Suggested counter methods based on PaymentMethod + Category
+        // Suggested counter methods based on Account + Category
         private var suggestedCounterMethods: [ReconcilableAccounts] {
             if let suggested = CounterTriggers.trigger(
-                for: transactionData.paymentMethod,
+                for: transactionData.account,
                 category: transactionData.category
             ) {
                 return [suggested]
@@ -294,9 +294,9 @@ struct AddOrEditTransactionView: View {
                         
                         if counterTransaction {
                             // Auto-suggest top picker if a trigger exists
-                            counterPaymentMethod = suggestedCounterMethods.first ?? .unknown
+                            counterAccount = suggestedCounterMethods.first ?? .unknown
                         } else {
-                            counterPaymentMethod = nil
+                            counterAccount = nil
                         }
                     }
                     .buttonStyle(.borderedProminent)
@@ -304,7 +304,7 @@ struct AddOrEditTransactionView: View {
                     VStack(spacing: 8) {
                         
                         // --- FX If counter transaction is different currency ---
-                        if counterTransaction && transactionData.paymentMethod.currency != counterPaymentMethod?.currency {
+                        if counterTransaction && transactionData.account.currency != counterAccount?.currency {
                             LabeledDecimalField(
                                 label: "Counter FX Rate",
                                 amount: $counterFXRate,
@@ -317,10 +317,10 @@ struct AddOrEditTransactionView: View {
                             LabeledPicker(
                                 label: "Suggested Counter Pmt",
                                 selection: Binding(
-                                    get: { counterPaymentMethod ?? .unknown },
-                                    set: { counterPaymentMethod = $0 }
+                                    get: { counterAccount ?? .unknown },
+                                    set: { counterAccount = $0 }
                                 ),
-                                isValid: counterPaymentMethod != nil && counterPaymentMethod != .unknown,
+                                isValid: counterAccount != nil && counterAccount != .unknown,
                                 items: suggestedCounterMethods
                             )
                         }
@@ -329,10 +329,10 @@ struct AddOrEditTransactionView: View {
                         LabeledPicker(
                             label: "Chosen Counter Pmt",
                             selection: Binding(
-                                get: { counterPaymentMethod ?? .unknown },
-                                set: { counterPaymentMethod = $0 }
+                                get: { counterAccount ?? .unknown },
+                                set: { counterAccount = $0 }
                             ),
-                            isValid: counterPaymentMethod != nil && counterPaymentMethod != .unknown
+                            isValid: counterAccount != nil && counterAccount != .unknown
                         )
                         
                         // --- Amount Box ---
@@ -340,7 +340,7 @@ struct AddOrEditTransactionView: View {
                             label: "Counter Pmt Amount",
                             amount: Binding(
                                 get: {
-                                    guard let method = counterPaymentMethod else { return transactionData.txAmount }
+                                    guard let method = counterAccount else { return transactionData.txAmount }
                                     if transactionData.currency == method.currency {
                                         return transactionData.txAmount
                                     } else {
@@ -418,12 +418,12 @@ struct AddOrEditTransactionView: View {
         transactionData.apply(to: tx)
         
         // --- Save counter transaction if active
-        if counterTransactionActive, let method = counterPaymentMethod, method != .unknown {
+        if counterTransactionActive, let method = counterAccount, method != .unknown {
             let counterTx = Transaction(context: viewContext)
             var counterData = transactionData
             
             // Set counter payment method
-            counterData.paymentMethod = method
+            counterData.account = method
             
             // Set counter currency
             counterData.currency = method.currency
@@ -475,12 +475,12 @@ struct AddOrEditTransactionView: View {
 //        
 //        // Save counter transaction if active
 //        if counterTransactionActive,
-//           counterPaymentMethod != .unknown {
+//           counterAccount != .unknown {
 //            let counterTx = Transaction(context: viewContext)
 //            var counterData = transactionData
 //            counterData.txAmount = -transactionData.txAmount
-//            if let method = counterPaymentMethod {
-//                counterData.paymentMethod = method
+//            if let method = counterAccount {
+//                counterData.account = method
 //            }
 //            counterData.apply(to: counterTx)
 //        }

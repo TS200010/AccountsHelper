@@ -29,7 +29,7 @@ enum MergeResult {
 @MainActor
 protocol TxImporter {
     static var displayName: String { get }
-    static var paymentMethod: ReconcilableAccounts { get }
+    static var account: ReconcilableAccounts { get }
     static var importType: ImportType { get }
 
     /// Import CSV and return Transactions, using the mergeHandler when duplicates are found.
@@ -100,7 +100,7 @@ extension TxImporter {
     static func findMergeCandidateInSnapshot(newTx: Transaction, snapshot: [Transaction]) -> Transaction? {
         for existing in snapshot {
             guard existing.txAmount == newTx.txAmount,
-                  existing.paymentMethod == newTx.paymentMethod,
+                  existing.account == newTx.account,
                   let existingDate = existing.transactionDate,
                   let newDate = newTx.transactionDate else {
                 continue

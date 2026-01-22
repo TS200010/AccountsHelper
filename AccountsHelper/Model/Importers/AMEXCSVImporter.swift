@@ -11,7 +11,7 @@ import CoreData
 class AMEXCSVImporter: TxImporter {
     
     static var displayName: String = "AMEX CSV Importer"
-    static var paymentMethod: ReconcilableAccounts = .AMEX
+    static var account: ReconcilableAccounts = .AMEX
     static var importType: ImportType = .csv
 
     @MainActor
@@ -100,7 +100,7 @@ class AMEXCSVImporter: TxImporter {
                 }
                 
                 newTx.timestamp = Date()
-                newTx.paymentMethod = paymentMethod
+                newTx.account = account
                 newTx.address = addressTemp
                 newTx.extendedDetails = extendedDetailsTemp
                 

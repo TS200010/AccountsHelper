@@ -11,7 +11,7 @@ import CoreData
 class BofSCSVImporter: TxImporter {
 
     static var displayName: String = "BofS CSV Importer"
-    static var paymentMethod: ReconcilableAccounts = .unknown
+    static var account: ReconcilableAccounts = .unknown
     static var importType: ImportType = .csv
 
     @MainActor
@@ -41,7 +41,7 @@ class BofSCSVImporter: TxImporter {
                 .trimmingCharacters(in: .whitespaces)
                 .filter(\.isNumber)
 
-            guard let paymentMethod =
+            guard let account =
                     ReconcilableAccounts.fromAccountNumber(rawAccountNumber)
             else {
                 throw ImportError.unknownAccount(rawAccountNumber)
@@ -106,7 +106,7 @@ class BofSCSVImporter: TxImporter {
                 // MARK: --- Default Properties
                 newTx.timestamp = Date()
                 newTx.payer = .tony
-                newTx.paymentMethod = paymentMethod
+                newTx.account = account
                 newTx.accountNumber = accountTemp
                 newTx.currency = .GBP
                 newTx.exchangeRate = 1

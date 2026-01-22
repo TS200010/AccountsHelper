@@ -83,7 +83,7 @@ struct InspectTransaction: View {
                             Divider()
                             transactionRow("Payer:", transaction.payer.description)
                             Divider()
-                            transactionRow("Pmt Method:", transaction.paymentMethod.description)
+                            transactionRow("Pmt Method:", transaction.account.description)
                         }
                         
                         // MARK: --- Additional Info Section

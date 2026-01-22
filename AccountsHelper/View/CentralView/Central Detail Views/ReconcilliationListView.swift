@@ -371,7 +371,7 @@ extension ReconcilliationListView {
             
             let newTx = Transaction(context: context)
             newTx.payer = .ACHelper
-            newTx.paymentMethod = row.rec.account
+            newTx.account = row.rec.account
             newTx.payee = "Balancing Transaction"
             newTx.explanation = "Automatically added to force balance"
             newTx.currency = row.rec.currency

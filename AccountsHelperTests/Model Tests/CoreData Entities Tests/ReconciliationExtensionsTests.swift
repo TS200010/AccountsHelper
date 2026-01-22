@@ -17,7 +17,7 @@ struct ReconciliationExtensionsTests {
 
     // MARK: --- Helper Methods
     private func makeReconciliation(
-        paymentMethod: ReconcilableAccounts = .VISA,
+        account: ReconcilableAccounts = .VISA,
         year: Int32 = 2025,
         month: Int32 = 10,
         statementDate: Date = Date(),
@@ -28,10 +28,10 @@ struct ReconciliationExtensionsTests {
             context: context,
             year: year,
             month: month,
-            paymentMethod: paymentMethod,
+            account: account,
             statementDate: statementDate,
             endingBalance: endingBalance,
-            currency: paymentMethod.currency
+            currency: account.currency
         )
         rec.closed = closed
         try? context.save()
@@ -61,7 +61,7 @@ struct ReconciliationExtensionsTests {
             context: context,
             year: 2025,
             month: 10,
-            paymentMethod: .VISA,
+            account: .VISA,
             statementDate: date,
             endingBalance: 123.45,
             currency: .USD
@@ -80,7 +80,7 @@ struct ReconciliationExtensionsTests {
         let period = AccountingPeriod(year: 2025, month: 10)
         let rec1 = makeReconciliation(year: 2025, month: 10)
         let rec2 = try Reconciliation.createNew(
-            paymentMethod: .VISA,
+            account: .VISA,
             period: period,
             statementDate: Date(),
             endingBalance: 50,
@@ -101,7 +101,7 @@ struct ReconciliationExtensionsTests {
     // MARK: --- Computed Property Tests
     @Test
     func testCurrencyOverrideForAMEXAndVISA() async throws {
-        let rec = makeReconciliation(paymentMethod: .AMEX)
+        let rec = makeReconciliation(account: .AMEX)
         rec.currency = .USD
         #expect(rec.currency == .GBP) // AMEX overrides to GBP
     }

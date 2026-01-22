@@ -89,14 +89,14 @@ class TransactionRow: Identifiable, Hashable {
     // MARK: --- iOSRowForDisplay
     var iOSRowForDisplay: String {
         var parts: [String] = []
-        if !transactionDate.isEmpty { parts.append("\(transactionDate) \(transaction.paymentMethod.description)" ) }
+        if !transactionDate.isEmpty { parts.append("\(transactionDate) \(transaction.account.description)" ) }
         if !displayAmount.isEmpty { parts.append("\(displayAmount) \(payee): \(category)"  ) }
 //        if !payee.isEmpty && !category.isEmpty { parts.append("\(payee): \(category)") }
         return parts.joined(separator: "\n")
     }
 
-    // MARK: --- PaymentMethod
-    var paymentMethod: String { transaction.paymentMethod.description }
+    // MARK: --- Account
+    var account: String { transaction.account.description }
 
     // MARK: --- Payer
     var payer: String { transaction.payer.description }

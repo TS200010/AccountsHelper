@@ -34,7 +34,7 @@ import ItMkLibrary
         return self.rawValue.description
     }
 
-    // MARK: --- Currency of PaymentMethod
+    // MARK: --- Currency of Account
     var currency: Currency {
         switch self {
         case .CashGBP:    return .GBP

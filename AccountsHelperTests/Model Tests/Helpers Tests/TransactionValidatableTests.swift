@@ -22,7 +22,7 @@ struct TransactionValidatableTests {
         var exchangeRate: Decimal = 1.0
         var payee: String? = "Tesco"
         var payer: Payer = .tony
-        var paymentMethod: ReconcilableAccounts = .CashGBP
+        var account: ReconcilableAccounts = .CashGBP
         var splitRemainderCategory: AccountsHelper.Category = .FoodHousehold
         var transactionDate: Date? = Date()
         
@@ -96,8 +96,8 @@ struct TransactionValidatableTests {
     @Test
     func testInvalidPaymentMethod() async throws {
         var tx = MockTransaction()
-        tx.paymentMethod = .unknown
-        #expect(!tx.isPaymentMethodValid())
+        tx.account = .unknown
+        #expect(!tx.isAccountValid())
         #expect(!tx.isValid())
     }
     

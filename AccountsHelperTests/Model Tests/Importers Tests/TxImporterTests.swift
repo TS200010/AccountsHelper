@@ -30,7 +30,7 @@ extension MockImporter {
     static func findMergeCandidateInSnapshot(newTx: Transaction, snapshot: [Transaction]) -> Transaction? {
         for existing in snapshot {
             guard existing.txAmount == newTx.txAmount,
-                  existing.paymentMethod == newTx.paymentMethod,
+                  existing.account == newTx.account,
                   let existingDate = existing.transactionDate,
                   let newDate = newTx.transactionDate else {
                 continue
@@ -89,14 +89,14 @@ struct TxImporterTests {
 
         let existing = Transaction(context: context)
         existing.txAmount = 100
-        existing.paymentMethod = .CashGBP
+        existing.account = .CashGBP
         existing.transactionDate = date
 
         let snapshot = [existing]
 
         let newTx = Transaction(context: context)
         newTx.txAmount = 100
-        newTx.paymentMethod = .CashGBP
+        newTx.account = .CashGBP
         newTx.transactionDate = date
 
         let candidate = MockImporter.findMergeCandidateInSnapshot(newTx: newTx, snapshot: snapshot)
@@ -112,14 +112,14 @@ struct TxImporterTests {
 
         let existing = Transaction(context: context)
         existing.txAmount = 50
-        existing.paymentMethod = .VISA
+        existing.account = .VISA
         existing.transactionDate = oldDate
 
         let snapshot = [existing]
 
         let newTx = Transaction(context: context)
         newTx.txAmount = 50
-        newTx.paymentMethod = .VISA
+        newTx.account = .VISA
         newTx.transactionDate = newDate
 
         let candidate = MockImporter.findMergeCandidateInSnapshot(newTx: newTx, snapshot: snapshot)
@@ -132,14 +132,14 @@ struct TxImporterTests {
         let context = CoreDataTestHelpers.makeInMemoryContext()
         let existing = Transaction(context: context)
         existing.txAmount = 10
-        existing.paymentMethod = .CashGBP
+        existing.account = .CashGBP
         existing.transactionDate = Date()
 
         let snapshot = [existing]
 
         let newTx = Transaction(context: context)
         newTx.txAmount = 20
-        newTx.paymentMethod = .VISA
+        newTx.account = .VISA
         newTx.transactionDate = Date()
 
         let candidate = MockImporter.findMergeCandidateInSnapshot(newTx: newTx, snapshot: snapshot)

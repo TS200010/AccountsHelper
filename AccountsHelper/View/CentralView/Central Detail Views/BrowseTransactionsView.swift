@@ -49,7 +49,7 @@ struct RectCorner: OptionSet {
 // MARK: --- SortColumn
 enum SortColumn: CaseIterable, Identifiable {
     case category, currency, debitCredit, exchangeRate,
-         payee, payer, paymentMethod, reconciliation, transactionDate, txAmount
+         payee, payer, account, reconciliation, transactionDate, txAmount
 
     var id: Self { self }
 
@@ -59,7 +59,7 @@ enum SortColumn: CaseIterable, Identifiable {
         case .currency:        return "dollarsign.circle"
         case .debitCredit:     return "arrow.left.arrow.right"
         case .exchangeRate:    return "chart.line.uptrend.xyaxis"
-        case .paymentMethod:   return "creditcard"
+        case .account:   return "creditcard"
         case .payee:           return "person"
         case .payer:           return "person.crop.circle"
         case .reconciliation:  return "checkmark.seal"
@@ -76,7 +76,7 @@ enum SortColumn: CaseIterable, Identifiable {
         case .exchangeRate:    return "Fx"
         case .payee:           return "Payee"
         case .payer:           return "Payer"
-        case .paymentMethod:   return "Account"
+        case .account:   return "Account"
         case .reconciliation:  return "Reconciliation"
         case .transactionDate: return "Date"
         case .txAmount:        return "Amount"
@@ -91,7 +91,7 @@ enum SortColumn: CaseIterable, Identifiable {
         case .exchangeRate:    return row.exchangeRate
         case .payee:           return row.payee
         case .payer:           return row.payer
-        case .paymentMethod:   return row.paymentMethod
+        case .account:         return row.account
         case .reconciliation:  return row.reconciliationPeriod
         case .transactionDate: return row.transactionDate
         case .txAmount:        return row.txAmount
@@ -142,7 +142,7 @@ struct BrowseTransactionsView: View {
     @State private var transactionsToDelete: Set<NSManagedObjectID> = []
     // Filter State
     @State private var selectedAccountingPeriod: AccountingPeriod? = nil
-    @State private var selectedPaymentMethod: ReconcilableAccounts? = nil
+    @State private var selectedAccount: ReconcilableAccounts? = nil
     // Column Width State
     #if os(macOS)
     @State private var availableWidth: CGFloat = 0
@@ -243,7 +243,7 @@ struct BrowseTransactionsView: View {
                 refreshFetchRequest()
             }
         }
-        .onChange(of: selectedPaymentMethod) { _, _ in
+        .onChange(of: selectedAccount) { _, _ in
             safeUIUpdate {
                 refreshFetchRequest()
             }
@@ -581,7 +581,7 @@ extension BrowseTransactionsView {
         ZStack {                                     // Wrap so background can fill full width
             rowBackground(for: index, row: row)
             HStack(spacing: 0) {
-                tableCell(row.paymentMethod, for: row)
+                tableCell(row.account, for: row)
                     .frame(width: scaledColumnWidths["Account"] ?? 80)
                     .if( gViewCheck ) { view in view.border( .yellow )}
                 
@@ -893,7 +893,7 @@ extension BrowseTransactionsView {
                     }
                     
                     // Payment Method Picker
-                    Picker("Account", selection: $selectedPaymentMethod) {
+                    Picker("Account", selection: $selectedAccount) {
                         Text("All").tag(nil as ReconcilableAccounts?)
                         ForEach(ReconcilableAccounts.allCases, id: \.self) { method in
                             Text(method.description).tag(method as ReconcilableAccounts?)
@@ -978,12 +978,12 @@ extension BrowseTransactionsView {
         var predicates: [NSPredicate] = []
         
         // --- Payment Method Filter
-        if let method = selectedPaymentMethod {
+        if let method = selectedAccount {
             predicates.append(NSPredicate(format: "accountCD == %@", NSNumber(value: method.rawValue)))
         }
         
         // --- Accounting Period / Date Filter
-        if let method = selectedPaymentMethod, let period = selectedAccountingPeriod {
+        if let method = selectedAccount, let period = selectedAccountingPeriod {
             if let reconciliation = try? Reconciliation.fetchOne(for: period, account: method, context: viewContext) {
                 let start = reconciliation.transactionStartDate as NSDate
                 let end = reconciliation.transactionEndDate as NSDate
@@ -1053,7 +1053,7 @@ extension BrowseTransactionsView {
             // --- Filtering
             if allowFiltering {
                 // --- Account Picker
-                Picker("Account", selection: $selectedPaymentMethod) {
+                Picker("Account", selection: $selectedAccount) {
                     Text("All").tag(nil as ReconcilableAccounts?)
                     ForEach(ReconcilableAccounts.allCases.filter { $0 != .unknown }, id: \.self) { method in
                         Text(method.description).tag(method as ReconcilableAccounts?)
@@ -1062,12 +1062,12 @@ extension BrowseTransactionsView {
                 .pickerStyle(MenuPickerStyle())
                 
                 // --- Accounting Period Picker (only show if a payment method is selected)
-                if let method = selectedPaymentMethod {
+                if let method = selectedAccount {
                     Picker("Period", selection: $selectedAccountingPeriod) {
                         Text("All").tag(nil as AccountingPeriod?)
                         
                         // Only show periods that have reconciliations for this method
-                        ForEach(accountingPeriodsForPaymentMethod(method), id: \.self) { period in
+                        ForEach(accountingPeriodsForAccount(method), id: \.self) { period in
                             Text(period.displayStringWithOpening).tag(Optional(period))
                         }
                     }
@@ -1133,7 +1133,7 @@ extension BrowseTransactionsView {
     }
     
     // MARK: --- Accounting periods per payment method
-    private func accountingPeriodsForPaymentMethod(_ method: ReconcilableAccounts) -> [AccountingPeriod] {
+    private func accountingPeriodsForAccount(_ method: ReconcilableAccounts) -> [AccountingPeriod] {
         let periods = reconciliations
             .filter { $0.account == method }
             .map { $0.accountingPeriod }
@@ -1173,11 +1173,11 @@ extension BrowseTransactionsView {
         }
         
         // MARK: --- Compute running balances (GBP only)
-        if let paymentMethod = selectedPaymentMethod, sortColumn == .transactionDate {
+        if let account = selectedAccount, sortColumn == .transactionDate {
             // Get previous reconciliation balance if available
             var balance: Decimal = 0
             if let previousRec = reconciliations
-                .filter({ $0.account == paymentMethod })
+                .filter({ $0.account == account })
                 .sorted(by: { ($0.periodYear, $0.periodMonth) > ($1.periodYear, $1.periodMonth) })
                 .first {
                 balance = previousRec.endingBalance

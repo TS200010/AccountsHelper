@@ -17,7 +17,7 @@ import AppKit   // macOS only (for NSImage)
  
  #if os(macOS)
  static var displayName: String = "VISA PNG Importer"
- static var paymentMethod: PaymentMethod = .VISA
+ static var account: account = .VISA
  static var importType: ImportType = .png
  
  @MainActor
@@ -89,7 +89,7 @@ import AppKit   // macOS only (for NSImage)
  tx.currency = .GBP
  tx.exchangeRate = 1
  
- tx.paymentMethod = paymentMethod
+ tx.account = account
  
  // --- Merge checking ---
  if let existing = Self.findMergeCandidateInSnapshot(newTx: tx, snapshot: createdTransactions + existingSnapshot) {
@@ -256,7 +256,7 @@ import AppKit   // macOS only (for NSImage)
  #else
  static var displayName: String = ""
  
- static var paymentMethod: PaymentMethod = .unknown
+ static var account: account = .unknown
  
  static var importType: ImportType = .csv
  

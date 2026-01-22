@@ -75,7 +75,7 @@ extension Reconciliation {
         return date < sentinel
     }
     
-    // MARK: --- PaymentMethod
+    // MARK: --- Account
     var account: ReconcilableAccounts {
         get { ReconcilableAccounts(rawValue: accountCD) ?? .unknown }
         set { accountCD = newValue.rawValue }
@@ -476,14 +476,14 @@ extension Reconciliation {
 
     // MARK: --- FetchPrevious
     static func fetchPrevious(
-        for paymentMethod: ReconcilableAccounts,
+        for account: ReconcilableAccounts,
         before date: Date,
         context: NSManagedObjectContext
     ) throws -> Reconciliation? {
         let request: NSFetchRequest<Reconciliation> = Reconciliation.fetchRequest()
         request.predicate = NSPredicate(
             format: "accountCD == %d AND statementDate < %@",
-            paymentMethod.rawValue,
+            account.rawValue,
             date as NSDate
         )
         request.sortDescriptors = [NSSortDescriptor(key: "statementDate", ascending: false)]
@@ -518,13 +518,13 @@ extension Reconciliation {
 
     static func fetch(
         for period: AccountingPeriod,
-        paymentMethod: ReconcilableAccounts,
+        account: ReconcilableAccounts,
         context: NSManagedObjectContext
     ) throws -> [Reconciliation] {
         let request: NSFetchRequest<Reconciliation> = Reconciliation.fetchRequest()
         request.predicate = NSPredicate(
             format: "periodYear == %d AND periodMonth == %d AND accountCD == %d",
-            period.year, period.month, paymentMethod.rawValue
+            period.year, period.month, account.rawValue
         )
         request.sortDescriptors = [NSSortDescriptor(key: "statementDate", ascending: true)]
         return try context.fetch(request)

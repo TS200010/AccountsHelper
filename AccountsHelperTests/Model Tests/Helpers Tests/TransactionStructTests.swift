@@ -95,7 +95,7 @@ struct TransactionStructTests {
         #expect(tx.splitAmount == 0)
         #expect(tx.payee == "")
         #expect(tx.payer == .tony)
-        #expect(tx.paymentMethod == .AMEX)
+        #expect(tx.account == .AMEX)
     }
 
     // MARK: --- Apply Tests

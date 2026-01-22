@@ -36,7 +36,7 @@ struct TransactionStruct {
     var extendedDetails: String?
     var payee: String?
     var payer: Payer
-    var paymentMethod: ReconcilableAccounts
+    var account: ReconcilableAccounts
     
     var reference: String?
     
@@ -88,7 +88,7 @@ struct TransactionStruct {
         extendedDetails: String? = nil,
         payee: String? = nil,
         payer: Payer = .tony,
-        paymentMethod: ReconcilableAccounts = .AMEX,
+        account: ReconcilableAccounts = .AMEX,
         reference: String? = nil,
         splitAmount: Decimal = 0,
         splitCategory: Category = .unknown,
@@ -107,7 +107,7 @@ struct TransactionStruct {
         self.extendedDetails = extendedDetails
         self.payee = payee
         self.payer = payer
-        self.paymentMethod = paymentMethod
+        self.account = account
         self.reference = reference
         self.splitAmount = splitAmount
         self.splitCategory = splitCategory
@@ -117,31 +117,31 @@ struct TransactionStruct {
         self.commissionAmount = commissionAmount
     }
     
-    /// Initialize from a Core Data Transaction object
+    // Initialize from a Core Data Transaction object
     init(from transaction: Transaction) {
-        self.accountNumber   = transaction.accountNumber
-        self.address         = transaction.address
-        self.category        = transaction.category
-        self.currency        = transaction.currency
-        self.debitCredit     = transaction.debitCredit
-        self.exchangeRate    = transaction.exchangeRate
-        self.explanation     = transaction.explanation
-        self.extendedDetails = transaction.extendedDetails
-        self.payee           = transaction.payee
-        self.payer           = transaction.payer
-        self.paymentMethod   = transaction.paymentMethod
-        self.reference       = transaction.reference
-        self.splitAmount     = transaction.splitAmount
-        self.splitCategory   = transaction.splitCategory
-        self.txAmount        = transaction.txAmount
-        self.timestamp       = transaction.timestamp
-        self.transactionDate = transaction.transactionDate
+        self.accountNumber    = transaction.accountNumber
+        self.address          = transaction.address
+        self.category         = transaction.category
+        self.currency         = transaction.currency
+        self.debitCredit      = transaction.debitCredit
+        self.exchangeRate     = transaction.exchangeRate
+        self.explanation      = transaction.explanation
+        self.extendedDetails  = transaction.extendedDetails
+        self.payee            = transaction.payee
+        self.payer            = transaction.payer
+        self.account          = transaction.account
+        self.reference        = transaction.reference
+        self.splitAmount      = transaction.splitAmount
+        self.splitCategory    = transaction.splitCategory
+        self.txAmount         = transaction.txAmount
+        self.timestamp        = transaction.timestamp
+        self.transactionDate  = transaction.transactionDate
         self.commissionAmount = transaction.commissionAmount
     }
     
     // MARK: --- Methods
     
-    /// Reset this transaction to default values
+    // Reset this transaction to default values
     mutating func setDefaults() {
         txAmount = 0
         category = .unknown
@@ -151,15 +151,15 @@ struct TransactionStruct {
         exchangeRate = 1.0
         payee = ""
         payer = .tony
-        paymentMethod = .AMEX
+        account = .AMEX
         splitAmount = 0
         transactionDate = Date()
         timestamp = Date()
         explanation = ""
     }
     
-    /// Apply this struct’s values to a Core Data Transaction object
-    /// - Parameter transaction: Core Data Transaction to update
+    // Apply this struct’s values to a Core Data Transaction object
+    // - Parameter transaction: Core Data Transaction to update
     func apply(to transaction: Transaction) {
         transaction.accountNumber   = accountNumber
         transaction.address         = address
@@ -171,7 +171,7 @@ struct TransactionStruct {
         transaction.extendedDetails = extendedDetails
         transaction.payee           = payee
         transaction.payer           = payer
-        transaction.paymentMethod   = paymentMethod
+        transaction.account         = account
         transaction.reference       = reference
         transaction.splitAmount     = splitAmount
         transaction.splitCategory   = splitCategory

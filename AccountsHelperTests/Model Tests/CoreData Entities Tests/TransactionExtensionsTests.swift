@@ -28,7 +28,7 @@ struct TransactionExtensionsTests {
         tx.splitAmount = splitAmount
         tx.commissionAmount = commission
         tx.currency = currency
-        tx.paymentMethod = paymentMethod
+        tx.account = paymentMethod
         tx.transactionDate = date
         try? context.save()
         return tx
@@ -164,7 +164,7 @@ struct TransactionExtensionsTests {
             format: "txAmountCD == %lld AND currencyCD == %d AND paymentMethodCD == %d",
             cents(temp.txAmount),
             temp.currency.rawValue,
-            temp.paymentMethod.rawValue
+            temp.account.rawValue
         )
         let countAmountCurrencyPM = try context.count(for: amountCurrencyPMRequest)
         #expect(countAmountCurrencyPM == 2)
@@ -177,7 +177,7 @@ struct TransactionExtensionsTests {
             format: "txAmountCD == %lld AND currencyCD == %d AND accountCD == %d AND transactionDate >= %@ AND transactionDate <= %@",
             cents(temp.txAmount),
             temp.currency.rawValue,
-            temp.paymentMethod.rawValue,
+            temp.account.rawValue,
             startDate as NSDate,
             endDate as NSDate
         )

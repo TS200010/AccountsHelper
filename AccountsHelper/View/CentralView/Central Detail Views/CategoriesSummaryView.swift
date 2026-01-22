@@ -51,7 +51,7 @@ struct CategoriesSummaryView: View {
     
     // MARK: --- Local Variables
     private var currency: Currency? {
-        transactions.first?.paymentMethod.currency
+        transactions.first?.account.currency
     }
     
     // MARK: --- SummaryTotals

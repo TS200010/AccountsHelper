@@ -19,7 +19,7 @@ protocol TransactionValidatable {
     var exchangeRate: Decimal { get }
     var payee: String? { get }
     var payer: Payer { get }
-    var paymentMethod: ReconcilableAccounts { get }
+    var account: ReconcilableAccounts { get }
     var splitRemainderCategory: Category { get }
     var transactionDate: Date? { get }
     var splitCategory: Category { get }
@@ -30,7 +30,7 @@ protocol TransactionValidatable {
 extension TransactionValidatable {
     
     // MARK: --- Body
-    /// Returns true if all key transaction fields are valid
+    // Returns true if all key transaction fields are valid
     func isValid() -> Bool {
         return isTXAmountValid()
             && isCategoryValid()
@@ -39,7 +39,7 @@ extension TransactionValidatable {
             && isDebitCreditValid()
             && isPayeeValid()
             && isPayerValid()
-            && isPaymentMethodValid()
+            && isAccountValid()
             && (splitAmount != 0 ? isSplitCategoryValid() : true)
             && (splitAmount != 0 ? isSplitRemainderCategoryValid() : true)
             && isTransactionDateValid()
@@ -47,17 +47,17 @@ extension TransactionValidatable {
     
     // MARK: --- Individual Field Validation
     
-    /// Validates that the transaction amount is non-zero
+    // Validates that the transaction amount is non-zero
     func isTXAmountValid() -> Bool {
         txAmount != Decimal(0)
     }
     
-    /// Validates that the main category is not unknown
+    // Validates that the main category is not unknown
     func isCategoryValid() -> Bool {
         category != .unknown
     }
     
-    /// Validates that the currency is known
+    // Validates that the currency is known
     func isCurrencyValid() -> Bool {
         currency != .unknown
     }
@@ -85,8 +85,8 @@ extension TransactionValidatable {
     }
     
     /// Validates that the payment method is known
-    func isPaymentMethodValid() -> Bool {
-        paymentMethod != .unknown
+    func isAccountValid() -> Bool {
+        account != .unknown
     }
     
     /// Validates that the split amount is non-zero and less than total

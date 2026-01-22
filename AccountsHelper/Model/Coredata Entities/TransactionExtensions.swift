@@ -83,7 +83,7 @@ extension Transaction {
         set { payerCD = newValue.rawValue }
     }
 
-    var paymentMethod: ReconcilableAccounts {
+    var account: ReconcilableAccounts {
         get { ReconcilableAccounts(rawValue: accountCD) ?? .unknown }
         set { accountCD = newValue.rawValue }
     }
@@ -160,7 +160,7 @@ extension Transaction {
         guard exchangeRate != 0 else { return amount }
 
         // No conversion if transaction currency matches payment method
-        if currency == paymentMethod.currency { return amount }
+        if currency == account.currency { return amount }
 
         return amount / exchangeRate
     }
@@ -318,7 +318,7 @@ extension Transaction {
     
     
     static func generateRandomTransactions(
-        for paymentMethod: ReconcilableAccounts,
+        for account: ReconcilableAccounts,
         currency: Currency,
         startDate: Date,
         endDate: Date,
@@ -343,7 +343,7 @@ extension Transaction {
             transaction.payee = payees.randomElement()
             transaction.explanation = explanations.randomElement()
             
-            transaction.accountCD = paymentMethod.rawValue
+            transaction.accountCD = account.rawValue
             transaction.currencyCD = currency.rawValue
             
             let isCredit = Bool.random()
@@ -392,7 +392,7 @@ extension Transaction {
         request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
             NSPredicate(format: "txAmountCD == %d", txAmountCDValue),
             NSPredicate(format: "currencyCD == %d", temp.currency.rawValue),
-            NSPredicate(format: "accountCD == %d", temp.paymentMethod.rawValue),
+            NSPredicate(format: "accountCD == %d", temp.account.rawValue),
             NSPredicate(format: "transactionDate >= %@ AND transactionDate <= %@", startDate as NSDate, endDate as NSDate)
         ])
         

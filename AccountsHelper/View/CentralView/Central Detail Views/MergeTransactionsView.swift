@@ -12,7 +12,7 @@ import CoreData
 enum MergeField: String, CaseIterable, Identifiable {
     case timestamp
     case transactionDate
-    case paymentMethod
+    case account
     case category
     case txAmount
     case currency
@@ -93,11 +93,11 @@ extension MergeField {
             hasValue: { ($0.payee ?? "").isEmpty == false },
             setter: { $0.payee = $1.payee }
         ),
-        .paymentMethod: MergeFieldInfo(
+        .account: MergeFieldInfo(
             displayName: "Account",
-            getter: { $0.paymentMethod.description },
-            hasValue: { $0.paymentMethod != .unknown },
-            setter: { $0.paymentMethod = $1.paymentMethod }
+            getter: { $0.account.description },
+            hasValue: { $0.account != .unknown },
+            setter: { $0.account = $1.account }
         ),
         .explanation: MergeFieldInfo(
             displayName: "Explanation",
