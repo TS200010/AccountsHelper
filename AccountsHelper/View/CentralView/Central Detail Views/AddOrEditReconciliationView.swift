@@ -47,7 +47,7 @@ struct AddOrEditReconciliationView: View {
     
     private var isUniquePeriodValid: Bool {
         let period = AccountingPeriod(year: selectedYear, month: selectedMonth)
-        let existing = try? Reconciliation.fetchOne(for: period, paymentMethod: selectedPaymentMethod, context: context)
+        let existing = try? Reconciliation.fetchOne(for: period, account: selectedPaymentMethod, context: context)
         // If editing, allow same record
         if let existing, let reconciliationToEdit, existing == reconciliationToEdit {
             return true
@@ -75,7 +75,7 @@ struct AddOrEditReconciliationView: View {
         .frame(minWidth: 500, minHeight: 320)
         .onAppear {
             if let rec = reconciliationToEdit {
-                selectedPaymentMethod = rec.paymentMethod
+                selectedPaymentMethod = rec.account
                 statementDate = rec.statementDate ?? Date()
                 endingBalance = rec.endingBalanceAsString()  // show as string
                 selectedYear  = Int(rec.periodYear)
@@ -188,7 +188,7 @@ extension AddOrEditReconciliationView {
         do {
             if let rec = reconciliationToEdit {
                 // Editing an existing reconciliation
-                rec.paymentMethod = selectedPaymentMethod
+                rec.account = selectedPaymentMethod
                 rec.statementDate = statementDate
                 rec.endingBalance = balanceDecimal
                 rec.periodYear = Int32(selectedYear)
@@ -196,12 +196,12 @@ extension AddOrEditReconciliationView {
                 rec.periodKey = Reconciliation.makePeriodKey(
                     year: Int32(selectedYear),
                     month: Int32(selectedMonth),
-                    paymentMethod: selectedPaymentMethod
+                    account: selectedPaymentMethod
                 )
             } else {
                 // Creating a new reconciliation
                 _ = try Reconciliation.createNew(
-                    paymentMethod: selectedPaymentMethod,
+                    account: selectedPaymentMethod,
                     period: period,
                     statementDate: statementDate,
                     endingBalance: balanceDecimal,

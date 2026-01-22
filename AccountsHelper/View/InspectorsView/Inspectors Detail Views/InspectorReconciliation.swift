@@ -52,7 +52,7 @@ struct InspectorReconciliation: View {
                         // MARK: --- Payment Method
                         HStack {
                             Text("Account:").bold()
-                            Text(rec.paymentMethod.description)
+                            Text(rec.account.description)
                             Spacer()
                         }
                         .padding()

@@ -198,7 +198,7 @@ extension ReconcilliationListView {
                         }
                     })) {
                         TableColumn("Account") { row in
-                            Text(row.rec.paymentMethod.description)
+                            Text(row.rec.account.description)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .foregroundColor(row.rec.closed ? .blue : (hasInvalidTransactions(row) ? .red : .primary))
                                 .contentShape(Rectangle())
@@ -371,7 +371,7 @@ extension ReconcilliationListView {
             
             let newTx = Transaction(context: context)
             newTx.payer = .ACHelper
-            newTx.paymentMethod = row.rec.paymentMethod
+            newTx.paymentMethod = row.rec.account
             newTx.payee = "Balancing Transaction"
             newTx.explanation = "Automatically added to force balance"
             newTx.currency = row.rec.currency
@@ -419,7 +419,7 @@ extension ReconcilliationListView {
             return """
             \(category.description)\t\(AmountFormatter.anyAmountAsString(
                 amount: total,
-                currency: row.rec.paymentMethod.currency,
+                currency: row.rec.account.currency,
                 withSymbol: .never
             ))
 """
@@ -462,7 +462,7 @@ extension ReconcilliationListView {
 
             let predicate = NSPredicate(
                 format: "accountCD == %d AND transactionDate >= %@ AND transactionDate <= %@",
-                row.rec.paymentMethod.rawValue,
+                row.rec.account.rawValue,
                 start as NSDate,
                 end as NSDate
             )
@@ -506,7 +506,7 @@ extension ReconcilliationListView {
         Button {
             let predicate = NSPredicate(
                 format: "accountCD == %d AND transactionDate >= %@ AND transactionDate <= %@",
-                row.rec.paymentMethod.rawValue,
+                row.rec.account.rawValue,
                 row.rec.transactionStartDate as NSDate,
                 row.rec.transactionEndDate as NSDate
             )

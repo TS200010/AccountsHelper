@@ -14,7 +14,7 @@ func reportHeader( title: String, viewContext: NSManagedObjectContext, appState:
     header.append(title)
     if let recID = appState.selectedReconciliationID,
        let rec = try? viewContext.existingObject(with: recID) as? Reconciliation {
-        header.append(" — \(rec.paymentMethod.description)\n")
+        header.append(" — \(rec.account.description)\n")
         let periodStr = "\(rec.periodMonth)/\(rec.periodYear)"
         let statementDateStr = rec.statementDate?.formatted(date: .numeric, time: .omitted) ?? "-"
         header.append("Period: \(periodStr) | Statement Date: \(statementDateStr)\n")

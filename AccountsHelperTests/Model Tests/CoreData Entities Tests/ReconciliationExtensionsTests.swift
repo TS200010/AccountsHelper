@@ -94,7 +94,7 @@ struct ReconciliationExtensionsTests {
         let baseline = try Reconciliation.ensureBaseline(for: .AMEX, in: context)
         #expect(baseline.periodYear > 0)
         #expect(baseline.periodMonth > 0)
-        #expect(baseline.paymentMethod == .AMEX)
+        #expect(baseline.account == .AMEX)
         #expect(baseline.endingBalance == 0)
     }
 
@@ -203,7 +203,7 @@ struct ReconciliationExtensionsTests {
         // Create a reconciliation dated in the future
         let futureDate = Calendar.current.date(byAdding: .day, value: 1, to: Date())!
         let rec = makeReconciliation(statementDate: futureDate)
-        let prev = try Reconciliation.fetchPrevious(for: rec.paymentMethod, before: Date(), context: context)
+        let prev = try Reconciliation.fetchPrevious(for: rec.account, before: Date(), context: context)
         #expect(prev == nil)
     }
 

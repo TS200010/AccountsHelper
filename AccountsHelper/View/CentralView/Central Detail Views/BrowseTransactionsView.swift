@@ -984,7 +984,7 @@ extension BrowseTransactionsView {
         
         // --- Accounting Period / Date Filter
         if let method = selectedPaymentMethod, let period = selectedAccountingPeriod {
-            if let reconciliation = try? Reconciliation.fetchOne(for: period, paymentMethod: method, context: viewContext) {
+            if let reconciliation = try? Reconciliation.fetchOne(for: period, account: method, context: viewContext) {
                 let start = reconciliation.transactionStartDate as NSDate
                 let end = reconciliation.transactionEndDate as NSDate
                 predicates.append(NSPredicate(format: "transactionDate >= %@ AND transactionDate <= %@", start, end))
@@ -1135,7 +1135,7 @@ extension BrowseTransactionsView {
     // MARK: --- Accounting periods per payment method
     private func accountingPeriodsForPaymentMethod(_ method: ReconcilableAccounts) -> [AccountingPeriod] {
         let periods = reconciliations
-            .filter { $0.paymentMethod == method }
+            .filter { $0.account == method }
             .map { $0.accountingPeriod }
         return Array(Set(periods))
             .sorted { ($0.year, $0.month) > ($1.year, $1.month) }
@@ -1177,7 +1177,7 @@ extension BrowseTransactionsView {
             // Get previous reconciliation balance if available
             var balance: Decimal = 0
             if let previousRec = reconciliations
-                .filter({ $0.paymentMethod == paymentMethod })
+                .filter({ $0.account == paymentMethod })
                 .sorted(by: { ($0.periodYear, $0.periodMonth) > ($1.periodYear, $1.periodMonth) })
                 .first {
                 balance = previousRec.endingBalance

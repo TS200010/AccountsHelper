@@ -19,7 +19,7 @@ extension Reconciliation {
         context: NSManagedObjectContext,
         year: Int32,
         month: Int32,
-        paymentMethod: ReconcilableAccounts,
+        account: ReconcilableAccounts,
         statementDate: Date,
         endingBalance: Decimal,
         currency: Currency
@@ -27,11 +27,11 @@ extension Reconciliation {
         self.init(context: context)
         self.periodYear = year
         self.periodMonth = month
-        self.accountCD = paymentMethod.rawValue
+        self.accountCD = account.rawValue
         self.statementDate = statementDate
         self.endingBalanceCD = decimalToCents(endingBalance)
         self.currencyCD = currency.rawValue
-        self.periodKey = Self.makePeriodKey(year: year, month: month, paymentMethod: paymentMethod)
+        self.periodKey = Self.makePeriodKey(year: year, month: month, account: account)
     }
 }
 
@@ -47,7 +47,7 @@ extension Reconciliation {
     var currency: Currency {
         get { Currency(rawValue: currencyCD) ?? .unknown }
         set {
-            switch paymentMethod {
+            switch account {
             case .AMEX, .VISA, .BofSPV:
                 currencyCD = Currency.GBP.rawValue
             default:
@@ -76,7 +76,7 @@ extension Reconciliation {
     }
     
     // MARK: --- PaymentMethod
-    var paymentMethod: ReconcilableAccounts {
+    var account: ReconcilableAccounts {
         get { ReconcilableAccounts(rawValue: accountCD) ?? .unknown }
         set { accountCD = newValue.rawValue }
     }
@@ -95,7 +95,7 @@ extension Reconciliation {
     // MARK: --- PreviousEndingBalance
     var previousEndingBalance: Decimal {
         if let context = self.managedObjectContext,
-           let previous = try? Reconciliation.fetchPrevious(for: self.paymentMethod, before: self.statementDate ?? Date.distantPast, context: context) {
+           let previous = try? Reconciliation.fetchPrevious(for: self.account, before: self.statementDate ?? Date.distantPast, context: context) {
             return previous.endingBalance
         }
         return 0
@@ -104,7 +104,7 @@ extension Reconciliation {
     // MARK: --- previousStatementDate
     func previousStatementDate() -> Date? {
         if let context = self.managedObjectContext,
-           let previous = try? Reconciliation.fetchPrevious(for: self.paymentMethod, before: self.statementDate ?? Date.distantPast, context: context) {
+           let previous = try? Reconciliation.fetchPrevious(for: self.account, before: self.statementDate ?? Date.distantPast, context: context) {
             return previous.statementDate
         }
         return Date.distantPast
@@ -155,7 +155,7 @@ extension Reconciliation {
     var transactionStartDate: Date {
         guard let currentStatement = self.statementDate else { return Date.distantPast }
         if let context = self.managedObjectContext,
-           let previous = try? Reconciliation.fetchPrevious(for: self.paymentMethod, before: currentStatement, context: context) {
+           let previous = try? Reconciliation.fetchPrevious(for: self.account, before: currentStatement, context: context) {
             return Calendar.current.date(byAdding: .day, value: 1, to: previous.statementDate!)!
         }
         return currentStatement
@@ -219,7 +219,7 @@ extension Reconciliation {
         let request: NSFetchRequest<Reconciliation> = Reconciliation.fetchRequest()
         request.predicate = NSPredicate(
             format: "accountCD == %d AND statementDate > %@ AND closed == YES",
-            self.paymentMethod.rawValue,
+            self.account.rawValue,
             statementDate as NSDate
         )
         request.fetchLimit = 1
@@ -279,7 +279,7 @@ extension Reconciliation {
         let request: NSFetchRequest<Reconciliation> = Reconciliation.fetchRequest()
         request.predicate = NSPredicate(
             format: "accountCD == %d AND statementDate > %@",
-            self.paymentMethod.rawValue,
+            self.account.rawValue,
             statementDate as NSDate
         )
         request.fetchLimit = 1
@@ -298,7 +298,7 @@ extension Reconciliation {
     // MARK: --- IsPreviousClosed
     func isPreviousClosed( ) -> Bool {
         guard let context = self.managedObjectContext,
-              let previous = try? Reconciliation.fetchPrevious(for: self.paymentMethod, before: self.statementDate ?? Date.distantPast, context: context) else {
+              let previous = try? Reconciliation.fetchPrevious(for: self.account, before: self.statementDate ?? Date.distantPast, context: context) else {
             return true
         }
         return previous.closed
@@ -336,7 +336,7 @@ extension Reconciliation {
         }
         
         // Always filter by payment method
-        predicates.append(NSPredicate(format: "accountCD == %@", NSNumber(value: paymentMethod.rawValue)))
+        predicates.append(NSPredicate(format: "accountCD == %@", NSNumber(value: account.rawValue)))
         
         return NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
     }
@@ -427,33 +427,33 @@ extension Reconciliation {
     // MARK: --- CreateNew
     @discardableResult
     static func createNew(
-        paymentMethod: ReconcilableAccounts,
+        account: ReconcilableAccounts,
         period: AccountingPeriod,
         statementDate: Date,
         endingBalance: Decimal,
         in context: NSManagedObjectContext
     ) throws -> Reconciliation {
-        _ = try ensureBaseline(for: paymentMethod, in: context)
-        if let existing = try fetchOne(for: period, paymentMethod: paymentMethod, context: context) {
+        _ = try ensureBaseline(for: account, in: context)
+        if let existing = try fetchOne(for: period, account: account, context: context) {
             return existing
         }
         let rec = Reconciliation(
             context: context,
             year: Int32(period.year),
             month: Int32(period.month),
-            paymentMethod: paymentMethod,
+            account: account,
             statementDate: statementDate,
             endingBalance: endingBalance,
-            currency: paymentMethod.currency
+            currency: account.currency
         )
         try context.save()
         return rec
     }
 
     // MARK: --- EnsureBaseline
-    static func ensureBaseline(for paymentMethod: ReconcilableAccounts, in context: NSManagedObjectContext) throws -> Reconciliation {
+    static func ensureBaseline(for account: ReconcilableAccounts, in context: NSManagedObjectContext) throws -> Reconciliation {
         let request: NSFetchRequest<Reconciliation> = Reconciliation.fetchRequest()
-        request.predicate = NSPredicate(format: "accountCD == %d", paymentMethod.rawValue)
+        request.predicate = NSPredicate(format: "accountCD == %d", account.rawValue)
         request.fetchLimit = 1
         if let existing = try context.fetch(request).first {
             return existing
@@ -465,10 +465,10 @@ extension Reconciliation {
             context: context,
             year: year,
             month: month,
-            paymentMethod: paymentMethod,
+            account: account,
             statementDate: baselineDate,
             endingBalance: 0,
-            currency: paymentMethod.currency
+            currency: account.currency
         )
         try context.save()
         return baseline
@@ -492,8 +492,8 @@ extension Reconciliation {
     }
 
     // MARK: --- MakePeriodKey
-    static func makePeriodKey(year: Int32, month: Int32, paymentMethod: ReconcilableAccounts) -> String {
-        "\(year)-\(String(format: "%02d", month))-\(paymentMethod.code)"
+    static func makePeriodKey(year: Int32, month: Int32, account: ReconcilableAccounts) -> String {
+        "\(year)-\(String(format: "%02d", month))-\(account.code)"
     }
 }
 
@@ -532,13 +532,13 @@ extension Reconciliation {
 
     static func fetchOne(
         for period: AccountingPeriod,
-        paymentMethod: ReconcilableAccounts,
+        account: ReconcilableAccounts,
         context: NSManagedObjectContext
     ) throws -> Reconciliation? {
         let request: NSFetchRequest<Reconciliation> = Reconciliation.fetchRequest()
         request.predicate = NSPredicate(
             format: "periodYear == %d AND periodMonth == %d AND accountCD == %d",
-            period.year, period.month, paymentMethod.rawValue
+            period.year, period.month, account.rawValue
         )
         request.fetchLimit = 1
         return try context.fetch(request).first
