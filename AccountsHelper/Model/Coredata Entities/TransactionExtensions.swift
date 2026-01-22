@@ -8,28 +8,6 @@
 import Foundation
 import CoreData
 
-/*
- @NSManaged public var accountNumber: String?
- @NSManaged public var address: String?
- @NSManaged public var categoryCD: Int32
- @NSManaged public var closed: Bool
- @NSManaged public var commissionAmountCD: Int32
- @NSManaged public var currencyCD: Int32
- @NSManaged public var debitCreditCD: Int32
- @NSManaged public var exchangeRateCD: Int32
- @NSManaged public var explanation: String?
- @NSManaged public var extendedDetails: String?
- @NSManaged public var payee: String?
- @NSManaged public var payerCD: Int32
- @NSManaged public var paymentMethodCD: Int32
- @NSManaged public var reference: String?
- @NSManaged public var splitAmountCD: Int32
- @NSManaged public var splitCategoryCD: Int32
- @NSManaged public var timestamp: Date?
- @NSManaged public var transactionDate: Date?
- @NSManaged public var txAmountCD: Int32
- */
-
 // MARK: --- CentsConvertible conformance
 extension Transaction: CentsConvertible {}
 
@@ -106,8 +84,8 @@ extension Transaction {
     }
 
     var paymentMethod: ReconcilableAccounts {
-        get { ReconcilableAccounts(rawValue: paymentMethodCD) ?? .unknown }
-        set { paymentMethodCD = newValue.rawValue }
+        get { ReconcilableAccounts(rawValue: accountCD) ?? .unknown }
+        set { accountCD = newValue.rawValue }
     }
 
     var splitCategory: Category {
@@ -365,7 +343,7 @@ extension Transaction {
             transaction.payee = payees.randomElement()
             transaction.explanation = explanations.randomElement()
             
-            transaction.paymentMethodCD = paymentMethod.rawValue
+            transaction.accountCD = paymentMethod.rawValue
             transaction.currencyCD = currency.rawValue
             
             let isCredit = Bool.random()
@@ -414,7 +392,7 @@ extension Transaction {
         request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
             NSPredicate(format: "txAmountCD == %d", txAmountCDValue),
             NSPredicate(format: "currencyCD == %d", temp.currency.rawValue),
-            NSPredicate(format: "paymentMethodCD == %d", temp.paymentMethod.rawValue),
+            NSPredicate(format: "accountCD == %d", temp.paymentMethod.rawValue),
             NSPredicate(format: "transactionDate >= %@ AND transactionDate <= %@", startDate as NSDate, endDate as NSDate)
         ])
         

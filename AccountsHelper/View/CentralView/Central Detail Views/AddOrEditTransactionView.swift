@@ -138,7 +138,7 @@ struct AddOrEditTransactionView: View {
                 LabeledDecimalWithFX(label: "Amount", amount: $transactionData.txAmount, currency: $transactionData.currency, fxRate: $transactionData.exchangeRate, isValid: transactionData.isTXAmountValid(), displayOnly: false)
                     .focused($focusedField, equals: .mainAmountField)
                 
-                LabeledPicker(label: "Payment Method", selection: $transactionData.paymentMethod, isValid: transactionData.isPaymentMethodValid())
+                LabeledPicker(label: "Account", selection: $transactionData.paymentMethod, isValid: transactionData.isPaymentMethodValid())
                 
                 LabeledTextField(label: "Payee", text: Binding(get: { transactionData.payee ?? "" }, set: { transactionData.payee = $0 }), isValid: transactionData.isPayeeValid())
                     .onChange(of: transactionData.payee) { _, newValue in

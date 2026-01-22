@@ -19,10 +19,10 @@ import ItMkLibrary
     case VISA       = 6
     case BofSPV     = 7
     case BofSCA     = 8
-    case BofSC      = 9
+    case LloydsC    = 9
     case BofSIASA   = 10
     case BofSISS    = 11
-    case BofSVP     = 12
+    case BofSYP     = 12
     case ItMkEquity = 13
     case unknown    = 99
 
@@ -45,10 +45,10 @@ import ItMkLibrary
         case .VISA:       return .GBP
         case .BofSPV:     return .GBP
         case .BofSCA:     return .GBP
-        case .BofSC:      return .GBP
+        case .LloydsC:    return .GBP
         case .BofSIASA:   return .GBP
         case .BofSISS:    return .GBP
-        case .BofSVP:     return .GBP
+        case .BofSYP:     return .GBP
         case .ItMkEquity: return .GBP
         case .unknown:    return .unknown
         }
@@ -65,10 +65,10 @@ import ItMkLibrary
         case .VISA:       return String(localized: "VISA")
         case .BofSPV:     return String(localized: "BofS PV")
         case .BofSCA:     return String(localized: "BofS CA")
-        case .BofSC:      return String(localized: "BofS C")
+        case .LloydsC:    return String(localized: "Lloyds C")
         case .BofSIASA:   return String(localized: "BofS IASA")
         case .BofSISS:    return String(localized: "BofS ISS")
-        case .BofSVP:     return String(localized: "BofS VP")
+        case .BofSYP:     return String(localized: "BofS YP")
         case .ItMkEquity: return String(localized: "ItMk Equity")
         case .unknown:    return String(localized: "Unknown")
         }
@@ -83,12 +83,12 @@ import ItMkLibrary
         case .CashYEN:    return "CASH_YEN"
         case .AMEX:       return "AMEX"
         case .VISA:       return "VISA"
-        case .BofSPV:     return "BOFS_PV"
-        case .BofSCA:     return "BOFS_CA"
-        case .BofSC:      return "BOFS_C"
-        case .BofSIASA:   return "BOFS_IASA"
-        case .BofSISS:    return "BOFS_ISS"
-        case .BofSVP:     return "BOFS_VP"
+        case .BofSPV:     return "BOFS_PV_82"
+        case .BofSCA:     return "BOFS_CA_64"
+        case .LloydsC:    return "LLOYDS_C_68"
+        case .BofSIASA:   return "BOFS_IASA_62"
+        case .BofSISS:    return "BOFS_ISS_56"
+        case .BofSYP:     return "BOFS_YP_57"
         case .ItMkEquity: return "ITMK_EQUITY"
         case .unknown:    return "UNKNOWN"
         }
@@ -105,10 +105,10 @@ import ItMkLibrary
         case 6:          return .VISA
         case 7:          return .BofSPV
         case 8:          return .BofSCA
-        case 9:          return .BofSC
+        case 9:          return .LloydsC
         case 10:         return .BofSIASA
         case 11:         return .BofSISS
-        case 12:         return .BofSVP
+        case 12:         return .BofSYP
         case 13:         return .ItMkEquity
         case 99:         return .unknown
         default:         return .unknown
@@ -131,12 +131,35 @@ import ItMkLibrary
         case .VISA:       return "GBP"
         case .BofSPV:     return "GBP"
         case .BofSCA:     return "GBP"
-        case .unknown:    return "GBP"
-        case .BofSC:      return "GBP"
+        case .LloydsC:    return "GBP"
         case .BofSIASA:   return "GBP"
         case .BofSISS:    return "GBP"
-        case .BofSVP:     return "GBP"
+        case .BofSYP:     return "GBP"
         case .ItMkEquity: return "GBP"
+        case .unknown:    return "GBP"
+        }
+    }
+    
+    // MARK: --- CSV Import
+    var accountNumber: String {
+        switch self {
+        case .BofSPV:   return "00142182"
+        case .BofSCA:   return "10077364"
+        case .LloydsC:  return "30007768"
+        case .BofSIASA: return "01511762"
+        case .BofSISS:  return "01401443"
+        case .BofSYP:   return "01931306"
+        default: return ""
+        }
+    }
+    
+    static func fromAccountNumber(_ value: String) -> ReconcilableAccounts? {
+        let normalised = value
+            .trimmingCharacters(in: .whitespaces)
+            .filter(\.isNumber)
+
+        return Self.allCases.first {
+            $0.accountNumber == normalised
         }
     }
 }

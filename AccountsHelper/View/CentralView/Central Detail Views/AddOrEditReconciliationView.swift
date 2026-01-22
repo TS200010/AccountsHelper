@@ -98,7 +98,7 @@ extension AddOrEditReconciliationView {
         Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 12) {
             
             GridRow {
-                Text("Payment Method:")
+                Text("Account:")
                     .frame(width: 140, alignment: .trailing)
                 Picker("", selection: $selectedPaymentMethod) {
                     ForEach(ReconcilableAccounts.allCases, id: \.self) { method in

@@ -197,7 +197,7 @@ extension ReconcilliationListView {
                             appState.replaceInspectorView(with: .viewReconciliation)
                         }
                     })) {
-                        TableColumn("Payment Method") { row in
+                        TableColumn("Account") { row in
                             Text(row.rec.paymentMethod.description)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .foregroundColor(row.rec.closed ? .blue : (hasInvalidTransactions(row) ? .red : .primary))
@@ -407,23 +407,6 @@ extension ReconcilliationListView {
         }
 
         return totals
-//        do {
-//            let predicate = NSPredicate(
-//                format: "paymentMethodCD == %d AND transactionDate >= %@ AND transactionDate <= %@",
-//                row.rec.paymentMethod.rawValue,
-//                row.rec.transactionStartDate as NSDate,
-//                row.rec.transactionEndDate as NSDate
-//            )
-//            let fetchRequest: NSFetchRequest<Transaction> = Transaction.fetchRequest()
-//            fetchRequest.predicate = predicate
-//            let transactions = try context.fetch(fetchRequest)
-//
-//            return transactions.sumByCategoryIncludingSplitsInGBP()
-//
-//        } catch {
-//            print("Failed to fetch category totals for reconciliation: \(error)")
-//            return [:]
-//        }
     }
     
     // MARK: --- ExportXLSSummary
@@ -478,7 +461,7 @@ extension ReconcilliationListView {
             let end   = calendar.date(byAdding: .day, value:  windowDays, to: row.rec.transactionEndDate)!
 
             let predicate = NSPredicate(
-                format: "paymentMethodCD == %d AND transactionDate >= %@ AND transactionDate <= %@",
+                format: "accountCD == %d AND transactionDate >= %@ AND transactionDate <= %@",
                 row.rec.paymentMethod.rawValue,
                 start as NSDate,
                 end as NSDate
@@ -522,7 +505,7 @@ extension ReconcilliationListView {
         
         Button {
             let predicate = NSPredicate(
-                format: "paymentMethodCD == %d AND transactionDate >= %@ AND transactionDate <= %@",
+                format: "accountCD == %d AND transactionDate >= %@ AND transactionDate <= %@",
                 row.rec.paymentMethod.rawValue,
                 row.rec.transactionStartDate as NSDate,
                 row.rec.transactionEndDate as NSDate

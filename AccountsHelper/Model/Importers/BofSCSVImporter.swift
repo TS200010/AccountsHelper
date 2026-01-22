@@ -11,7 +11,7 @@ import CoreData
 class BofSCSVImporter: TxImporter {
 
     static var displayName: String = "BofS CSV Importer"
-    static var paymentMethod: ReconcilableAccounts = .BofSPV
+    static var paymentMethod: ReconcilableAccounts = .unknown
     static var importType: ImportType = .csv
 
     @MainActor
@@ -29,7 +29,24 @@ class BofSCSVImporter: TxImporter {
             let csvData = try String(contentsOf: fileURL, encoding: .utf8)
             let rows = parseCSV(csvData: csvData)
             guard let headers = rows.first else { return [] }
+            
+            guard
+                let accountIndex = headers.firstIndex(where: { $0.lowercased() == "account number" }),
+                rows.count > 1
+            else {
+                throw ImportError.missingAccountNumberColumn
+            }
 
+            let rawAccountNumber = rows[1][accountIndex]
+                .trimmingCharacters(in: .whitespaces)
+                .filter(\.isNumber)
+
+            guard let paymentMethod =
+                    ReconcilableAccounts.fromAccountNumber(rawAccountNumber)
+            else {
+                throw ImportError.unknownAccount(rawAccountNumber)
+            }
+            
             let matcher = CategoryMatcher(context: tempContext)
             var accountTemp = ""
 

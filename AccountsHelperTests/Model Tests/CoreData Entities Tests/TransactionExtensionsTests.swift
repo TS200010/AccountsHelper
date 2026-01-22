@@ -174,7 +174,7 @@ struct TransactionExtensionsTests {
         let startDate = now.addingTimeInterval(-7 * 24 * 60 * 60)
         let endDate = now.addingTimeInterval(1 * 24 * 60 * 60)
         fullRequest.predicate = NSPredicate(
-            format: "txAmountCD == %lld AND currencyCD == %d AND paymentMethodCD == %d AND transactionDate >= %@ AND transactionDate <= %@",
+            format: "txAmountCD == %lld AND currencyCD == %d AND accountCD == %d AND transactionDate >= %@ AND transactionDate <= %@",
             cents(temp.txAmount),
             temp.currency.rawValue,
             temp.paymentMethod.rawValue,

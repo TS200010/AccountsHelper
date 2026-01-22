@@ -181,7 +181,7 @@ struct NavigatorMenuView: View {
             AddOrEditTransactionView()
         }
         .sheet(isPresented: $showingBrowseTransactionsView) {
-            BrowseTransactionsView()
+            BrowseTransactionsView( mode: .generalBrowsing )
         }
         #endif
     }

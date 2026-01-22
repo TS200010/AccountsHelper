@@ -47,7 +47,7 @@ import ItMkLibrary
     case ToYenCash          = 51
     case ToBofSPV_82        = 52
     case ToBofSCA_64        = 53
-    case ToBofSC_68         = 54
+    case ToLloydsC_68       = 54
     case ToBofSIASA_62      = 55
     case ToBofSISS_43       = 56
     case ToBofSYP_06        = 57
@@ -118,7 +118,7 @@ import ItMkLibrary
         case .ToYenCash:        return String(localized: "ToYenCash")
         case .ToBofSPV_82:      return String(localized: "ToBofSPV 82")
         case .ToBofSCA_64:      return String(localized: "ToBofSCA 64")
-        case .ToBofSC_68:       return String(localized: "ToBofSC 68")
+        case .ToLloydsC_68:       return String(localized: "ToLloydsC 68")
         case .ToBofSIASA_62:    return String(localized: "ToBofSIASA 62")
         case .ToBofSISS_43:     return String(localized: "ToBofSISS 43")
         case .ToBofSYP_06:      return String(localized: "ToBofSYP 06")

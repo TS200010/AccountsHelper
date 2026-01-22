@@ -127,7 +127,7 @@ extension PersistenceController {
             let transactions = try context.fetch(fetchRequest)
             guard !transactions.isEmpty else { return 0 }
 
-            var csvText = "accountNumber,address,categoryCD,checked,closed,commissionAmountCD,currencyCD,debitCreditCD,exchangeRateCD,explanation,extendedDetails,payee,payerCD,paymentMethodCD,reference,splitAmountCD,splitCategoryCD,timestamp,transactionDate,txAmountCD\n"
+            var csvText = "accountNumber,address,categoryCD,closed,commissionAmountCD,currencyCD,debitCreditCD,exchangeRateCD,explanation,extendedDetails,payee,payerCD,accountCD,reference,splitAmountCD,splitCategoryCD,timestamp,transactionDate,txAmountCD\n"
 
             let dateFormatter = ISO8601DateFormatter()
 
@@ -153,7 +153,7 @@ extension PersistenceController {
                     f(tx.extendedDetails),
                     f(tx.payee),
                     f(tx.payerCD),
-                    f(tx.paymentMethodCD),
+                    f(tx.accountCD),
                     f(tx.reference),
                     f(tx.splitAmountCD),
                     f(tx.splitCategoryCD),
@@ -218,7 +218,7 @@ extension PersistenceController {
                 tx.extendedDetails = components[10]
                 tx.payee = components[11]
                 tx.payerCD = Int32(components[12]) ?? 0
-                tx.paymentMethodCD = Int32(components[13]) ?? 0
+                tx.accountCD = Int32(components[13]) ?? 0
                 tx.reference = components[14]
                 tx.splitAmountCD = Int32(components[15]) ?? 0
                 tx.splitCategoryCD = Int32(components[16]) ?? 0

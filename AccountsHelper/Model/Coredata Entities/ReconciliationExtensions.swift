@@ -13,43 +13,6 @@ extension Reconciliation: CentsConvertible {}
 
 // MARK: --- INITIALISATION
 extension Reconciliation {
-    
-    func resetPayPalCategoriesToUnknownX() {
-        return 
-        
-        let context = self.managedObjectContext!
-            context.performAndWait {
-                let request: NSFetchRequest<Transaction> = Transaction.fetchRequest()
-                
-                // Filter for Bank of Scotland only (adjust this predicate if needed)
-                request.predicate = NSPredicate(format: "paymentMethodCD == %d", ReconcilableAccounts.BofSCA.rawValue)
-                
-                do {
-                    let transactions = try context.fetch(request)
-                    var changed = false
-                    
-                    for tx in transactions {
-                        guard let payee = tx.payee, !payee.isEmpty else { continue }
-                        
-                        let trimmed = payee.trimmingCharacters(in: .whitespacesAndNewlines)
-                        if trimmed.uppercased().hasPrefix("PAYPAL") {
-                            if tx.category != .unknown {
-                                tx.category = .unknown
-                                changed = true
-                            }
-                        }
-                    }
-                    
-                    if changed {
-                        try context.save()
-                    }
-                } catch {
-                    NSLog("Failed to reset PayPal categories: \(error)")
-                }
-            }
-        
-    }
-
 
     // MARK: --- ConvenienceInit
     convenience init(
@@ -64,7 +27,7 @@ extension Reconciliation {
         self.init(context: context)
         self.periodYear = year
         self.periodMonth = month
-        self.paymentMethodCD = paymentMethod.rawValue
+        self.accountCD = paymentMethod.rawValue
         self.statementDate = statementDate
         self.endingBalanceCD = decimalToCents(endingBalance)
         self.currencyCD = currency.rawValue
@@ -114,8 +77,8 @@ extension Reconciliation {
     
     // MARK: --- PaymentMethod
     var paymentMethod: ReconcilableAccounts {
-        get { ReconcilableAccounts(rawValue: paymentMethodCD) ?? .unknown }
-        set { paymentMethodCD = newValue.rawValue }
+        get { ReconcilableAccounts(rawValue: accountCD) ?? .unknown }
+        set { accountCD = newValue.rawValue }
     }
     
     // MARK: --- OpeningBalance
@@ -255,7 +218,7 @@ extension Reconciliation {
 
         let request: NSFetchRequest<Reconciliation> = Reconciliation.fetchRequest()
         request.predicate = NSPredicate(
-            format: "paymentMethodCD == %d AND statementDate > %@ AND closed == YES",
+            format: "accountCD == %d AND statementDate > %@ AND closed == YES",
             self.paymentMethod.rawValue,
             statementDate as NSDate
         )
@@ -307,17 +270,6 @@ extension Reconciliation {
         request.predicate = self.transactionsPredicate_NOT_USED()
         request.sortDescriptors = [NSSortDescriptor(key: "transactionDate", ascending: true)]
         return try context.fetch(request)
-//        let request: NSFetchRequest<Transaction> = Transaction.fetchRequest()
-//        let start = self.transactionStartDate as NSDate
-//        let end = self.transactionEndDate as NSDate
-//        request.predicate = NSPredicate(
-//            format: "paymentMethodCD == %d AND transactionDate >= %@ AND transactionDate <= %@",
-//            self.paymentMethod.rawValue,
-//            start,
-//            end
-//        )
-//        request.sortDescriptors = [NSSortDescriptor(key: "transactionDate", ascending: true)]
-//        return try context.fetch(request)
     }
 
     // MARK: --- HasLaterReconciliation
@@ -326,7 +278,7 @@ extension Reconciliation {
               let statementDate = self.statementDate else { return false }
         let request: NSFetchRequest<Reconciliation> = Reconciliation.fetchRequest()
         request.predicate = NSPredicate(
-            format: "paymentMethodCD == %d AND statementDate > %@",
+            format: "accountCD == %d AND statementDate > %@",
             self.paymentMethod.rawValue,
             statementDate as NSDate
         )
@@ -384,33 +336,13 @@ extension Reconciliation {
         }
         
         // Always filter by payment method
-        predicates.append(NSPredicate(format: "paymentMethodCD == %@", NSNumber(value: paymentMethod.rawValue)))
+        predicates.append(NSPredicate(format: "accountCD == %@", NSNumber(value: paymentMethod.rawValue)))
         
         return NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
     }
 
-//    func transactionsPredicate() -> NSPredicate {
-//        var predicates: [NSPredicate] = []
-//        
-//        // --- Date range filter
-//        if let start = previousStatementDate(), let end = statementDate {
-//            predicates.append(NSPredicate(format: "transactionDate >= %@ AND transactionDate <= %@", start as NSDate, end as NSDate))
-//        }
-//        
-//        // --- Payment method filter
-//            predicates.append(NSPredicate(format: "paymentMethodCD == %@", NSNumber(value: paymentMethod.rawValue)))
-//        
-//        guard !predicates.isEmpty else { return NSPredicate(value: true) } // matches all if nothing to filter
-//        
-//        return NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
-//    }
-    
-
-
     // MARK: --- Reopen
     func reopen( ) throws {
-        
-//        resetPayPalCategoriesToUnknown()
         
         guard let context = self.managedObjectContext else {
             print("No managed object context found!")
@@ -521,7 +453,7 @@ extension Reconciliation {
     // MARK: --- EnsureBaseline
     static func ensureBaseline(for paymentMethod: ReconcilableAccounts, in context: NSManagedObjectContext) throws -> Reconciliation {
         let request: NSFetchRequest<Reconciliation> = Reconciliation.fetchRequest()
-        request.predicate = NSPredicate(format: "paymentMethodCD == %d", paymentMethod.rawValue)
+        request.predicate = NSPredicate(format: "accountCD == %d", paymentMethod.rawValue)
         request.fetchLimit = 1
         if let existing = try context.fetch(request).first {
             return existing
@@ -550,7 +482,7 @@ extension Reconciliation {
     ) throws -> Reconciliation? {
         let request: NSFetchRequest<Reconciliation> = Reconciliation.fetchRequest()
         request.predicate = NSPredicate(
-            format: "paymentMethodCD == %d AND statementDate < %@",
+            format: "accountCD == %d AND statementDate < %@",
             paymentMethod.rawValue,
             date as NSDate
         )
@@ -578,7 +510,7 @@ extension Reconciliation {
             period.year, period.month
         )
         request.sortDescriptors = [
-            NSSortDescriptor(key: "paymentMethodCD", ascending: true),
+            NSSortDescriptor(key: "accountCD", ascending: true),
             NSSortDescriptor(key: "statementDate", ascending: true)
         ]
         return try context.fetch(request)
@@ -591,7 +523,7 @@ extension Reconciliation {
     ) throws -> [Reconciliation] {
         let request: NSFetchRequest<Reconciliation> = Reconciliation.fetchRequest()
         request.predicate = NSPredicate(
-            format: "periodYear == %d AND periodMonth == %d AND paymentMethodCD == %d",
+            format: "periodYear == %d AND periodMonth == %d AND accountCD == %d",
             period.year, period.month, paymentMethod.rawValue
         )
         request.sortDescriptors = [NSSortDescriptor(key: "statementDate", ascending: true)]
@@ -605,7 +537,7 @@ extension Reconciliation {
     ) throws -> Reconciliation? {
         let request: NSFetchRequest<Reconciliation> = Reconciliation.fetchRequest()
         request.predicate = NSPredicate(
-            format: "periodYear == %d AND periodMonth == %d AND paymentMethodCD == %d",
+            format: "periodYear == %d AND periodMonth == %d AND accountCD == %d",
             period.year, period.month, paymentMethod.rawValue
         )
         request.fetchLimit = 1

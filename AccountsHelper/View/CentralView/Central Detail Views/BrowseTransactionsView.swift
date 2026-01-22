@@ -76,7 +76,7 @@ enum SortColumn: CaseIterable, Identifiable {
         case .exchangeRate:    return "Fx"
         case .payee:           return "Payee"
         case .payer:           return "Payer"
-        case .paymentMethod:   return "Payment Method"
+        case .paymentMethod:   return "Account"
         case .reconciliation:  return "Reconciliation"
         case .transactionDate: return "Date"
         case .txAmount:        return "Amount"
@@ -148,7 +148,7 @@ struct BrowseTransactionsView: View {
     @State private var availableWidth: CGFloat = 0
     @State private var scaledColumnWidths: [String: CGFloat] = [:]
     @State private var columnWidths: [String: CGFloat] = [
-        "Payment Method": 80,
+        "Account": 80,
         "Date": 100,
         "✓": 5,
         "Amount": 130,
@@ -395,8 +395,8 @@ extension BrowseTransactionsView {
                             .if(gViewCheck) { view in view.border(.orange) }
                         
                         HStack(spacing: 0) {
-                            TableHeaderCell("Payment Method", width: 80)
-                                .frame(width: scaledColumnWidths["Payment Method"] ?? 80)
+                            TableHeaderCell("Account", width: 80)
+                                .frame(width: scaledColumnWidths["Account"] ?? 80)
                                 .if( gViewCheck ) { view in view.border( .green )}
                             TableHeaderCell("Date", width: 100)
                                 .frame(width: scaledColumnWidths["Date"] ?? 100)
@@ -519,9 +519,6 @@ extension BrowseTransactionsView {
         // 16 is to not entirely fill available space
         let scaleFactor = (availableWidth - 50) / totalRequested
         scaledColumnWidths = columnWidths.mapValues { max(minWidth, $0 * scaleFactor) }
-
-        // Debug
-        print("Scaled column widths: \(scaledColumnWidths)")
     }
 #endif
 
@@ -585,7 +582,7 @@ extension BrowseTransactionsView {
             rowBackground(for: index, row: row)
             HStack(spacing: 0) {
                 tableCell(row.paymentMethod, for: row)
-                    .frame(width: scaledColumnWidths["Payment Method"] ?? 80)
+                    .frame(width: scaledColumnWidths["Account"] ?? 80)
                     .if( gViewCheck ) { view in view.border( .yellow )}
                 
                 tableCell(row.transactionDate, for: row)
@@ -896,7 +893,7 @@ extension BrowseTransactionsView {
                     }
                     
                     // Payment Method Picker
-                    Picker("Payment Method", selection: $selectedPaymentMethod) {
+                    Picker("Account", selection: $selectedPaymentMethod) {
                         Text("All").tag(nil as ReconcilableAccounts?)
                         ForEach(ReconcilableAccounts.allCases, id: \.self) { method in
                             Text(method.description).tag(method as ReconcilableAccounts?)
@@ -982,7 +979,7 @@ extension BrowseTransactionsView {
         
         // --- Payment Method Filter
         if let method = selectedPaymentMethod {
-            predicates.append(NSPredicate(format: "paymentMethodCD == %@", NSNumber(value: method.rawValue)))
+            predicates.append(NSPredicate(format: "accountCD == %@", NSNumber(value: method.rawValue)))
         }
         
         // --- Accounting Period / Date Filter
@@ -1055,8 +1052,8 @@ extension BrowseTransactionsView {
             
             // --- Filtering
             if allowFiltering {
-                // --- Payment Method Picker
-                Picker("Payment Method", selection: $selectedPaymentMethod) {
+                // --- Account Picker
+                Picker("Account", selection: $selectedPaymentMethod) {
                     Text("All").tag(nil as ReconcilableAccounts?)
                     ForEach(ReconcilableAccounts.allCases.filter { $0 != .unknown }, id: \.self) { method in
                         Text(method.description).tag(method as ReconcilableAccounts?)

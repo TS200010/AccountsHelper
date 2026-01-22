@@ -20,7 +20,6 @@ extension Array where Element == Transaction {
         for tx in self {
             // Split portion (always converted to payment method currency)
             if tx.splitAmount != 0 {
-                print( tx.splitAmount )
                 let convertedSplit = tx.convertToPaymentCurrency(amount: tx.splitAmount)
                 result.append(TransactionPosting(category: tx.splitCategory, amount: convertedSplit))
             }

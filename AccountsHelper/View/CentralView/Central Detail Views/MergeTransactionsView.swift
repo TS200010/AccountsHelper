@@ -94,7 +94,7 @@ extension MergeField {
             setter: { $0.payee = $1.payee }
         ),
         .paymentMethod: MergeFieldInfo(
-            displayName: "Payment Method",
+            displayName: "Account",
             getter: { $0.paymentMethod.description },
             hasValue: { $0.paymentMethod != .unknown },
             setter: { $0.paymentMethod = $1.paymentMethod }
