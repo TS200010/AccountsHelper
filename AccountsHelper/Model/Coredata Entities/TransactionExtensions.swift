@@ -429,13 +429,13 @@ extension Transaction {
     }
 }
 
-// MARK: --- Linked Trainsaction PairID Management
+// MARK: --- Counter Trainsaction PairID Management
 extension Transaction {
     /// Returns the single other transaction that shares the same `pairID` in the given context.
     /// - If `pairID` is nil, returns nil.
     /// - If zero or more than one other transaction exists, returns nil.
     /// - Does not create, delete, or mutate any objects.
-    func linkedTransaction(in context: NSManagedObjectContext) -> Transaction? {
+    func counterTransaction(in context: NSManagedObjectContext) -> Transaction? {
         guard let pid = self.pairID else { return nil }
 
         let request: NSFetchRequest<Transaction> = Transaction.fetchRequest()
@@ -448,7 +448,7 @@ extension Transaction {
             return results.count == 1 ? results.first : nil
         } catch {
             // Do not mutate anything; surface the error for diagnostics
-            print("linkedTransaction fetch error: \(error)")
+            print("counterTransaction fetch error: \(error)")
             return nil
         }
     }
@@ -458,7 +458,7 @@ extension Transaction {
     ///   - other: the counterpart transaction to pair with (if nil, no action is taken)
     ///   - context: the managed object context to use for fetches and validation
     /// - Throws: `PairingError` when invariant violations would occur, or any fetch error encountered
-    func assignPairIDIfCreatingCounterpart(
+    func assignPairIDforCounterpart(
         with other: Transaction?,
         in context: NSManagedObjectContext
     ) {

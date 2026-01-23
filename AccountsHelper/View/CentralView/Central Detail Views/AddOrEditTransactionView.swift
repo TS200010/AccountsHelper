@@ -460,7 +460,7 @@ struct AddOrEditTransactionView: View {
         // --- Pairing: if we created a counter transaction, ensure both share a pairID
         if let ct = counterTx {
             // Use existing helper on Transaction which enforces pair-size invariant
-            tx.assignPairIDIfCreatingCounterpart(with: ct, in: viewContext)
+            tx.assignPairIDforCounterpart(with: ct, in: viewContext)
         }
 
         // --- Save context

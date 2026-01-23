@@ -638,7 +638,7 @@ extension BrowseTransactionsView {
                         Image(systemName: "link.circle.fill")
                             .font(.system(size: 14, weight: .regular))
                             .foregroundColor(.red)
-                    } else if row.transaction.linkedTransaction(in: viewContext) != nil {
+                    } else if row.transaction.counterTransaction(in: viewContext) != nil {
                         Image(systemName: "link.circle")
                             .font(.system(size: 14, weight: .regular))
                     } else {
