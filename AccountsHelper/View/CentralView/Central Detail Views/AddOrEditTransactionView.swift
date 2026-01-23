@@ -413,30 +413,29 @@ struct AddOrEditTransactionView: View {
     
     // MARK: --- SaveTransaction
     private func saveTransaction() {
-        // --- Save main transaction
+        // --- Save main transaction (create if needed)
         let tx = existingTransaction ?? Transaction(context: viewContext)
         transactionData.apply(to: tx)
-        
-        // --- Save counter transaction if active
+
+        // Track optional counter transaction so we can pair after both are prepared
+        var counterTx: Transaction? = nil
+
+        // --- Prepare counter transaction if active
         if counterTransactionActive, let method = counterAccount, method != .unknown {
-            let counterTx = Transaction(context: viewContext)
+            let ct = Transaction(context: viewContext)
             var counterData = transactionData
-            
-            // Set counter payment method
+
+            // Set counter payment method and currency
             counterData.account = method
-            
-            // Set counter currency
             counterData.currency = method.currency
-            
-            // Prompted FX rate for non-GBP counter
+
+            // Counter exchange rate
             if counterData.currency == .GBP {
                 counterData.exchangeRate = 1
             } else {
-                // exchangeRate should have been prompted from the user in the UI
-                // Make sure it is set
                 counterData.exchangeRate = counterFXRate
             }
-            
+
             // Convert main transaction amount to GBP
             let amountInGBP: Decimal
             if transactionData.currency == .GBP {
@@ -444,14 +443,26 @@ struct AddOrEditTransactionView: View {
             } else {
                 amountInGBP = transactionData.txAmount / transactionData.exchangeRate
             }
-            
-            // Set counter transaction amount in counter currency
+
+            // Set counter transaction amount in counter currency (negated)
             counterData.txAmount = -amountInGBP * counterData.exchangeRate
-            
+
             // Apply to counter transaction
-            counterData.apply(to: counterTx)
+            counterData.apply(to: ct)
+            counterTx = ct
+        } else {
+            // Counter is not active: remove pairID from main transaction if present
+            if tx.pairID != nil {
+                tx.pairID = nil
+            }
         }
-        
+
+        // --- Pairing: if we created a counter transaction, ensure both share a pairID
+        if let ct = counterTx {
+            // Use existing helper on Transaction which enforces pair-size invariant
+            tx.assignPairIDIfCreatingCounterpart(with: ct, in: viewContext)
+        }
+
         // --- Save context
         do {
             try viewContext.save()
@@ -459,7 +470,7 @@ struct AddOrEditTransactionView: View {
             print("Failed to save transaction: \(error)")
             viewContext.rollback()
         }
-        
+
         // --- Teach category mapping for main transaction
         if let payee = transactionData.payee {
             let matcher = CategoryMatcher(context: viewContext)
@@ -472,7 +483,7 @@ struct AddOrEditTransactionView: View {
 //        // Save main transaction
 //        let tx = existingTransaction ?? Transaction(context: viewContext)
 //        transactionData.apply(to: tx)
-//        
+//
 //        // Save counter transaction if active
 //        if counterTransactionActive,
 //           counterAccount != .unknown {
@@ -484,14 +495,14 @@ struct AddOrEditTransactionView: View {
 //            }
 //            counterData.apply(to: counterTx)
 //        }
-//        
+//
 //        do {
 //            try viewContext.save()
 //        } catch {
 //            print("Failed to save transaction: \(error)")
 //            viewContext.rollback()
 //        }
-//        
+//
 //        // Teach category mapping for main transaction
 //        if let payee = transactionData.payee {
 //            let matcher = CategoryMatcher(context: viewContext)
