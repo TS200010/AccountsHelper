@@ -429,6 +429,7 @@ extension Transaction {
     }
 }
 
+// MARK: --- Linked Trainsaction PairID Management
 extension Transaction {
     /// Returns the single other transaction that shares the same `pairID` in the given context.
     /// - If `pairID` is nil, returns nil.
@@ -451,22 +452,6 @@ extension Transaction {
             return nil
         }
     }
-}
-
-extension Transaction {
-//    enum PairingError: LocalizedError {
-//        case conflictingPairIDs(existing: UUID, other: UUID)
-//        case pairSizeLimitExceeded(pairID: UUID)
-//
-//        var errorDescription: String? {
-//            switch self {
-//            case .conflictingPairIDs(let existing, let other):
-//                return "Conflicting pairID values: \(existing.uuidString) vs \(other.uuidString)"
-//            case .pairSizeLimitExceeded(let pairID):
-//                return "Assigning pairID \(pairID.uuidString) would exceed the maximum of 2 transactions per pair"
-//            }
-//        }
-//    }
 
     /// Assigns a pairID when creating a counterpart, enforcing the invariant that no more than two transactions share a pairID.
     /// - Parameters:
@@ -534,4 +519,5 @@ extension Transaction {
             }
         }
     }
+    
 }

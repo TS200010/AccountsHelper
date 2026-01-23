@@ -35,6 +35,7 @@ fileprivate func safeUIUpdate(_ action: @escaping () -> Void) {
 }
 
 // MARK: --- RectCorner OptionSet
+// @MainActor
 struct RectCorner: OptionSet {
     let rawValue: Int
     
@@ -157,7 +158,8 @@ struct BrowseTransactionsView: View {
         "Category": 80,
         "Split": 200,
         "Payee": 300,
-        "Reconciliation": 60
+        "Reconciliation": 60,
+        "Link": 50
     ]
     #endif
     // Checked Selection State
@@ -351,7 +353,7 @@ extension BrowseTransactionsView {
                     : (row.transaction.closed ? .blue : (row.transaction.isValid() ? .primary : .red))
                 )
             #if os(macOS)
-                .opacity((selectionActive && row.checked) ? 0.5 : 1.0)  
+                .opacity((selectionActive && row.checked) ? 0.5 : 1.0)
                 .lineLimit(1)
                 .truncationMode(.tail)
             #else
@@ -402,6 +404,8 @@ extension BrowseTransactionsView {
                                 .frame(width: scaledColumnWidths["Date"] ?? 100)
                             TableHeaderCell("✓", width: 5)
                                 .frame(width: scaledColumnWidths["✓"] ?? 5)
+                            TableHeaderCell("Link", width: 50)
+                                .frame(width: scaledColumnWidths["Link"] ?? 50)
                             TableHeaderCell("Reconciliation", width: 60)
                                 .frame(width: scaledColumnWidths["Reconciliation"] ?? 60)
                             TableHeaderCell("Amount", width: 130)
@@ -662,6 +666,22 @@ extension BrowseTransactionsView {
                 }
                 .frame(width: scaledColumnWidths["✓"] ?? 5)
                 .disabled(row.transaction.closed)
+                
+                // --- Link column cell (macOS only) ---
+                Group {
+                    if row.transaction.pairID == nil {
+                        // empty
+                        Text("-")
+                    } else if row.transaction.linkedTransaction(in: viewContext) != nil {
+                        Image(systemName: "link.circle")
+                            .font(.system(size: 14, weight: .regular))
+                    } else {
+                        Image(systemName: "link.badge.questionmark")
+                            .font(.system(size: 14, weight: .regular))
+                    }
+                }
+                .frame(width: scaledColumnWidths["Link"] ?? 50, height: macOSRowHeight, alignment: .center)
+                .padding(.horizontal, 4)
                 
                 tableCell(row.reconciliationPeriodShortDescription, for: row)
                     .frame(width: scaledColumnWidths["Reconciliation"] ?? 60)
@@ -1323,4 +1343,3 @@ extension BrowseTransactionsView {
         }
     }
 }
- 
