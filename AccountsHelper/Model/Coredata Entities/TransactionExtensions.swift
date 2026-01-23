@@ -428,3 +428,110 @@ extension Transaction {
         return components.joined(separator: "|")
     }
 }
+
+extension Transaction {
+    /// Returns the single other transaction that shares the same `pairID` in the given context.
+    /// - If `pairID` is nil, returns nil.
+    /// - If zero or more than one other transaction exists, returns nil.
+    /// - Does not create, delete, or mutate any objects.
+    func linkedTransaction(in context: NSManagedObjectContext) -> Transaction? {
+        guard let pid = self.pairID else { return nil }
+
+        let request: NSFetchRequest<Transaction> = Transaction.fetchRequest()
+        // Find transactions with same pairID but exclude self
+        request.predicate = NSPredicate(format: "pairID == %@ AND SELF != %@", pid as CVarArg, self)
+        request.fetchLimit = 2
+
+        do {
+            let results = try context.fetch(request)
+            return results.count == 1 ? results.first : nil
+        } catch {
+            // Do not mutate anything; surface the error for diagnostics
+            print("linkedTransaction fetch error: \(error)")
+            return nil
+        }
+    }
+}
+
+extension Transaction {
+//    enum PairingError: LocalizedError {
+//        case conflictingPairIDs(existing: UUID, other: UUID)
+//        case pairSizeLimitExceeded(pairID: UUID)
+//
+//        var errorDescription: String? {
+//            switch self {
+//            case .conflictingPairIDs(let existing, let other):
+//                return "Conflicting pairID values: \(existing.uuidString) vs \(other.uuidString)"
+//            case .pairSizeLimitExceeded(let pairID):
+//                return "Assigning pairID \(pairID.uuidString) would exceed the maximum of 2 transactions per pair"
+//            }
+//        }
+//    }
+
+    /// Assigns a pairID when creating a counterpart, enforcing the invariant that no more than two transactions share a pairID.
+    /// - Parameters:
+    ///   - other: the counterpart transaction to pair with (if nil, no action is taken)
+    ///   - context: the managed object context to use for fetches and validation
+    /// - Throws: `PairingError` when invariant violations would occur, or any fetch error encountered
+    func assignPairIDIfCreatingCounterpart(
+        with other: Transaction?,
+        in context: NSManagedObjectContext
+    ) {
+        guard let other = other else { return }
+        
+        
+        let selfPID = self.pairID
+        let otherPID = other.pairID
+        
+        // Case: both nil -> generate new UUID and assign to both
+        if selfPID == nil && otherPID == nil {
+            let pairID = UUID()
+            self.pairID = pairID
+            other.pairID = pairID
+            return
+        }
+        
+        // Case: exactly one non-nil -> copy the existing PID to the other transaction
+        if let candidate = selfPID ?? otherPID {
+            // Count existing transactions that already use this candidate
+            let request: NSFetchRequest<Transaction> = Transaction.fetchRequest()
+            request.predicate = NSPredicate(format: "pairID == %@", candidate as CVarArg)
+            
+            do {
+                let existing = try context.fetch(request)
+                
+                // Determine how many additional assignments would be needed (0,1,2)
+                var additions = 0
+                if selfPID != candidate { additions += 1 }
+                if otherPID != candidate { additions += 1 }
+                
+                let resultantCount = existing.count + additions
+                if resultantCount > 2 {
+                    print( "Assigning pairID \(candidate.uuidString) would exceed the maximum of 2 transactions per pair")
+                    return
+                }
+                
+                // Assign missing pairID(s)
+                if selfPID == nil {
+                    self.pairID = candidate
+                }
+                if otherPID == nil {
+                    other.pairID = candidate
+                }
+            } catch {
+                print("assignPairID fetch error: \(error)")
+            }
+            return
+        }
+        
+        // Case: both non-nil
+        if let s = selfPID, let o = otherPID {
+            if s == o {
+                // already same pairID - nothing to do
+                return
+            } else {
+                print("Conflicting pairID values: \(s.uuidString) vs \(o.uuidString)")
+            }
+        }
+    }
+}
