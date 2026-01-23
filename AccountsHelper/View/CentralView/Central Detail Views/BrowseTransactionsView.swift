@@ -35,7 +35,6 @@ fileprivate func safeUIUpdate(_ action: @escaping () -> Void) {
 }
 
 // MARK: --- RectCorner OptionSet
-// @MainActor
 struct RectCorner: OptionSet {
     let rawValue: Int
     
@@ -605,12 +604,12 @@ extension BrowseTransactionsView {
                                 if newValue {
                                     // Assign transaction to reconciliation
                                     rec.addToTransactions(row.transaction)
-//                                    row.transaction.reconciliation = rec
+                                    //                                    row.transaction.reconciliation = rec
                                 } else {
                                     // Remove only if it currently belongs to this reconciliation
                                     if row.transaction.reconciliation == rec {
                                         rec.removeFromTransactions(row.transaction)
-//                                        row.transaction.reconciliation = nil
+                                        //                                        row.transaction.reconciliation = nil
                                     }
                                 }
                                 
@@ -619,45 +618,7 @@ extension BrowseTransactionsView {
                                 updateRunningTotals()
                             }
                         }
-                ))
-                    
-//                    Toggle("", isOn: Binding(
-//                        get: { row.checked },
-//                        set: { newValue in
-//                            if selectionActive {
-//                                if let recID = appState.selectedReconciliationID,
-//                                   let rec = reconciliations.first(where: { $0.objectID == recID }) {
-//                                    if newValue {
-//                                        row.transaction.reconciliation = rec
-//                                    } else {
-//                                        // Remove only if it currently belongs to this reconciliation
-//                                        if row.transaction.reconciliation == rec {
-//                                            row.transaction.reconciliation = nil
-//                                        }
-//                                    }
-//                                    try? viewContext.save()
-//                                    updateRunningTotal()
-//                                }
-//                            }
-////                            if selectionActive {
-////                                row.checked = newValue
-////                                row.transaction.checked = newValue
-////                                if allowSelection && newValue {
-////                                    if let recID = appState.selectedReconciliationID,
-////                                       let rec = reconciliations.first(where: { $0.objectID == recID }) {
-////                                        row.transaction.reconciliation = rec
-//////                                        row.transaction.periodKey = rec.periodKey
-////                                    }
-////                                } else {
-//////                                    row.transaction.periodKey = ""
-////                                    row.transaction.reconciliation = nil
-////                                }
-////
-////                                try? viewContext.save()
-////                                updateRunningTotal()
-////                            }
-//                        }
-//                    ))
+                    ))
                     .toggleStyle(.checkbox)
                     .disabled(!allowSelection || row.transaction.closed)
                     .labelsHidden()
@@ -667,17 +628,24 @@ extension BrowseTransactionsView {
                 .frame(width: scaledColumnWidths["✓"] ?? 5)
                 .disabled(row.transaction.closed)
                 
-                // --- Link column cell (macOS only) ---
                 Group {
                     if row.transaction.pairID == nil {
                         // empty
                         Text("-")
+                    } else if !row.transaction.isPairValid(in: viewContext) {
+                        // pairID present but invalid (not exactly 2 members)
+//                        Text("X")
+                        Image(systemName: "link.circle.fill")
+                            .font(.system(size: 14, weight: .regular))
+                            .foregroundColor(.red)
                     } else if row.transaction.linkedTransaction(in: viewContext) != nil {
                         Image(systemName: "link.circle")
                             .font(.system(size: 14, weight: .regular))
                     } else {
-                        Image(systemName: "link.badge.questionmark")
+                        // Probably never get here
+                        Image(systemName: "exclamationmark.triangle")
                             .font(.system(size: 14, weight: .regular))
+                            .foregroundColor(.yellow)
                     }
                 }
                 .frame(width: scaledColumnWidths["Link"] ?? 50, height: macOSRowHeight, alignment: .center)

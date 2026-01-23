@@ -521,3 +521,20 @@ extension Transaction {
     }
     
 }
+
+extension Transaction {
+    /// Returns true if pairID is nil or exactly two transactions share the pairID.
+    /// On error, prints the error and returns false.
+    func isPairValid(in context: NSManagedObjectContext) -> Bool {
+        guard let pid = self.pairID else { return true }
+        let request: NSFetchRequest<Transaction> = Transaction.fetchRequest()
+        request.predicate = NSPredicate(format: "pairID == %@", pid as CVarArg)
+        do {
+            let results = try context.fetch(request)
+            return results.count == 2
+        } catch {
+            print("pair validation error: \(error)")
+            return false
+        }
+    }
+}
