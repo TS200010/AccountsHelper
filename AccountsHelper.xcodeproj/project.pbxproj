@@ -29,6 +29,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		4571A2F52F238FF1001D8B83 /* TransactionPairingSpec_v3.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = TransactionPairingSpec_v3.md; sourceTree = "<group>"; };
 		45C1C93C2E7D522B002608BC /* AccountsHelper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AccountsHelper.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		45C1C9502E7D522D002608BC /* AccountsHelperTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AccountsHelperTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		45C1C95A2E7D522D002608BC /* AccountsHelperUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AccountsHelperUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -92,9 +93,18 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		4571A2F62F238FF1001D8B83 /* Specs */ = {
+			isa = PBXGroup;
+			children = (
+				4571A2F52F238FF1001D8B83 /* TransactionPairingSpec_v3.md */,
+			);
+			path = Specs;
+			sourceTree = "<group>";
+		};
 		45C1C9332E7D522B002608BC = {
 			isa = PBXGroup;
 			children = (
+				4571A2F62F238FF1001D8B83 /* Specs */,
 				45C1C93E2E7D522B002608BC /* AccountsHelper */,
 				45C1C9532E7D522D002608BC /* AccountsHelperTests */,
 				45C1C95D2E7D522D002608BC /* AccountsHelperUITests */,
