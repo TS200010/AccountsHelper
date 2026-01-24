@@ -29,14 +29,23 @@ let gUploadSchema = false
 let gViewCheck = false
 
 // MARK: --- To remove Magic numbers from the code
-let gInspectorMaxWidth:      CGFloat = 350
-let gNavigatorMaxWidth:      CGFloat = 350
-let gMinToolbarHeight:       CGFloat = 30
-let gMaxToolbarHeight:       CGFloat = 30
-let gCentralViewHeadingSize: CGFloat = 170
-let gInvalidReconciliationGap: Decimal = Decimal(999_999)
-let gNumTransactionAttributes = 19 // Number minus one as we do not care about TimeStamp
-let gAmountFieldWidth:       Int    = 10
+let gInspectorMaxWidth:         CGFloat = 350
+let gNavigatorMaxWidth:         CGFloat = 350
+let gMinToolbarHeight:          CGFloat = 30
+let gMaxToolbarHeight:          CGFloat = 30
+let gCentralViewHeadingSize:    CGFloat = 170
+let gInvalidReconciliationGap:  Decimal = Decimal(999_999)
+let gNumTransactionAttributes:  Int     = 19 // Number minus one as we do not care about TimeStamp
+let gAmountFieldWidth:          Int     = 10
+let gHStackSpacing:             CGFloat = 12.0
+let gLabelWidth:                CGFloat = 140
+let gPickerWidth:               CGFloat = 200
+let gRowHeight:                 CGFloat = 35
+#if os(macOS)
+let gInterFieldSpacing: CGFloat = 0
+#else
+let gInterFieldSpacing: CGFloat = 3
+#endif
 
 // MARK: --- Defaults
 let gAppName: String = Bundle.main.object(forInfoDictionaryKey: "CFBundleName") as? String ?? "UnknownAppName"

@@ -36,11 +36,6 @@ struct InspectTransaction: View {
                             .padding(.bottom, 10)
                         
                         // MARK: --- General Section
-//                        inspectorSection("General") {
-//                            transactionRow("Timestamp:", transaction.timestamp?.formatted(date: .abbreviated, time: .standard) ?? "N/A")
-//                            Divider()
-//                            transactionRow("TX Date:", transaction.transactionDate?.formatted(date: .abbreviated, time: .standard) ?? "N/A")
-//                        }
                         inspectorSection("General") {
                             transactionRow("Timestamp:", transaction.timestamp.map { dateOnlyFormatter.string(from: $0) } ?? "N/A")
                             Divider()
@@ -97,6 +92,22 @@ struct InspectTransaction: View {
                             transactionRow("Extended", transaction.extendedDetails ?? "N/A")
                             Divider()
                             transactionRow("Explanation:", transaction.explanation ?? "N/A")
+                        }
+
+                        // MARK: --- Counter Transaction Section (read-only)
+                        inspectorSection("Counter Transaction") {
+                            // Use existing helper to fetch the paired transaction; do not create/mutate
+                            if let counter = transaction.counterTransaction(in: viewContext) {
+                                transactionRow("Account:", counter.account.description)
+                                Divider()
+                                transactionRow("Currency:", counter.currency.description)
+                                Divider()
+                                transactionRow("Fx:", counter.exchangeRateAsStringLong() ?? "N/A")
+                                Divider()
+                                transactionRow("TX Amt:", String(format: "%.2f", (counter.txAmount as NSDecimalNumber?)?.doubleValue ?? 0))
+                            } else {
+                                transactionRow("Counter:", "None")
+                            }
                         }
                         
                         // MARK: --- Status Section
