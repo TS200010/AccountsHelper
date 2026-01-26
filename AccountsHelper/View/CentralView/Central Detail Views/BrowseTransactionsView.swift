@@ -126,7 +126,7 @@ struct BrowseTransactionsView: View {
     // Focus State
     @FocusState private var focusedRowIndex: Int?
     // Sort State
-    @State private var ascending: Bool = true
+    @State private var ascending: Bool = false
     @State private var sortColumn: SortColumn = .transactionDate
     // Merge State
     @State private var mergeCandidates: [Transaction] = []
@@ -186,7 +186,7 @@ struct BrowseTransactionsView: View {
     // MARK: --- Initialiser
     init(predicate: NSPredicate? = nil, mode: BrowseTransactionsMode ) {
         _transactions = FetchRequest(
-            sortDescriptors: [NSSortDescriptor(keyPath: \Transaction.transactionDate, ascending: true)],
+            sortDescriptors: [NSSortDescriptor(keyPath: \Transaction.transactionDate, ascending: false)],
             predicate: predicate
         )
 //        self.predicateIn = predicate
@@ -1002,22 +1002,10 @@ extension BrowseTransactionsView {
         
         var positiveCheckedTotalAsString: String {
             return AmountFormatter.anyAmountAsString(amount: positiveCheckedTotal, currency: .GBP, withSymbol: showCurrencySymbols)
-//            let total = transactions
-//                .filter { $0.reconciliation == appState.selectedReconciliationID }
-//                .map { $0.txAmountInGBP }
-//                .filter { $0 > 0 }
-//                .reduce(0, +)
-//            return AmountFormatter.anyAmountAsString(amount: total, currency: .GBP, withSymbol: showCurrencySymbols)
         }
 
         var negativeCheckedTotalAsString: String {
             return AmountFormatter.anyAmountAsString(amount: negativeCheckedTotal, currency: .GBP, withSymbol: showCurrencySymbols)
-//            let total = transactions
-//                .filter { $0.reconciliation == appState.selectedReconciliationID }
-//                .map { $0.txAmountInGBP }
-//                .filter { $0 < 0 }
-//                .reduce(0, +)
-//            return AmountFormatter.anyAmountAsString(amount: total, currency: .GBP, withSymbol: showCurrencySymbols)
         }
         
         var openingBalanceAsString: String {

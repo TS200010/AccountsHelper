@@ -105,8 +105,16 @@ struct InspectTransaction: View {
                                 transactionRow("Fx:", counter.exchangeRateAsStringLong() ?? "N/A")
                                 Divider()
                                 transactionRow("TX Amt:", String(format: "%.2f", (counter.txAmount as NSDecimalNumber?)?.doubleValue ?? 0))
+                                Divider()
+                                transactionRow("PairID (this transaction):", transaction.pairID?.description ?? "N/A")
+                                Divider()
+                                transactionRow("PairID (counter):", counter.pairID?.description ?? "N/A")
                             } else {
                                 transactionRow("Counter:", "None")
+                                Divider()
+                                transactionRow("PairID (this transaction):", transaction.pairID?.description ?? "N/A")
+                                Divider()
+                                transactionRow("PairID (counter):", "N/A")
                             }
                         }
                         

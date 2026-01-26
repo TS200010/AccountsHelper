@@ -17,40 +17,53 @@ extension AddOrEditTransactionView {
         transactionData.apply(to: tx)
         
         // --- Save counter transaction if active
-        if counterTransactionActive, let method = counterAccount, method != .unknown {
-            let counterTx = Transaction(context: viewContext)
-            var counterData = transactionData
-            
-            // Set counter payment method
-            counterData.account = method
-            
-            // Set counter currency
-            counterData.currency = method.currency
-            
-            // Prompted FX rate for non-GBP counter
-            if counterData.currency == .GBP {
-                counterData.exchangeRate = 1
+        if counterTransactionActive,
+           let counterAccount = counterAccount,
+           counterAccount != .unknown {
+
+            // --- If counter already exists, update it
+            if let counterTx = tx.counterTransaction(in: viewContext) {
+                var counterData = transactionData
+                counterData.account = counterAccount
+                counterData.currency = counterAccount.currency
+                counterData.exchangeRate = (counterData.currency == .GBP) ? 1 : counterFXRate
+
+                let amountInGBP: Decimal = (transactionData.currency == .GBP)
+                    ? transactionData.txAmount
+                    : transactionData.txAmount / transactionData.exchangeRate
+
+                counterData.txAmount = -amountInGBP * counterData.exchangeRate
+                counterData.apply(to: counterTx)
+
+                // Preserve link
+                counterTx.pairID = tx.pairID
+                counterTx.exchangeRate = counterData.exchangeRate
+                counterTx.txAmount = counterData.txAmount
+
             } else {
-                // exchangeRate should have been prompted from the user in the UI
-                // Make sure it is set
-                counterData.exchangeRate = counterFXRate
+
+                // --- Create new counter transaction
+                let counterTx = Transaction(context: viewContext)
+                var counterData = transactionData
+
+                counterData.account = counterAccount
+                counterData.currency = counterAccount.currency
+                counterData.exchangeRate = (counterData.currency == .GBP) ? 1 : counterFXRate
+
+                let amountInGBP: Decimal = (transactionData.currency == .GBP)
+                    ? transactionData.txAmount
+                    : transactionData.txAmount / transactionData.exchangeRate
+
+                counterData.txAmount = -amountInGBP * counterData.exchangeRate
+                counterData.apply(to: counterTx)
+
+                // Link them
+                let newPairID = UUID()
+                tx.pairID = newPairID
+                counterTx.pairID = newPairID
             }
-            
-            // Convert main transaction amount to GBP
-            let amountInGBP: Decimal
-            if transactionData.currency == .GBP {
-                amountInGBP = transactionData.txAmount
-            } else {
-                amountInGBP = transactionData.txAmount / transactionData.exchangeRate
-            }
-            
-            // Set counter transaction amount in counter currency
-            counterData.txAmount = -amountInGBP * counterData.exchangeRate
-            
-            // Apply to counter transaction
-            counterData.apply(to: counterTx)
         }
-        
+
         // --- Save context
         do {
             try viewContext.save()
@@ -67,4 +80,3 @@ extension AddOrEditTransactionView {
     }
     
 }
-

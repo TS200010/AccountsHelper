@@ -16,6 +16,7 @@ extension AddOrEditTransactionView {
         @Binding var counterTransaction: Bool
         @Binding var counterAccount: ReconcilableAccounts?
         @Binding var counterFXRate: Decimal
+        let canRemoveCounter: Bool
         
         // Suggested counter methods based on Account + Category
         private var suggestedCounterMethods: [ReconcilableAccounts] {
@@ -32,17 +33,34 @@ extension AddOrEditTransactionView {
             GroupBox(label: Label("Counter Transaction", systemImage: "arrow.2.squarepath")) {
                 VStack(spacing: 12) {
                     
-                    Button(counterTransaction ? "Remove Counter Transaction" : "Add Counter Transaction") {
-                        counterTransaction.toggle()
-                        
-                        if counterTransaction {
-                            // Auto-suggest top picker if a trigger exists
+                    if !counterTransaction {
+                        Button("Add Counter Transaction") {
+                            counterTransaction = true
                             counterAccount = suggestedCounterMethods.first ?? .unknown
-                        } else {
-                            counterAccount = nil
                         }
+                        .buttonStyle(.borderedProminent)
                     }
-                    .buttonStyle(.borderedProminent)
+                    else if canRemoveCounter {
+                        Button("Remove Counter Transaction") {
+                            counterTransaction = false
+                            counterAccount = nil
+                            counterFXRate = 0
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                    
+//                    Button(counterTransaction ? "Remove Counter Transaction" : "Add Counter Transaction") {
+//                        counterTransaction.toggle()
+//                        
+//                        if counterTransaction {
+//                            // Auto-suggest top picker if a trigger exists
+//                            counterAccount = suggestedCounterMethods.first ?? .unknown
+//                        } else {
+//                            counterAccount = nil
+//                        }
+//                    }
+//                    .disabled(counterTransaction && !canRemoveCounter)
+//                    .buttonStyle(.borderedProminent)
                     
                     VStack(spacing: 8) {
                         

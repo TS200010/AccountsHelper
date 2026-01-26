@@ -441,7 +441,7 @@ extension Transaction {
         let request: NSFetchRequest<Transaction> = Transaction.fetchRequest()
         // Find transactions with same pairID but exclude self
         request.predicate = NSPredicate(format: "pairID == %@ AND SELF != %@", pid as CVarArg, self)
-        request.fetchLimit = 2
+        request.fetchLimit = 1
 
         do {
             let results = try context.fetch(request)
