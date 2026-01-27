@@ -290,7 +290,18 @@ extension BrowseTransactionsView {
                     appState.refreshInspector()
                 }
                 .disabled(anySelectedTransactionClosed)
+                
+                Button(role: .destructive) {
+                    // Remove pairing only, not deleting transaction
+                    row.transaction.pairID = nil
+                    try? viewContext.save()
+                    appState.refreshInspector()
+                } label: {
+                    Label("Unlink Pair", systemImage: "link.badge.minus")
+                }
+                
             }
+        
             
             if selectedTransactionIDs.count == 2 {
                 Button("Merge Transactions") {

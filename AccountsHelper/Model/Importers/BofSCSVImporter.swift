@@ -110,6 +110,17 @@ class BofSCSVImporter: TxImporter {
                 newTx.accountNumber = accountTemp
                 newTx.currency = .GBP
                 newTx.exchangeRate = 1
+                
+                // MARK: --- Pair Detection
+                if let counter = Self.findPairCandidateInSnapshot(
+                    newTx: newTx,
+                    snapshot: createdTransactions + existingSnapshot
+                ) {
+                    let pid = UUID()
+                    newTx.pairID = pid
+                    counter.pairID = pid
+                }
+
 
                 // MARK: --- Duplicate Checking
                 if let existing = Self.findMergeCandidateInSnapshot(
@@ -179,4 +190,74 @@ class BofSCSVImporter: TxImporter {
             return []
         }
     }
+    
+    // MARK: --- findPairCandidateInSnapshot
+    static func findPairCandidateInSnapshot(
+        newTx: Transaction,
+        snapshot: [Transaction]
+    ) -> Transaction? {
+        guard newTx.pairID == nil else { return nil }
+        
+        let wip = snapshot.first { existing in
+
+            // 1. Must be unpaired
+            guard existing.pairID == nil else { return false }
+
+            // 2. Opposite sign
+            let oppositeSign =
+                (existing.txAmount < 0 && newTx.txAmount > 0) ||
+                (existing.txAmount > 0 && newTx.txAmount < 0)
+
+            // 3. Same absolute amount
+            let sameAmount =
+                existing.txAmount.magnitude == newTx.txAmount.magnitude
+
+            // 4. Same date
+            let sameDate = existing.transactionDate == newTx.transactionDate
+
+            // 5. Different accounts
+            let differentAccount = existing.account != newTx.account
+
+            // 6. Transfer-like
+//            let looksLikeTransfer =
+//                Self.looksLikeTransfer(existing) &&
+//                Self.looksLikeTransfer(newTx)
+
+            // 7. Optional description cross-reference
+//            let descriptionMatch =
+//                Self.descriptionsReferenceEachOther(existing, newTx)
+
+            return
+                oppositeSign &&
+                sameAmount &&
+                sameDate &&
+                differentAccount// &&
+//                looksLikeTransfer // &&
+//                descriptionMatch
+        }
+
+        return wip
+    }
+    
+    // MARK: --- looksLikeTransfer
+//    static func looksLikeTransfer(_ tx: Transaction) -> Bool {
+//        guard let explanation = tx.explanation?.uppercased() else { return false }
+//        return explanation.contains("TFR")
+//            || explanation.contains("FPI")
+//            || explanation.contains("FPO")
+//    }
+//    
+    // MARK: --- descriptionsReferenceEachOther
+//    static func descriptionsReferenceEachOther(_ a: Transaction, _ b: Transaction) -> Bool {
+//        guard
+//            let aRef = a.accountNumber,
+//            let bRef = b.accountNumber
+//        else { return true } // allow if missing
+//
+//        return a.payee?.contains(bRef) == true
+//            || b.payee?.contains(aRef) == true
+//    }
+
+
+
 }

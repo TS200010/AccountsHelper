@@ -10,10 +10,10 @@ import CoreData
 
 // MARK: --- Mergeable Fields
 enum MergeField: String, CaseIterable, Identifiable {
-    case timestamp
+//    case timestamp
     case transactionDate
     case account
-    case category
+//    case category
     case txAmount
     case currency
     case exchangeRate
@@ -27,7 +27,7 @@ enum MergeField: String, CaseIterable, Identifiable {
     case debitCredit
     case explanation
     case extendedDetails
-    case accountingPeriod
+//    case accountingPeriod
     case reference
 
     var id: String { rawValue }
@@ -57,12 +57,12 @@ extension MergeField {
             hasValue: { $0.splitAmount != 0 },
             setter: { $0.splitAmount = $1.splitAmount }
         ),
-        .category: MergeFieldInfo(
-            displayName: "Category",
-            getter: { $0.category.description },
-            hasValue: { $0.category != .unknown },
-            setter: { $0.category = $1.category }
-        ),
+//        .category: MergeFieldInfo(
+//            displayName: "Category",
+//            getter: { $0.category.description },
+//            hasValue: { $0.category != .unknown },
+//            setter: { $0.category = $1.category }
+//        ),
         .splitCategory: MergeFieldInfo(
             displayName: "Split Category",
             getter: { $0.splitCategory.description },
@@ -153,12 +153,12 @@ extension MergeField {
             hasValue: { ($0.reference ?? "").isEmpty == false },
             setter: { $0.reference = $1.reference }
         ),
-        .timestamp: MergeFieldInfo(
-            displayName: "Timestamp",
-            getter: { $0.timestampAsString() ?? "" },
-            hasValue: { $0.timestamp != nil },
-            setter: { $0.timestamp = $1.timestamp }
-        )
+//        .timestamp: MergeFieldInfo(
+//            displayName: "Timestamp",
+//            getter: { $0.timestampAsString() ?? "" },
+//            hasValue: { $0.timestamp != nil },
+//            setter: { $0.timestamp = $1.timestamp }
+//        )
     ]
 }
 

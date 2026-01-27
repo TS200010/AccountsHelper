@@ -112,7 +112,7 @@ struct TxImportView<Importer: TxImporter>: View {
             importedCount = imported.count
             statusMessage = "Import complete! Imported \(importedCount)"
             if importedCount == 0 {
-                statusMessage += "\nNo transactions imported. Did you export all Columns?"
+                statusMessage += "\nNo transactions imported. \nDid you export all Columns?"
             }
         }
     }

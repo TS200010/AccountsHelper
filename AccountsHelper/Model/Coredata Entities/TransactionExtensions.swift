@@ -74,7 +74,7 @@ extension Transaction {
             let int64Value = nsNumber.int64Value
             let clamped = min(Int64(Int32.max), max(Int64(Int32.min), int64Value))
             exchangeRateCD = Int32(clamped)
-            print("ExchangeRateCD Setter: \(exchangeRateCD)")
+//            print("ExchangeRateCD Setter: \(exchangeRateCD)")
         }
     }
 
@@ -107,7 +107,7 @@ extension Transaction {
         get { Decimal(txAmountCD) / 100 }
         set {
             txAmountCD = decimalToCents(newValue)
-            print("txAmountCD Setter: \(txAmountCD) from newValue: \(newValue)")
+//            print("txAmountCD Setter: \(txAmountCD) from newValue: \(newValue)")
         }
     }
 
@@ -412,8 +412,6 @@ extension Transaction {
         var components: [String] = []
 
         for field in MergeField.allCases {
-            // Skip fields that shouldn't affect equality
-            if field == .timestamp { continue }
 
             guard let info = MergeField.all[field] else { continue }
 

@@ -99,13 +99,21 @@ extension TxImporter {
     // MARK: --- Default Merge Candidate Matching
     static func findMergeCandidateInSnapshot(newTx: Transaction, snapshot: [Transaction]) -> Transaction? {
         for existing in snapshot {
+            
+            // Heuristics
+            // If its DAILY OD INT then we always keep both
+            if let payee = newTx.payee,
+               payee.hasPrefix("DAILY OD INT") {
+                continue
+            }
+            
             guard existing.txAmount == newTx.txAmount,
                   existing.account == newTx.account,
                   let existingDate = existing.transactionDate,
                   let newDate = newTx.transactionDate else {
                 continue
             }
-
+            
             // Allow transactionDate ± range: -7 days to +1 day
             let minDate = Calendar.current.date(byAdding: .day, value: -7, to: newDate)!
             let maxDate = Calendar.current.date(byAdding: .day, value: 1, to: newDate)!
