@@ -44,12 +44,15 @@ extension ContentViewMacOS {
             NavigatorHomeView()
                 .navigationSplitViewColumnWidth(min: 250, ideal: 300, max: gNavigatorMaxWidth)
         } detail: {
-            CentralViewsHomeView()
-                .navigationTitle(appState.selectedCentralView.asString)
-                .inspector(isPresented: $showingInspectors) {
-                    InspectorViewsHomeView()
-                        .inspectorColumnWidth(min: 250, ideal: 300, max: gInspectorMaxWidth)
-                }
+            DetailContainerView(
+                showingInspectors: $showingInspectors
+            )
+//            CentralViewsHomeView()
+//                .navigationTitle(appState.selectedCentralView.asString)
+//                .inspector(isPresented: $showingInspectors) {
+//                    InspectorViewsHomeView()
+//                        .inspectorColumnWidth(min: 250, ideal: 300, max: gInspectorMaxWidth)
+//                }
         }
         .toolbar { toolbarSection }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -63,6 +66,20 @@ extension ContentViewMacOS {
             Button("OK", role: .cancel) { gGlobalAlert.reset() }
         }
         .if(gViewCheck) { view in view.border(.blue) }
+    }
+    
+    struct DetailContainerView: View {
+
+        @Binding var showingInspectors: Bool
+
+        var body: some View {
+            CentralViewsHomeView()
+                .navigationTitle("Details")
+                .inspector(isPresented: $showingInspectors) {
+                    InspectorViewsHomeView()
+                        .inspectorColumnWidth(min: 250, ideal: 300, max: gInspectorMaxWidth)
+                }
+        }
     }
 }
 

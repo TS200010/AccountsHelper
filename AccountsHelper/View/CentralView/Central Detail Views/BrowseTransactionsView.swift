@@ -184,15 +184,13 @@ struct BrowseTransactionsView: View {
     }
 
     // MARK: --- Initialiser
-    init(predicate: NSPredicate? = nil, mode: BrowseTransactionsMode ) {
+    init( predicate: NSPredicate? = nil, mode: BrowseTransactionsMode ) {
         _transactions = FetchRequest(
             sortDescriptors: [NSSortDescriptor(keyPath: \Transaction.transactionDate, ascending: false)],
             predicate: predicate
         )
-//        self.predicateIn = predicate
         self.mode = mode
     }
-    
     @FetchRequest(
         sortDescriptors: [
             NSSortDescriptor(keyPath: \Reconciliation.periodYear, ascending: false),
@@ -201,8 +199,10 @@ struct BrowseTransactionsView: View {
         animation: .default
     )
     
+    // MARK: --- Reconcilations
     private var reconciliations: FetchedResults<Reconciliation>
     
+    // MARK: --- AccountingPeriods
     private var accountingPeriods: [AccountingPeriod] {
         var uniquePeriods = Set<AccountingPeriod>()
         for rec in reconciliations {
@@ -214,11 +214,9 @@ struct BrowseTransactionsView: View {
     }
     
    
+    // MARK: --- UpdateRunningTotals
     private func updateRunningTotals() {
         guard allowSelection else { return } // Do nothing if selection Not allowed. We have no checked total.
-//        checkedTotal = transactions.filter { $0.checked }.map { $0.txAmountInGBP }.reduce(0, +)
-//        checkedTotal = transactions.filter { $0.reconciliation == appState.selectedReconciliationID }.map { $0.txAmountInGBP }.reduce(0, +)
-//        checkedTotal = selectedReconciliation?.sumInNativeCurrency() ?? 0
         negativeCheckedTotal = selectedReconciliation?.sumNegativeAmountsInNativeCurrency() ?? 0
         positiveCheckedTotal = selectedReconciliation?.sumPositiveAmountsInNativeCurrency() ?? 0
     }
@@ -412,10 +410,10 @@ extension BrowseTransactionsView {
                                 .if( gViewCheck ) { view in view.border( .green )}
                             TableHeaderCell("Date", width: 100)
                                 .frame(width: scaledColumnWidths["Date"] ?? 100)
-                            TableHeaderCell("✓", width: 5)
-                                .frame(width: scaledColumnWidths["✓"] ?? 5)
-                            TableHeaderCell("Link", width: 50)
-                                .frame(width: scaledColumnWidths["Link"] ?? 50)
+//                            TableHeaderCell("✓", width: 5)
+//                                .frame(width: scaledColumnWidths["✓"] ?? 5)
+//                            TableHeaderCell("Link", width: 50)
+//                                .frame(width: scaledColumnWidths["Link"] ?? 50)
                             TableHeaderCell("Reconciliation", width: 60)
                                 .frame(width: scaledColumnWidths["Reconciliation"] ?? 60)
                             TableHeaderCell("Amount", width: 130)
@@ -479,6 +477,7 @@ extension BrowseTransactionsView {
                         }
                     }
                     .frame(minHeight: 300)
+                    .frame(maxWidth: .infinity)
                 }
                 .onAppear {
                     updateScaledWidths(for: availableWidth)
@@ -487,7 +486,8 @@ extension BrowseTransactionsView {
                     updateScaledWidths(for: newWidth)
                 }
                 // --- Constrain VStack to the width of the available window
-                .frame(minWidth: proxy.size.width, alignment: .leading)
+//                .frame(minWidth: proxy.size.width, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .if(gViewCheck) { view in view.border(.red).padding(.leading, 0) }
             }
             .contextMenu { SortContextMenu() }
@@ -602,65 +602,65 @@ extension BrowseTransactionsView {
                 tableCell(row.transactionDate, for: row)
                     .frame(width: scaledColumnWidths["Date"] ?? 100)
                 
-                HStack {
-                    Spacer(minLength: 0)
-                    Toggle("", isOn: Binding(
-                        get: { row.checked },
-                        set: { newValue in
-                            guard selectionActive else { return }
-                            row.checked = newValue
-                            if let recID = appState.selectedReconciliationID,
-                               let rec = reconciliations.first(where: { $0.objectID == recID }) {
-                                
-                                if newValue {
-                                    // Assign transaction to reconciliation
-                                    rec.addToTransactions(row.transaction)
-                                    //                                    row.transaction.reconciliation = rec
-                                } else {
-                                    // Remove only if it currently belongs to this reconciliation
-                                    if row.transaction.reconciliation == rec {
-                                        rec.removeFromTransactions(row.transaction)
-                                        //                                        row.transaction.reconciliation = nil
-                                    }
-                                }
-                                
-                                // Save changes and update totals
-                                try? viewContext.save()
-                                updateRunningTotals()
-                            }
-                        }
-                    ))
-                    .toggleStyle(.checkbox)
-                    .disabled(!allowSelection || row.transaction.closed)
-                    .labelsHidden()
-                    .frame(width: 20, height: 20)
-                    Spacer(minLength: 0)
-                }
-                .frame(width: scaledColumnWidths["✓"] ?? 5)
-                .disabled(row.transaction.closed)
+//                HStack {
+//                    Spacer(minLength: 0)
+//                    Toggle("", isOn: Binding(
+//                        get: { row.checked },
+//                        set: { newValue in
+//                            guard selectionActive else { return }
+//                            row.checked = newValue
+//                            if let recID = appState.selectedReconciliationID,
+//                               let rec = reconciliations.first(where: { $0.objectID == recID }) {
+//                                
+//                                if newValue {
+//                                    // Assign transaction to reconciliation
+//                                    rec.addToTransactions(row.transaction)
+//                                    //                                    row.transaction.reconciliation = rec
+//                                } else {
+//                                    // Remove only if it currently belongs to this reconciliation
+//                                    if row.transaction.reconciliation == rec {
+//                                        rec.removeFromTransactions(row.transaction)
+//                                        //                                        row.transaction.reconciliation = nil
+//                                    }
+//                                }
+//                                
+//                                // Save changes and update totals
+//                                try? viewContext.save()
+//                                updateRunningTotals()
+//                            }
+//                        }
+//                    ))
+//                    .toggleStyle(.checkbox)
+//                    .disabled(!allowSelection || row.transaction.closed)
+//                    .labelsHidden()
+//                    .frame(width: 20, height: 20)
+//                    Spacer(minLength: 0)
+//                }
+//                .frame(width: scaledColumnWidths["✓"] ?? 5)
+//                .disabled(row.transaction.closed)
                 
-                Group {
-                    if row.transaction.pairID == nil {
-                        // empty
-                        Text("-")
-                    } else if !row.transaction.isPairValid(in: viewContext) {
-                        // pairID present but invalid (not exactly 2 members)
-//                        Text("X")
-                        Image(systemName: "link.circle.fill")
-                            .font(.system(size: 14, weight: .regular))
-                            .foregroundColor(.red)
-                    } else if row.transaction.counterTransaction(in: viewContext) != nil {
-                        Image(systemName: "link.circle")
-                            .font(.system(size: 14, weight: .regular))
-                    } else {
-                        // Probably never get here
-                        Image(systemName: "exclamationmark.triangle")
-                            .font(.system(size: 14, weight: .regular))
-                            .foregroundColor(.yellow)
-                    }
-                }
-                .frame(width: scaledColumnWidths["Link"] ?? 50, height: macOSRowHeight, alignment: .center)
-                .padding(.horizontal, 4)
+//                Group {
+//                    if row.transaction.pairID == nil {
+//                        // empty
+//                        Text("-")
+//                    } else if !row.transaction.isPairValid(in: viewContext) {
+//                        // pairID present but invalid (not exactly 2 members)
+////                        Text("X")
+//                        Image(systemName: "link.circle.fill")
+//                            .font(.system(size: 14, weight: .regular))
+//                            .foregroundColor(.red)
+//                    } else if row.transaction.counterTransaction(in: viewContext) != nil {
+//                        Image(systemName: "link.circle")
+//                            .font(.system(size: 14, weight: .regular))
+//                    } else {
+//                        // Probably never get here
+//                        Image(systemName: "exclamationmark.triangle")
+//                            .font(.system(size: 14, weight: .regular))
+//                            .foregroundColor(.yellow)
+//                    }
+//                }
+//                .frame(width: scaledColumnWidths["Link"] ?? 50, height: macOSRowHeight, alignment: .center)
+//                .padding(.horizontal, 4)
                 
                 tableCell(row.reconciliationPeriodShortDescription, for: row)
                     .frame(width: scaledColumnWidths["Reconciliation"] ?? 60)

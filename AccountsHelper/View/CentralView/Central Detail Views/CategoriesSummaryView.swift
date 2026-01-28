@@ -138,22 +138,6 @@ struct CategoriesSummaryView: View {
                                currency: currentCurrency)
         }
     }
-//    internal var categoryRows: [CategoryRow] {
-//        let grouped = Dictionary(grouping: transactions) { (tx: Transaction) in
-//            tx.category
-//        }
-//        let currentCurrency = currency ?? .unknown
-//        
-//        return Category.allCases.map { category in
-//            let txs = grouped[category] ?? []
-//            let total = txs.reduce(Decimal(0)) { sum, tx in
-//                sum + tx.txAmount
-//            }
-//            let ids = txs.map { $0.objectID }
-//            
-//            return CategoryRow(category: category, total: total, transactionIDs: ids, currency: currentCurrency )
-//        }
-//    }
     
     // MARK: --- Body
     var body: some View {
@@ -161,8 +145,7 @@ struct CategoriesSummaryView: View {
             headerView
             categoriesTable
                 .frame(minWidth: 300, idealWidth: 500, maxWidth: 600) // adjust as needed
-            
-//                .navigationTitle("Transactions Summary")
+
         }
         .toolbar { printToolbarItem }
     }
