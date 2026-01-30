@@ -77,8 +77,8 @@ struct BrowseTransactionsView: View {
     // Column Width State
     #if os(macOS)
     @State var availableWidth: CGFloat = 0
-    @State var scaledColumnWidths: [String: CGFloat] = [:]
-    @State var columnWidths: [String: CGFloat] = [
+//    @State var scaledColumnWidths: [String: CGFloat] = [:]
+    private static let defaultColumnWidths : [String: CGFloat] = [
         "Account": 80,
         "Date": 100,
         "✓": 5,
@@ -91,6 +91,8 @@ struct BrowseTransactionsView: View {
         "Payee": 200,
         "Reconciliation": 60
     ]
+    @State private var columnWidths: [String: CGFloat] = Self.defaultColumnWidths
+
     #endif
     // Checked Selection State
     @State private var selectionActive: Bool = false
@@ -318,12 +320,14 @@ extension BrowseTransactionsView {
                         // Load saved widths
                         if let saved = UserDefaults.standard.dictionary(forKey: gColumnWidthsKey) as? [String: Double] {
                             columnWidths = saved.mapValues { CGFloat($0) }
+                        } else {
+                            columnWidths = Self.defaultColumnWidths
                         }
-                        updateScaledWidths(for: availableWidth)
+//                        updateScaledWidths(for: availableWidth)
                     }
                     .onChange(of: width) { _, newWidth in
                         availableWidth = newWidth
-                        updateScaledWidths(for: newWidth)
+                        updateColumnWidths(for: newWidth)
                     }
                 
                 VStack(spacing: 0) {
@@ -337,28 +341,28 @@ extension BrowseTransactionsView {
                         
                         HStack(spacing: 0) {
                             TableHeaderCell("Account", width: 80)
-                                .frame(width: scaledColumnWidths["Account"] ?? 80)
+                                .frame(width: columnWidths["Account"] ?? 80)
                                 .if( gViewCheck ) { view in view.border( .green )}
                             TableHeaderCell("Date", width: 100)
-                                .frame(width: scaledColumnWidths["Date"] ?? 100)
-//                            TableHeaderCell("✓", width: 5)
-//                                .frame(width: scaledColumnWidths["✓"] ?? 5)
-//                            TableHeaderCell("Link", width: 50)
-//                                .frame(width: scaledColumnWidths["Link"] ?? 50)
+                                .frame(width: columnWidths["Date"] ?? 100)
+                            TableHeaderCell("✓", width: 5)
+                                .frame(width: columnWidths["✓"] ?? 5)
+                            TableHeaderCell("Link", width: 5)
+                                .frame(width: columnWidths["Link"] ?? 5)
                             TableHeaderCell("Reconciliation", width: 60)
-                                .frame(width: scaledColumnWidths["Reconciliation"] ?? 60)
+                                .frame(width: columnWidths["Reconciliation"] ?? 60)
                             TableHeaderCell("Amount", width: 130)
-                                .frame(width: scaledColumnWidths["Amount"] ?? 130)
+                                .frame(width: columnWidths["Amount"] ?? 130)
                             TableHeaderCell("Payee", width: 100)
-                                .frame(width: scaledColumnWidths["Payee"] ?? 100)
+                                .frame(width: columnWidths["Payee"] ?? 100)
                             TableHeaderCell("Balance", width: 130)
-                                .frame(width: scaledColumnWidths["Balance"] ?? 130)
+                                .frame(width: columnWidths["Balance"] ?? 130)
                             TableHeaderCell("Fx", width: 60)
-                                .frame(width: scaledColumnWidths["Fx"] ?? 60)
+                                .frame(width: columnWidths["Fx"] ?? 60)
                             TableHeaderCell("Category", width: 80)
-                                .frame(width: scaledColumnWidths["Category"] ?? 80)
+                                .frame(width: columnWidths["Category"] ?? 80)
                             TableHeaderCell("Split", width: 200)
-                                .frame(width: scaledColumnWidths["Split"] ?? 200)
+                                .frame(width: columnWidths["Split"] ?? 200)
 
                         }
                         .if( gViewCheck ) { view in view.border( .cyan )}
@@ -408,17 +412,18 @@ extension BrowseTransactionsView {
                         }
                     }
                     .frame(minHeight: 300)
-                    .frame(maxWidth: .infinity)
+//                    .frame(maxWidth: .infinity)
                 }
                 .onAppear {
-                    updateScaledWidths(for: availableWidth)
+                    updateColumnWidths(for: availableWidth)
                 }
                 .onChange(of: availableWidth) { _, newWidth in
-                    updateScaledWidths(for: newWidth)
+                    updateColumnWidths(for: newWidth)
                 }
                 // --- Constrain VStack to the width of the available window
 //                .frame(minWidth: proxy.size.width, alignment: .leading)
-                .frame(maxWidth: .infinity, alignment: .leading)
+//                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(width: proxy.size.width, alignment: .leading)
                 .if(gViewCheck) { view in view.border(.red).padding(.leading, 0) }
             }
             .contextMenu { SortContextMenu() }
@@ -454,17 +459,63 @@ extension BrowseTransactionsView {
         #endif
     }
     
-    // MARK: --- UpdateScaledWidths
+    // MARK: --- updateColumnWidths
 #if os(macOS)
-    private func updateScaledWidths(for availableWidth: CGFloat) {
-        let minWidth: CGFloat = 60
-        let totalRequested = columnWidths.values.reduce(0, +)
+    private func updateColumnWidths(for availableWidth: CGFloat) {
+        let minWidth: CGFloat = 5
+        let totalMin = CGFloat(columnWidths.count) * minWidth
 
-        // Scale to fit availableWidth proportionally
-        // 16 is to not entirely fill available space
-        let scaleFactor = (availableWidth - 50) / totalRequested
-        scaledColumnWidths = columnWidths.mapValues { max(minWidth, $0 * scaleFactor) }
+        guard availableWidth > totalMin else {
+            columnWidths = columnWidths.mapValues { _ in minWidth }
+            return
+        }
+
+        let totalRequested = columnWidths.values.reduce(0, +)
+        let scale = min(1.0, availableWidth / totalRequested)
+
+        var widths = columnWidths.mapValues { max(minWidth, $0 * scale) }
+
+        // FINAL SAFETY CLAMP
+        let total = widths.values.reduce(0, +)
+        if total > availableWidth {
+            let excess = total - availableWidth
+//            let lastKey = widths.keys.last!
+//            widths[lastKey]! -= excess
+            widths["Split"]! -= excess
+        }
+
+        columnWidths = widths
+        print(availableWidth, columnWidths.values.reduce(0, +))
     }
+
+//    private func updateScaledWidths(for availableWidth: CGFloat) {
+//        let minWidth: CGFloat = 60
+//
+//        let totalRequested = columnWidths.values.reduce(0, +)
+//
+//        // If columns fit, use intent directly
+//        if totalRequested <= availableWidth {
+//            scaledColumnWidths = columnWidths
+//            return
+//        }
+//
+//        // Otherwise, scale proportionally (render-only)
+//        let scale = availableWidth / totalRequested
+//
+//        scaledColumnWidths = columnWidths.mapValues {
+//            max(minWidth, $0 * scale)
+//        }
+//    }
+
+//    private func updateScaledWidths(for availableWidth: CGFloat) {
+//        let minWidth: CGFloat = 60
+//        let totalRequested = columnWidths.values.reduce(0, +)
+//
+//        // Scale to fit availableWidth proportionally
+//        // 16 is to not entirely fill available space
+//        let scaleFactor = (availableWidth - 50) / totalRequested
+//        scaledColumnWidths = columnWidths.mapValues { max(minWidth, $0 * scaleFactor) }
+//    }
 #endif
 
 
@@ -472,39 +523,48 @@ extension BrowseTransactionsView {
     // MARK: --- ResizeColumn
 #if os(macOS)
     private func resizeColumn(title: String, delta: CGFloat) {
-        guard let currentWidth = columnWidths[title], availableWidth > 0 else { return }
-
         let minWidth: CGFloat = 60
-        let maxWidth: CGFloat = availableWidth * 0.8 // optional upper bound
+        guard let current = columnWidths[title] else { return }
 
-        var newWidth = currentWidth + delta
-        newWidth = max(minWidth, min(maxWidth, newWidth))
-        columnWidths[title] = newWidth
+        columnWidths[title] = max(minWidth, current + delta)
 
-        // Now adjust other columns to fit availableWidth
-        let totalWidth = columnWidths.values.reduce(0, +)
-        if totalWidth > availableWidth {
-            var remainingExcess = totalWidth - availableWidth
-
-            // Shrink other columns proportionally (or from the right)
-            let flexibleColumns = columnWidths.keys.filter { $0 != title }
-            for key in flexibleColumns.reversed() {
-                guard let width = columnWidths[key] else { continue }
-                let shrinkable = max(width - minWidth, 0)
-                if shrinkable >= remainingExcess {
-                    columnWidths[key] = width - remainingExcess
-                    remainingExcess = 0
-                    break
-                } else {
-                    columnWidths[key] = width - shrinkable
-                    remainingExcess -= shrinkable
-                }
-            }
-        }
-
-        scaledColumnWidths = columnWidths
-        UserDefaults.standard.set(columnWidths.mapValues { Double($0) }, forKey: gColumnWidthsKey)
+        // Reflect immediately
+//        scaledColumnWidths = columnWidths
     }
+//    private func resizeColumn(title: String, delta: CGFloat) {
+//        guard let currentWidth = columnWidths[title], availableWidth > 0 else { return }
+//
+//        let minWidth: CGFloat = 60
+//        let maxWidth: CGFloat = availableWidth * 0.8 // optional upper bound
+//
+//        var newWidth = currentWidth + delta
+//        newWidth = max(minWidth, min(maxWidth, newWidth))
+//        columnWidths[title] = newWidth
+//
+//        // Now adjust other columns to fit availableWidth
+//        let totalWidth = columnWidths.values.reduce(0, +)
+//        if totalWidth > availableWidth {
+//            var remainingExcess = totalWidth - availableWidth
+//
+//            // Shrink other columns proportionally (or from the right)
+//            let flexibleColumns = columnWidths.keys.filter { $0 != title }
+//            for key in flexibleColumns.reversed() {
+//                guard let width = columnWidths[key] else { continue }
+//                let shrinkable = max(width - minWidth, 0)
+//                if shrinkable >= remainingExcess {
+//                    columnWidths[key] = width - remainingExcess
+//                    remainingExcess = 0
+//                    break
+//                } else {
+//                    columnWidths[key] = width - shrinkable
+//                    remainingExcess -= shrinkable
+//                }
+//            }
+//        }
+//
+//        scaledColumnWidths = columnWidths
+////        UserDefaults.standard.set(columnWidths.mapValues { Double($0) }, forKey: gColumnWidthsKey)
+//    }
 
 //    private func resizeColumn(title: String, delta: CGFloat) {
 //        guard let currentWidth = columnWidths[title], availableWidth > 0 else { return }
@@ -562,11 +622,11 @@ extension BrowseTransactionsView {
 //            rowBackground(for: index, row: row)
             HStack(spacing: 0) {
                 tableCell(row.account, for: row)
-                    .frame(width: scaledColumnWidths["Account"] ?? 80)
+                    .frame(width: columnWidths["Account"] ?? 80)
                     .if( gViewCheck ) { view in view.border( .yellow )}
                 
                 tableCell(row.transactionDate, for: row)
-                    .frame(width: scaledColumnWidths["Date"] ?? 100)
+                    .frame(width: columnWidths["Date"] ?? 100)
                 
                 HStack {
                     Spacer(minLength: 0)
@@ -602,7 +662,7 @@ extension BrowseTransactionsView {
                     .frame(width: 20, height: 20)
                     Spacer(minLength: 0)
                 }
-                .frame(width: scaledColumnWidths["✓"] ?? 5)
+                .frame(width: columnWidths["✓"] ?? 5)
                 .disabled(row.transaction.closed)
                 
                 Group {
@@ -625,18 +685,18 @@ extension BrowseTransactionsView {
                             .foregroundColor(.yellow)
                     }
                 }
-                .frame(width: scaledColumnWidths["Link"] ?? 50, height: macOSRowHeight, alignment: .center)
+                .frame(width: columnWidths["Link"] ?? 50, height: macOSRowHeight, alignment: .center)
                 .padding(.horizontal, 4)
                 
                 tableCell(row.reconciliationPeriodShortDescription, for: row)
-                    .frame(width: scaledColumnWidths["Reconciliation"] ?? 60)
+                    .frame(width: columnWidths["Reconciliation"] ?? 60)
             
                 multiLineTableCell( row.transaction.totalAmountDualCurrencyAsString(withSymbol: showCurrencySymbols), for: row, alignment: .trailing )
                     .multilineTextAlignment(.trailing)
-                    .frame(width: scaledColumnWidths["Amount"] ?? 130)
+                    .frame(width: columnWidths["Amount"] ?? 130)
                 
                 tableCell(row.payee, for: row)
-                    .frame(width: scaledColumnWidths["Payee"] ?? 100)
+                    .frame(width: columnWidths["Payee"] ?? 100)
                 
                 tableCell(
                     AmountFormatter.anyAmountAsString(
@@ -645,24 +705,24 @@ extension BrowseTransactionsView {
                         withSymbol: showCurrencySymbols
                     ), for: row, alignment: .trailing
                 )
-                    .frame(width: scaledColumnWidths["Balance"] ?? 130)
+                    .frame(width: columnWidths["Balance"] ?? 130)
                 
                 tableCell(row.exchangeRate, for: row)
-                    .frame(width: scaledColumnWidths["Fx"] ?? 60)
+                    .frame(width: columnWidths["Fx"] ?? 60)
                 
                 tableCell(row.category, for: row)
-                    .frame(width: scaledColumnWidths["Category"] ?? 80)
+                    .frame(width: columnWidths["Category"] ?? 80)
                 
                 multiLineTableCell( row.transaction.splitAmountAndCategoryAsString(withSymbol: showCurrencySymbols), for: row, alignment: .leading )
-                    .frame(width: scaledColumnWidths["Split"] ?? 200)
+                    .frame(width: columnWidths["Split"] ?? 200)
                 
 
             }
-//            .background(
-//                rowBackground(for: index, row: row)
-//                    .frame(maxWidth: .infinity, alignment: .leading)
-//            )
             .padding(.leading, 16)
+            .background(
+                rowBackground(for: index, row: row)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            )
             .contentShape(Rectangle())
             
         }
@@ -744,7 +804,7 @@ extension BrowseTransactionsView {
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .font(.custom("SF Mono Medium", size: 14))
-                .frame(width: (scaledColumnWidths[title] ?? width) - handleWidth, height: macOSRowHeight, alignment: .leading)
+                .frame(width: (columnWidths[title] ?? width) - handleWidth, height: macOSRowHeight, alignment: .leading)
 //                .background(Color.gray.opacity(0.1))
 //                .border(Color.gray.opacity(0.3), width: 0.5)
             
@@ -759,6 +819,18 @@ extension BrowseTransactionsView {
 //                            let val2 = (value.translation.width > 0 ? 1 : -1 )
 //                            resizeColumn(title: title, delta: CGFloat(val2))
                             resizeColumn(title: title, delta: value.translation.width)
+                            updateColumnWidths(for: availableWidth)
+                        }
+                        .onEnded { _ in
+                            let minWidth: CGFloat = 60
+                            for key in columnWidths.keys {
+                                columnWidths[key] = max(columnWidths[key]!, minWidth)
+                            }
+
+                            UserDefaults.standard.set(
+                                columnWidths.mapValues { Double($0) },
+                                forKey: gColumnWidthsKey
+                            )
                         }
                 )
                 .onHover { hovering in
@@ -766,7 +838,7 @@ extension BrowseTransactionsView {
                     if !hovering { NSCursor.arrow.set() }
                 }
         }
-        .frame(width: scaledColumnWidths[title] ?? width, height: macOSRowHeight)
+        .frame(width: columnWidths[title] ?? width, height: macOSRowHeight)
     }
 #endif
 
