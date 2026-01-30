@@ -18,22 +18,6 @@ import UIKit
 #endif
 
 
-// MARK: --- BrowseTransactionsMode
-enum BrowseTransactionsMode {
-    case generalBrowsing
-    case reconciliationAssignmentBrowsing
-}
-
-// MARK: --- To work aroound a SwiftUI bug
-fileprivate func safeUIUpdate(_ action: @escaping () -> Void) {
-    action()
-//    DispatchQueue.main.async {
-//        withAnimation(.none) {
-//            action()
-//        }
-//    }
-}
-
 // MARK: --- RectCorner OptionSet
 struct RectCorner: OptionSet {
     let rawValue: Int
@@ -45,59 +29,6 @@ struct RectCorner: OptionSet {
     static let allCorners: RectCorner = [.topLeft, .topRight, .bottomLeft, .bottomRight]
 }
 
-
-// MARK: --- SortColumn
-enum SortColumn: CaseIterable, Identifiable {
-    case category, currency, debitCredit, exchangeRate,
-         payee, payer, account, reconciliation, transactionDate, txAmount
-
-    var id: Self { self }
-
-    var systemImage: String {
-        switch self {
-        case .category:        return "folder"
-        case .currency:        return "dollarsign.circle"
-        case .debitCredit:     return "arrow.left.arrow.right"
-        case .exchangeRate:    return "chart.line.uptrend.xyaxis"
-        case .account:   return "creditcard"
-        case .payee:           return "person"
-        case .payer:           return "person.crop.circle"
-        case .reconciliation:  return "checkmark.seal"
-        case .transactionDate: return "calendar"
-        case .txAmount:        return "sum"
-        }
-    }
-
-    var title: String {
-        switch self {
-        case .category:        return "Category"
-        case .currency:        return "Currency"
-        case .debitCredit:     return "Debit/Credit"
-        case .exchangeRate:    return "Fx"
-        case .payee:           return "Payee"
-        case .payer:           return "Payer"
-        case .account:   return "Account"
-        case .reconciliation:  return "Reconciliation"
-        case .transactionDate: return "Date"
-        case .txAmount:        return "Amount"
-        }
-    }
-
-    fileprivate func stringKey(for row: TransactionRow) -> String? {
-        switch self {
-        case .category:        return row.category
-        case .currency:        return row.currency
-        case .debitCredit:     return row.debitCredit
-        case .exchangeRate:    return row.exchangeRate
-        case .payee:           return row.payee
-        case .payer:           return row.payer
-        case .account:         return row.account
-        case .reconciliation:  return row.reconciliationPeriod
-        case .transactionDate: return row.transactionDate
-        case .txAmount:        return row.txAmount
-        }
-    }
-}
 
 // MARK: --- BrowseTransactionsView
 struct BrowseTransactionsView: View {
@@ -145,20 +76,20 @@ struct BrowseTransactionsView: View {
     @State private var selectedAccount: ReconcilableAccounts? = nil
     // Column Width State
     #if os(macOS)
-    @State private var availableWidth: CGFloat = 0
-    @State private var scaledColumnWidths: [String: CGFloat] = [:]
-    @State private var columnWidths: [String: CGFloat] = [
+    @State var availableWidth: CGFloat = 0
+    @State var scaledColumnWidths: [String: CGFloat] = [:]
+    @State var columnWidths: [String: CGFloat] = [
         "Account": 80,
         "Date": 100,
         "✓": 5,
+        "Link": 5,
         "Amount": 130,
         "Balance": 130,
         "Fx": 60,
         "Category": 80,
         "Split": 200,
-        "Payee": 300,
-        "Reconciliation": 60,
-        "Link": 50
+        "Payee": 200,
+        "Reconciliation": 60
     ]
     #endif
     // Checked Selection State
@@ -544,20 +475,20 @@ extension BrowseTransactionsView {
         guard let currentWidth = columnWidths[title], availableWidth > 0 else { return }
 
         let minWidth: CGFloat = 60
-        let newWidth = max(minWidth, currentWidth + delta)
+        let maxWidth: CGFloat = availableWidth * 0.8 // optional upper bound
+
+        var newWidth = currentWidth + delta
+        newWidth = max(minWidth, min(maxWidth, newWidth))
         columnWidths[title] = newWidth
 
-        // Total width after resize
+        // Now adjust other columns to fit availableWidth
         let totalWidth = columnWidths.values.reduce(0, +)
-
-        // If total exceeds availableWidth, shrink flexible columns
         if totalWidth > availableWidth {
             var remainingExcess = totalWidth - availableWidth
 
-            // Flexible columns excluding the dragged one
+            // Shrink other columns proportionally (or from the right)
             let flexibleColumns = columnWidths.keys.filter { $0 != title }
-
-            for key in flexibleColumns.reversed() { // shrink from right
+            for key in flexibleColumns.reversed() {
                 guard let width = columnWidths[key] else { continue }
                 let shrinkable = max(width - minWidth, 0)
                 if shrinkable >= remainingExcess {
@@ -569,17 +500,52 @@ extension BrowseTransactionsView {
                     remainingExcess -= shrinkable
                 }
             }
-
-            // Clamp dragged column if still over
-            if remainingExcess > 0 {
-                columnWidths[title] = max(minWidth, newWidth - remainingExcess)
-            }
         }
 
         scaledColumnWidths = columnWidths
-        // Save
         UserDefaults.standard.set(columnWidths.mapValues { Double($0) }, forKey: gColumnWidthsKey)
     }
+
+//    private func resizeColumn(title: String, delta: CGFloat) {
+//        guard let currentWidth = columnWidths[title], availableWidth > 0 else { return }
+//
+//        let minWidth: CGFloat = 60
+//        let newWidth = max(minWidth, currentWidth + delta)
+//        columnWidths[title] = newWidth
+//
+//        // Total width after resize
+//        let totalWidth = columnWidths.values.reduce(0, +)
+//
+//        // If total exceeds availableWidth, shrink flexible columns
+//        if totalWidth > availableWidth {
+//            var remainingExcess = totalWidth - availableWidth
+//
+//            // Flexible columns excluding the dragged one
+//            let flexibleColumns = columnWidths.keys.filter { $0 != title }
+//
+//            for key in flexibleColumns.reversed() { // shrink from right
+//                guard let width = columnWidths[key] else { continue }
+//                let shrinkable = max(width - minWidth, 0)
+//                if shrinkable >= remainingExcess {
+//                    columnWidths[key] = width - remainingExcess
+//                    remainingExcess = 0
+//                    break
+//                } else {
+//                    columnWidths[key] = width - shrinkable
+//                    remainingExcess -= shrinkable
+//                }
+//            }
+//
+//            // Clamp dragged column if still over
+//            if remainingExcess > 0 {
+//                columnWidths[title] = max(minWidth, newWidth - remainingExcess)
+//            }
+//        }
+//
+//        scaledColumnWidths = columnWidths
+//        // Save
+//        UserDefaults.standard.set(columnWidths.mapValues { Double($0) }, forKey: gColumnWidthsKey)
+//    }
     #endif
 
     // MARK: --- TransactionRowView
@@ -593,7 +559,7 @@ extension BrowseTransactionsView {
     ) -> some View {
         #if os(macOS)
         ZStack {                                     // Wrap so background can fill full width
-            rowBackground(for: index, row: row)
+//            rowBackground(for: index, row: row)
             HStack(spacing: 0) {
                 tableCell(row.account, for: row)
                     .frame(width: scaledColumnWidths["Account"] ?? 80)
@@ -602,65 +568,65 @@ extension BrowseTransactionsView {
                 tableCell(row.transactionDate, for: row)
                     .frame(width: scaledColumnWidths["Date"] ?? 100)
                 
-//                HStack {
-//                    Spacer(minLength: 0)
-//                    Toggle("", isOn: Binding(
-//                        get: { row.checked },
-//                        set: { newValue in
-//                            guard selectionActive else { return }
-//                            row.checked = newValue
-//                            if let recID = appState.selectedReconciliationID,
-//                               let rec = reconciliations.first(where: { $0.objectID == recID }) {
-//                                
-//                                if newValue {
-//                                    // Assign transaction to reconciliation
-//                                    rec.addToTransactions(row.transaction)
-//                                    //                                    row.transaction.reconciliation = rec
-//                                } else {
-//                                    // Remove only if it currently belongs to this reconciliation
-//                                    if row.transaction.reconciliation == rec {
-//                                        rec.removeFromTransactions(row.transaction)
-//                                        //                                        row.transaction.reconciliation = nil
-//                                    }
-//                                }
-//                                
-//                                // Save changes and update totals
-//                                try? viewContext.save()
-//                                updateRunningTotals()
-//                            }
-//                        }
-//                    ))
-//                    .toggleStyle(.checkbox)
-//                    .disabled(!allowSelection || row.transaction.closed)
-//                    .labelsHidden()
-//                    .frame(width: 20, height: 20)
-//                    Spacer(minLength: 0)
-//                }
-//                .frame(width: scaledColumnWidths["✓"] ?? 5)
-//                .disabled(row.transaction.closed)
+                HStack {
+                    Spacer(minLength: 0)
+                    Toggle("", isOn: Binding(
+                        get: { row.checked },
+                        set: { newValue in
+                            guard selectionActive else { return }
+                            row.checked = newValue
+                            if let recID = appState.selectedReconciliationID,
+                               let rec = reconciliations.first(where: { $0.objectID == recID }) {
+                                
+                                if newValue {
+                                    // Assign transaction to reconciliation
+                                    rec.addToTransactions(row.transaction)
+                                    //                                    row.transaction.reconciliation = rec
+                                } else {
+                                    // Remove only if it currently belongs to this reconciliation
+                                    if row.transaction.reconciliation == rec {
+                                        rec.removeFromTransactions(row.transaction)
+                                        //                                        row.transaction.reconciliation = nil
+                                    }
+                                }
+                                
+                                // Save changes and update totals
+                                try? viewContext.save()
+                                updateRunningTotals()
+                            }
+                        }
+                    ))
+                    .toggleStyle(.checkbox)
+                    .disabled(!allowSelection || row.transaction.closed)
+                    .labelsHidden()
+                    .frame(width: 20, height: 20)
+                    Spacer(minLength: 0)
+                }
+                .frame(width: scaledColumnWidths["✓"] ?? 5)
+                .disabled(row.transaction.closed)
                 
-//                Group {
-//                    if row.transaction.pairID == nil {
-//                        // empty
-//                        Text("-")
-//                    } else if !row.transaction.isPairValid(in: viewContext) {
-//                        // pairID present but invalid (not exactly 2 members)
-////                        Text("X")
-//                        Image(systemName: "link.circle.fill")
-//                            .font(.system(size: 14, weight: .regular))
-//                            .foregroundColor(.red)
-//                    } else if row.transaction.counterTransaction(in: viewContext) != nil {
-//                        Image(systemName: "link.circle")
-//                            .font(.system(size: 14, weight: .regular))
-//                    } else {
-//                        // Probably never get here
-//                        Image(systemName: "exclamationmark.triangle")
-//                            .font(.system(size: 14, weight: .regular))
-//                            .foregroundColor(.yellow)
-//                    }
-//                }
-//                .frame(width: scaledColumnWidths["Link"] ?? 50, height: macOSRowHeight, alignment: .center)
-//                .padding(.horizontal, 4)
+                Group {
+                    if row.transaction.pairID == nil {
+                        // empty
+                        Text("-")
+                    } else if !row.transaction.isPairValid(in: viewContext) {
+                        // pairID present but invalid (not exactly 2 members)
+//                        Text("X")
+                        Image(systemName: "link.circle.fill")
+                            .font(.system(size: 14, weight: .regular))
+                            .foregroundColor(.red)
+                    } else if row.transaction.counterTransaction(in: viewContext) != nil {
+                        Image(systemName: "link.circle")
+                            .font(.system(size: 14, weight: .regular))
+                    } else {
+                        // Probably never get here
+                        Image(systemName: "exclamationmark.triangle")
+                            .font(.system(size: 14, weight: .regular))
+                            .foregroundColor(.yellow)
+                    }
+                }
+                .frame(width: scaledColumnWidths["Link"] ?? 50, height: macOSRowHeight, alignment: .center)
+                .padding(.horizontal, 4)
                 
                 tableCell(row.reconciliationPeriodShortDescription, for: row)
                     .frame(width: scaledColumnWidths["Reconciliation"] ?? 60)
@@ -692,8 +658,13 @@ extension BrowseTransactionsView {
                 
 
             }
+//            .background(
+//                rowBackground(for: index, row: row)
+//                    .frame(maxWidth: .infinity, alignment: .leading)
+//            )
             .padding(.leading, 16)
             .contentShape(Rectangle())
+            
         }
         .if( gViewCheck ) { view in view.border( .green )}
         .onTapGesture {
@@ -1181,6 +1152,8 @@ extension BrowseTransactionsView {
     }
 }
 
+
+
 // MARK: --- VIEW HELPERS
 extension BrowseTransactionsView {
     
@@ -1188,44 +1161,69 @@ extension BrowseTransactionsView {
     @ViewBuilder
     private func rowBackground(for index: Int, row: TransactionRow) -> some View {
 #if os(macOS)
-        let rowWidth = scaledColumnWidths.values.reduce(0, +)
+        
         if selectionActive {
-            // In selection mode, no row highlight
             Color.clear
-                .frame(width: rowWidth, height: macOSRowHeight)
-        } else {
-            if selectedTransactionIDs.contains(row.id) {
-                let prevSelected = index > 0 && selectedTransactionIDs.contains(filteredTransactionRows[index-1].id)
-                let nextSelected = index < filteredTransactionRows.count-1 && selectedTransactionIDs.contains(filteredTransactionRows[index+1].id)
-                if !prevSelected && !nextSelected {
-                    // Single row selected — round all corners
-                    RoundedRectangle(cornerRadius: 8)
-                        .foregroundColor(.blue)
-                        .frame(width: rowWidth, height: macOSRowHeight)
-                } else if !prevSelected && nextSelected {
-                    // Top row of multi-selection — round top corners only
-                    Color.blue
-                        .frame(width: rowWidth, height: macOSRowHeight)
-                        .clipShape(RoundedCorner(corners: [.topLeft, .topRight], radius: 8))
-                } else if prevSelected && !nextSelected {
-                    // Bottom row of multi-selection — round bottom corners only
-                    Color.blue
-                        .frame(width: rowWidth, height: macOSRowHeight)
-                        .clipShape(RoundedCorner(corners: [.bottomLeft, .bottomRight], radius: 8))
-                } else {
-                    // Middle row of multi-selection — no rounding
-                    Color.blue
-                        .frame(width: rowWidth, height: macOSRowHeight)
-                }
-            } else if index % 2 == 0 {
-                Color.clear
-                    .frame(width: rowWidth, height: macOSRowHeight)
+        } else if selectedTransactionIDs.contains(row.id) {
+            let prevSelected = index > 0 && selectedTransactionIDs.contains(filteredTransactionRows[index-1].id)
+            let nextSelected = index < filteredTransactionRows.count-1 && selectedTransactionIDs.contains(filteredTransactionRows[index+1].id)
+            
+            if !prevSelected && !nextSelected {
+                RoundedRectangle(cornerRadius: 8)
+                    .foregroundColor(.blue)
+            } else if !prevSelected && nextSelected {
+                Color.blue
+                    .clipShape(RoundedCorner(corners: [.topLeft, .topRight], radius: 8))
+            } else if prevSelected && !nextSelected {
+                Color.blue
+                    .clipShape(RoundedCorner(corners: [.bottomLeft, .bottomRight], radius: 8))
             } else {
-                Color.gray.opacity(0.05)
-                    .frame(width: rowWidth, height: macOSRowHeight)
-                
+                Color.blue
             }
+        } else if index % 2 == 0 {
+            Color.clear
+        } else {
+            Color.gray.opacity(0.05)
         }
+    
+//        let rowWidth = scaledColumnWidths.values.reduce(0, +)
+//        if selectionActive {
+//            // In selection mode, no row highlight
+//            Color.clear
+//                .frame(width: rowWidth, height: macOSRowHeight)
+//        } else {
+//            if selectedTransactionIDs.contains(row.id) {
+//                let prevSelected = index > 0 && selectedTransactionIDs.contains(filteredTransactionRows[index-1].id)
+//                let nextSelected = index < filteredTransactionRows.count-1 && selectedTransactionIDs.contains(filteredTransactionRows[index+1].id)
+//                if !prevSelected && !nextSelected {
+//                    // Single row selected — round all corners
+//                    RoundedRectangle(cornerRadius: 8)
+//                        .foregroundColor(.blue)
+//                        .frame(width: rowWidth, height: macOSRowHeight)
+//                } else if !prevSelected && nextSelected {
+//                    // Top row of multi-selection — round top corners only
+//                    Color.blue
+//                        .frame(width: rowWidth, height: macOSRowHeight)
+//                        .clipShape(RoundedCorner(corners: [.topLeft, .topRight], radius: 8))
+//                } else if prevSelected && !nextSelected {
+//                    // Bottom row of multi-selection — round bottom corners only
+//                    Color.blue
+//                        .frame(width: rowWidth, height: macOSRowHeight)
+//                        .clipShape(RoundedCorner(corners: [.bottomLeft, .bottomRight], radius: 8))
+//                } else {
+//                    // Middle row of multi-selection — no rounding
+//                    Color.blue
+//                        .frame(width: rowWidth, height: macOSRowHeight)
+//                }
+//            } else if index % 2 == 0 {
+//                Color.clear
+//                    .frame(width: rowWidth, height: macOSRowHeight)
+//            } else {
+//                Color.gray.opacity(0.05)
+//                    .frame(width: rowWidth, height: macOSRowHeight)
+//                
+//            }
+//        }
 #else
         // TODO: Set to frame width
         let rowWidth:CGFloat = 0 // Not actuallty needed at the moment
