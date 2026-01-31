@@ -52,7 +52,9 @@ class BofSCSVImporter: TxImporter {
 
             // Snapshot of existing transactions from parent context
             let fetchRequest: NSFetchRequest<Transaction> = Transaction.fetchRequest()
-            let existingSnapshot = (try? context.fetch(fetchRequest)) ?? []
+//            let existingSnapshot = (try? context.fetch(fetchRequest)) ?? []
+            let existingSnapshotIDs =
+                (try? context.fetch(fetchRequest))?.map { $0.objectID } ?? []
 
             // MARK: --- Row Processing
             var shouldContinue = true
@@ -96,7 +98,13 @@ class BofSCSVImporter: TxImporter {
                         }
 
                     case "balance":
-                        break
+                        let cleaned = value.replacingOccurrences(of: ",", with: "")
+                        if let balance = Decimal(string: cleaned) {
+                            newTx.extendedDetails = Self.appendBalanceFingerprint(
+                                balance,
+                                to: newTx.extendedDetails
+                            )
+                        }
 
                     default:
                         break
@@ -111,21 +119,40 @@ class BofSCSVImporter: TxImporter {
                 newTx.currency = .GBP
                 newTx.exchangeRate = 1
                 
+                let snapshot: [Transaction] =
+                    createdTransactions +
+                    existingSnapshotIDs.compactMap {
+                        tempContext.object(with: $0) as? Transaction
+                    }
+                
+                // MARK: --- Exact Duplicate Detection
+                if Self.isExactDuplicate(
+                    newTx: newTx,
+                    snapshot: snapshot
+                ) {
+                    tempContext.delete(newTx)
+                    continue
+                }
+                
                 // MARK: --- Pair Detection
                 if let counter = Self.findPairCandidateInSnapshot(
                     newTx: newTx,
-                    snapshot: createdTransactions + existingSnapshot
+                    snapshot: snapshot
                 ) {
                     let pid = UUID()
                     newTx.pairID = pid
                     counter.pairID = pid
                 }
 
-
                 // MARK: --- Duplicate Checking
                 if let existing = Self.findMergeCandidateInSnapshot(
                     newTx: newTx,
-                    snapshot: createdTransactions + existingSnapshot
+                    snapshot:
+                        createdTransactions +
+                        existingSnapshotIDs.compactMap {
+                            tempContext.object(with: $0) as? Transaction
+                        }
+//                    snapshot: createdTransactions + existingSnapshot
                 ) {
 
                     if existing.comparableFieldsRepresentation() == newTx.comparableFieldsRepresentation() {
@@ -178,7 +205,10 @@ class BofSCSVImporter: TxImporter {
             try context.save()
 
             // Re-fetch results in parent context
-            let objectIDs = createdTransactions.map { $0.objectID }
+            let objectIDs = createdTransactions
+                .filter { !$0.isDeleted }
+                .map { $0.objectID }
+//            let objectIDs = createdTransactions.map { $0.objectID }
             let parentTransactions: [Transaction] = objectIDs.compactMap { id in
                 context.object(with: id) as? Transaction
             }
@@ -239,6 +269,56 @@ class BofSCSVImporter: TxImporter {
         return wip
     }
     
+    // MARK: --- appendBalanceFingerprint
+    private static func appendBalanceFingerprint(
+        _ balance: Decimal,
+        to existing: String?
+    ) -> String {
+        let fingerprint = "BOS_BAL_AFTER=\(balance)"
+        guard let existing else { return fingerprint }
+        return existing.contains("BOS_BAL_AFTER=")
+            ? existing
+            : existing + " | " + fingerprint
+    }
+    
+    // MARK: --- isExactDuplicate
+    static func isExactDuplicate(
+        newTx: Transaction,
+        snapshot: [Transaction]
+    ) -> Bool {
+
+        guard
+            let newDate = newTx.transactionDate,
+            let newFingerprint = newTx.extendedDetails
+        else { return false }
+
+        let calendar = Calendar.current
+
+        for existing in snapshot {
+
+            guard
+                existing.account == newTx.account,
+                existing.txAmount == newTx.txAmount,
+                let existingDate = existing.transactionDate,
+                let existingFingerprint = existing.extendedDetails
+            else { continue }
+
+            // Same statement day
+            guard calendar.isDate(existingDate, inSameDayAs: newDate) else {
+                continue
+            }
+
+            // Balance-after fingerprint match
+            if existingFingerprint == newFingerprint {
+                return true
+            }
+        }
+
+        return false
+    }
+
+
+    
     // MARK: --- looksLikeTransfer
 //    static func looksLikeTransfer(_ tx: Transaction) -> Bool {
 //        guard let explanation = tx.explanation?.uppercased() else { return false }
@@ -258,6 +338,5 @@ class BofSCSVImporter: TxImporter {
 //            || b.payee?.contains(aRef) == true
 //    }
 
-
-
 }
+

@@ -106,7 +106,7 @@ extension MergeField {
             setter: { $0.explanation = $1.explanation }
         ),
         .transactionDate: MergeFieldInfo(
-            displayName: "Date",
+            displayName: "Transaction Date",
             getter: { $0.transactionDateAsString() ?? "" },
             hasValue: { $0.transactionDate != nil },
             setter: { $0.transactionDate = $1.transactionDate }

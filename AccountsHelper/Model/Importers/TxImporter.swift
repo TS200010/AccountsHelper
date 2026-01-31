@@ -97,31 +97,98 @@ extension TxImporter {
     }
 
     // MARK: --- Default Merge Candidate Matching
-    static func findMergeCandidateInSnapshot(newTx: Transaction, snapshot: [Transaction]) -> Transaction? {
+    static func findMergeCandidateInSnapshot(
+        newTx: Transaction,
+        snapshot: [Transaction]
+    ) -> Transaction? {
+
+        let calendar = Calendar.current
+
         for existing in snapshot {
-            
-            // Heuristics
-            // If its DAILY OD INT then we always keep both
-            if let payee = newTx.payee,
-               payee.hasPrefix("DAILY OD INT") {
+
+            // Must be same account
+            guard existing.account == newTx.account else { continue }
+
+            // Must have dates
+            guard let existingDate = existing.transactionDate,
+                  let newDate = newTx.transactionDate else { continue }
+
+            // -----------------------------
+            // DAILY OD INT — STRICT ONLY
+            // -----------------------------
+            if isDailyODInterest(newTx) {
+
+                // Strict duplicate: same amount AND same statement day
+                if existing.txAmount == newTx.txAmount &&
+                   calendar.isDate(existingDate, inSameDayAs: newDate) {
+                    return nil
+                }
+
+                // Otherwise: NOT a merge candidate — keep scanning
                 continue
             }
-            
-            guard existing.txAmount == newTx.txAmount,
-                  existing.account == newTx.account,
-                  let existingDate = existing.transactionDate,
-                  let newDate = newTx.transactionDate else {
-                continue
-            }
-            
-            // Allow transactionDate ± range: -7 days to +1 day
-            let minDate = Calendar.current.date(byAdding: .day, value: -7, to: newDate)!
-            let maxDate = Calendar.current.date(byAdding: .day, value: 1, to: newDate)!
+
+            // --------------------------------
+            // NORMAL TRANSACTIONS — FUZZY
+            // --------------------------------
+            guard existing.txAmount == newTx.txAmount else { continue }
+
+            let minDate = calendar.date(byAdding: .day, value: -7, to: newDate)!
+            let maxDate = calendar.date(byAdding: .day, value: 1, to: newDate)!
 
             if existingDate >= minDate && existingDate <= maxDate {
                 return existing
             }
         }
+
         return nil
     }
+
+    
+    
+//    static func findMergeCandidateInSnapshot(newTx: Transaction, snapshot: [Transaction]) -> Transaction? {
+//        for existing in snapshot {
+//            
+//
+////            if let payee = newTx.payee,
+////               payee.hasPrefix("DAILY OD INT") {
+////                continue
+////            }
+//            
+//            guard existing.txAmount == newTx.txAmount,
+//                  existing.account == newTx.account,
+//                  let existingDate = existing.transactionDate,
+//                  let newDate = newTx.transactionDate else {
+//                continue
+//            }
+//            
+//            // Heuristics
+//            // If its DAILY OD INT then we always keep both
+//            if let payee = newTx.payee,
+//               payee.hasPrefix("DAILY OD INT"),
+//               Calendar.current.isDate(existingDate, inSameDayAs: newDate) {
+//                continue
+//            }
+//            
+//            // Allow transactionDate ± range: -7 days to +1 day
+//            let minDate = Calendar.current.date(byAdding: .day, value: -7, to: newDate)!
+//            let maxDate = Calendar.current.date(byAdding: .day, value: 1, to: newDate)!
+//
+//            if existingDate >= minDate && existingDate <= maxDate {
+//                return existing
+//            }
+//        }
+//        return nil
+//    }
 }
+
+
+// MARK: --- Helpers
+extension TxImporter {
+    
+    private static func isDailyODInterest(_ tx: Transaction) -> Bool {
+        tx.payee?.hasPrefix("DAILY OD INT") == true
+    }
+    
+}
+

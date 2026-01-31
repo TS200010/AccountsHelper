@@ -121,7 +121,7 @@ struct InspectTransaction: View {
                         // MARK: --- Status Section
                         inspectorSection("Status") {
                             transactionRow("Closed:", transaction.closed.description)
-//                            transactionRow("PeriodKey:", transaction.periodKey ?? "N/A")
+                            transactionRow("PeriodKey:", transaction.reconciliation?.periodKey ?? "None")
                         }
                         
                         Spacer(minLength: 20)

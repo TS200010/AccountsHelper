@@ -78,6 +78,7 @@ struct AddOrEditTransactionView: View {
                 //                header
                 mainFields
                 splitSection
+                advancedSection
                 actionButtons
             }
             .frame(maxWidth: 700)
@@ -126,6 +127,15 @@ struct AddOrEditTransactionView: View {
                 canRemoveCounter:     !counterExistsOnLoad
             )
             .frame(minWidth: 300)
+        }
+    #endif
+    }
+    
+    // MARK: --- Advanced Section
+    private var advancedSection: some View {
+    #if os(macOS)
+        GroupBox(label: Label("Advanced", systemImage: "square.and.arrow.down")) {
+            
         }
     #endif
     }
