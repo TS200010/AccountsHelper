@@ -9,7 +9,7 @@ import Foundation
 import CoreData
 
 class AMEXCSVImporter: TxImporter {
-    
+
     static var displayName: String = "AMEX CSV Importer"
     static var account: ReconcilableAccounts = .AMEX
     static var importType: ImportType = .csv
@@ -19,16 +19,18 @@ class AMEXCSVImporter: TxImporter {
         fileURL: URL,
         context: NSManagedObjectContext,
         mergeHandler: @MainActor (Transaction, Transaction) async -> MergeResult
-    ) async -> [Transaction] {
-        var createdTransactions: [Transaction] = []
+    ) async -> ImportSummary {
         
+        var createdTransactions: [Transaction] = []
+        var importSummary = ImportSummary(processedCount: 0, mergedCount: 0, keepExistingCount: 0, keepNewCount: 0, keepBothCount: 0)
+
         do {
             let csvData = try String(contentsOf: fileURL, encoding: .utf8)
             let rows = parseCSV(csvData: csvData)
-            guard let headers = rows.first else { return [] }
+            guard let headers = rows.first else { return importSummary }
             guard headers.count > 5 else {
                 print("Please export ALL fields from the AMEX WebSite")
-                return []
+                return importSummary
             }
 
             let matcher = CategoryMatcher(context: context)
@@ -42,6 +44,7 @@ class AMEXCSVImporter: TxImporter {
                 guard row.count == headers.count else { continue }
                 
                 let newTx = Transaction(context: context)
+                importSummary.processedCount += 1
                 
                 // Temp variables
                 var addressTemp = ""
@@ -140,18 +143,21 @@ class AMEXCSVImporter: TxImporter {
                             createdTransactions.append(existing)
                         }
                         context.delete(newTx)
+                        importSummary.mergedCount += 1
 
                     case .keepExisting:
                         if !createdTransactions.contains(existing) {
                             createdTransactions.append(existing)
                         }
                         context.delete(newTx)
+                        importSummary.keepExistingCount += 1
 
                     case .keepNew:
                         if !createdTransactions.contains(newTx) {
                             createdTransactions.append(newTx)
                         }
                         context.delete(existing)
+                        importSummary.keepNewCount += 1
 
                     case .keepBoth:
                         if !createdTransactions.contains(existing) {
@@ -160,6 +166,7 @@ class AMEXCSVImporter: TxImporter {
                         if !createdTransactions.contains(newTx) {
                             createdTransactions.append(newTx)
                         }
+                        importSummary.keepBothCount += 1
                         
                     case .cancelMerge:
                         shouldContinue = false
@@ -174,7 +181,9 @@ class AMEXCSVImporter: TxImporter {
             print("Failed to import AMEX CSV: \(error)")
         }
         
-        return createdTransactions
+        return importSummary
+        
+//        return createdTransactions
     }
 
     

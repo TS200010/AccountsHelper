@@ -39,11 +39,12 @@ struct TxImportView<Importer: TxImporter>: View {
             
             Text(statusMessage)
                 .font(.headline)
-            
-            // MARK: --- Imported Count
-            HStack {
-                Text("Imported: \(importedCount)")
-            }
+//                .lineLimit(nil)
+//
+//            // MARK: --- Imported Count
+//            HStack {
+//                Text("Imported Do We See This?: \(importedCount)")
+//            }
             
             // MARK: --- Select File Button
             Button("Select File") {
@@ -64,7 +65,7 @@ struct TxImportView<Importer: TxImporter>: View {
             */
             
         }
-        .frame(width: 500, height: 250)
+        .frame(width: 800, height: 500)
     }
     
     // MARK: --- File Selection
@@ -93,7 +94,7 @@ struct TxImportView<Importer: TxImporter>: View {
         statusMessage = "Parsing file..."
         
         Task { @MainActor in
-            let imported = await Importer.importTransactions(
+            let importSummary = await Importer.importTransactions(
                 fileURL: url,
                 context: viewContext,
                 mergeHandler: { existing, new in
@@ -109,10 +110,10 @@ struct TxImportView<Importer: TxImporter>: View {
                 }
             )
             
-            importedCount = imported.count
-            statusMessage = "Import complete! Imported \(importedCount)"
-            if importedCount == 0 {
-                statusMessage += "\nNo transactions imported. \nDid you export all Columns?"
+            statusMessage = "Import complete.\nProcessed \(importSummary.processedCount) transactions\n"
+            statusMessage += "Merged: \(importSummary.mergedCount)\nKept Existing: \(importSummary.keepExistingCount)\nKept New: \(importSummary.keepNewCount)\nKept Both: \(importSummary.keepBothCount)"
+            if importSummary.processedCount == 0 {
+                statusMessage += "\n\nNo transactions processed. Did you export all Columns?"
             }
         }
     }

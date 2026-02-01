@@ -5,19 +5,33 @@
    version = "2.0">
    <Breakpoints>
       <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.SymbolicBreakpoint">
+         <BreakpointContent
+            uuid = "C1D1F6D3-7102-4DE2-BEEF-35A4215288FC"
+            shouldBeEnabled = "Yes"
+            nameForDebugger = "CoreDataDelete"
+            ignoreCount = "0"
+            continueAfterRunningActions = "Yes"
+            symbolName = "objc_exception_throw&#10;"
+            moduleName = "">
+            <Locations>
+            </Locations>
+         </BreakpointContent>
+      </BreakpointProxy>
+      <BreakpointProxy
          BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
          <BreakpointContent
-            uuid = "C8681BA4-30E8-4119-B4CB-A6D8DF377211"
+            uuid = "D670D353-35D5-4E52-B724-41E70E3E080D"
             shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "AccountsHelper/Model/Importers/BofSCSVImporter.swift"
+            filePath = "AccountsHelper/View/CentralView/Central Detail Views/MergeTransactionsView.swift"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "231"
-            endingLineNumber = "231"
-            landmarkName = "findPairCandidateInSnapshot(newTx:snapshot:)"
-            landmarkType = "7">
+            startingLineNumber = "274"
+            endingLineNumber = "274"
+            landmarkName = "body"
+            landmarkType = "24">
          </BreakpointContent>
       </BreakpointProxy>
    </Breakpoints>

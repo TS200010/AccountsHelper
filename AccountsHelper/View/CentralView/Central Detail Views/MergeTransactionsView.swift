@@ -265,12 +265,12 @@ struct MergeTransactionsView: View {
                 }
 
                 Button("Keep New") {
-                    viewContext.delete(leftTransaction)
-                    do {
-                        try viewContext.save()
-                    } catch {
-                        viewContext.rollback()
-                    }
+//                    viewContext.delete(leftTransaction)
+//                    do {
+//                        try viewContext.save()
+//                    } catch {
+//                        viewContext.rollback()
+//                    }
                     appState.popCentralView()
                     onComplete?(.keepNew)
                 }

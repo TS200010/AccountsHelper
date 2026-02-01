@@ -19,16 +19,17 @@ class BofSCSVImporter: TxImporter {
         fileURL: URL,
         context: NSManagedObjectContext,
         mergeHandler: @MainActor (Transaction, Transaction) async -> MergeResult
-    ) async -> [Transaction] {
+    ) async -> ImportSummary {
 
         // MARK: --- Setup
         let tempContext = makeTemporaryContext(parent: context)
         var createdTransactions: [Transaction] = []
+        var importSummary = ImportSummary(processedCount: 0, mergedCount: 0, keepExistingCount: 0, keepNewCount: 0, keepBothCount: 0)
 
         do {
             let csvData = try String(contentsOf: fileURL, encoding: .utf8)
             let rows = parseCSV(csvData: csvData)
-            guard let headers = rows.first else { return [] }
+            guard let headers = rows.first else { return importSummary }
             
             guard
                 let accountIndex = headers.firstIndex(where: { $0.lowercased() == "account number" }),
@@ -62,6 +63,7 @@ class BofSCSVImporter: TxImporter {
                 guard row.count == headers.count else { continue }
 
                 let newTx = Transaction(context: tempContext)
+                importSummary.processedCount += 1
 
                 for (index, header) in headers.enumerated() {
                     let value = row[index].trimmingCharacters(in: .whitespacesAndNewlines)
@@ -170,18 +172,21 @@ class BofSCSVImporter: TxImporter {
                             createdTransactions.append(existing)
                         }
                         tempContext.delete(newTx)
+                        importSummary.mergedCount += 1
 
                     case .keepExisting:
                         if !createdTransactions.contains(existing) {
                             createdTransactions.append(existing)
                         }
                         tempContext.delete(newTx)
+                        importSummary.keepExistingCount += 1
 
                     case .keepNew:
                         if !createdTransactions.contains(newTx) {
                             createdTransactions.append(newTx)
                         }
                         tempContext.delete(existing)
+                        importSummary.keepNewCount += 1
 
                     case .keepBoth:
                         if !createdTransactions.contains(existing) {
@@ -190,6 +195,7 @@ class BofSCSVImporter: TxImporter {
                         if !createdTransactions.contains(newTx) {
                             createdTransactions.append(newTx)
                         }
+                        importSummary.keepBothCount += 1
                         
                     case .cancelMerge:
                         shouldContinue = false
@@ -213,11 +219,11 @@ class BofSCSVImporter: TxImporter {
                 context.object(with: id) as? Transaction
             }
 
-            return parentTransactions
+            return importSummary
 
         } catch {
             print("Failed to import BofS CSV: \(error)")
-            return []
+            return importSummary
         }
     }
     

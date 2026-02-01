@@ -8,6 +8,7 @@
 import Foundation
 import CoreData
 
+// MARK: --- ImportType
 enum ImportType {
     case csv
     case png
@@ -16,6 +17,7 @@ enum ImportType {
     // etc
 }
 
+// MARK: --- MergeResult
 enum MergeResult {
     case merged
     case keepExisting
@@ -24,14 +26,22 @@ enum MergeResult {
     case cancelMerge
 }
 
-// MARK: --- IxImporter Protocol
+// MARK: --- ImportSummary
+struct ImportSummary {
+    var processedCount: Int
+    var mergedCount: Int
+    var keepExistingCount: Int
+    var keepNewCount: Int
+    var keepBothCount: Int
+}
 
+// MARK: --- IxImporter Protocol
 @MainActor
 protocol TxImporter {
     static var displayName: String { get }
     static var account: ReconcilableAccounts { get }
     static var importType: ImportType { get }
-
+    
     /// Import CSV and return Transactions, using the mergeHandler when duplicates are found.
     /// Transactions are created in a temporary child context, then saved into the main context.
     @MainActor
@@ -39,7 +49,7 @@ protocol TxImporter {
         fileURL: URL,
         context: NSManagedObjectContext,
         mergeHandler: @MainActor (Transaction, Transaction) async -> MergeResult
-    ) async -> [Transaction]
+    ) async -> ImportSummary
 
     /// Basic CSV parsing
     static func parseCSV(csvData: String) -> [[String]]
@@ -143,43 +153,6 @@ extension TxImporter {
 
         return nil
     }
-
-    
-    
-//    static func findMergeCandidateInSnapshot(newTx: Transaction, snapshot: [Transaction]) -> Transaction? {
-//        for existing in snapshot {
-//            
-//
-////            if let payee = newTx.payee,
-////               payee.hasPrefix("DAILY OD INT") {
-////                continue
-////            }
-//            
-//            guard existing.txAmount == newTx.txAmount,
-//                  existing.account == newTx.account,
-//                  let existingDate = existing.transactionDate,
-//                  let newDate = newTx.transactionDate else {
-//                continue
-//            }
-//            
-//            // Heuristics
-//            // If its DAILY OD INT then we always keep both
-//            if let payee = newTx.payee,
-//               payee.hasPrefix("DAILY OD INT"),
-//               Calendar.current.isDate(existingDate, inSameDayAs: newDate) {
-//                continue
-//            }
-//            
-//            // Allow transactionDate ± range: -7 days to +1 day
-//            let minDate = Calendar.current.date(byAdding: .day, value: -7, to: newDate)!
-//            let maxDate = Calendar.current.date(byAdding: .day, value: 1, to: newDate)!
-//
-//            if existingDate >= minDate && existingDate <= maxDate {
-//                return existing
-//            }
-//        }
-//        return nil
-//    }
 }
 
 
