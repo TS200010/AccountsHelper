@@ -17,42 +17,22 @@ extension CategoriesSummaryView {
         let symbolSetting = ShowCurrencySymbolsEnum(rawValue: symbolSettingRaw) ?? .always
         
         let amountStr = AmountFormatter.anyAmountAsString(amount: amount, currency: currency, withSymbol: symbolSetting )
-//        // Format the number according to the currency
-//        let formatter = NumberFormatter()
-//        formatter.numberStyle = .currency
-//        formatter.locale = currency.localeForCurrency
-//        
-//        // Handle zero-minor-unit currencies like JPY
-//        switch currency {
-//        case .JPY:
-//            formatter.maximumFractionDigits = 0
-//            formatter.minimumFractionDigits = 0
-//        default:
-//            formatter.maximumFractionDigits = 2
-//            formatter.minimumFractionDigits = 2
-//        }
-//        
-//        // Construct the number
-//        let amountStr = formatter.string(from: amount as NSDecimalNumber) ?? "\(amount)"
+        
         let paddedLabel = label.padding(toLength: 30, withPad: " ", startingAt: 0)
         let paddedAmount = String(repeating: " ", count: max(0, 15 - amountStr.count)) + amountStr
         return "\(paddedLabel)\(paddedAmount)\n"
     }
-
     
     func printCategoriesSummary() {
         
 #if os(macOS)
-        //        DispatchQueue.main.async {
-        
-//        let showCurrencySymbols = true
         let totals = summaryTotals
         let rows = categoryRows
         
         // MARK: --- Build Report Header
         let report = NSMutableString()
         report.append(reportHeader(title: "Category Summary Report", viewContext: viewContext, appState: appState) )
-
+        
         // MARK: --- Build Column Headings
         report.append("\n")
         report.append(String(format: "%-30@ %15@\n", "Category" as NSString, "Total" as NSString))
@@ -65,7 +45,7 @@ extension CategoriesSummaryView {
             let paddedTotal = String(repeating: " ", count: max(0, 15 - totalStr.count)) + totalStr
             report.append("\(paddedName)\(paddedTotal)\n")
         }
-
+        
         // MARK: --- Report Footer
         report.append("\n" + String(repeating: "-", count: 46) + "\n")
         let reportCurrency: Currency = rows.first?.currency ?? .unknown
@@ -74,10 +54,11 @@ extension CategoriesSummaryView {
         report.append(formatFooterLine("Total DR", totals.totalDR, currency: reportCurrency, withSymbol: showCurrencySymbols))
         report.append(formatFooterLine("Net Total", totals.total, currency: reportCurrency, withSymbol: showCurrencySymbols))
         report.append(formatFooterLine("Ending Balance", totals.endBalance, currency: reportCurrency, withSymbol: showCurrencySymbols))
-
+        
         // MARK: --- Print
         printReport(report)
         
 #endif
     }
+    
 }

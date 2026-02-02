@@ -515,6 +515,10 @@ extension ReconcilliationListView {
             Label("Categories Summary", systemImage: "doc.text.magnifyingglass")
         }
         
+        Button { printMonthlyBalanceSummary()} label: {
+            Label("Monthly Balance Summary", systemImage: "chart.bar")
+        }
+        
         Button { exportXLSSummary(for: row) } label: {
             Label("XLS Summary", systemImage: "doc.on.doc")
         }
