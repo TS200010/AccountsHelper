@@ -22,7 +22,8 @@ class BofSCSVImporter: TxImporter {
     ) async -> ImportSummary {
 
         // MARK: --- Setup
-        let tempContext = makeTemporaryContext(parent: context)
+//        let tempContext = makeTemporaryContext(parent: context)
+        let tempContext = context
         var createdTransactions: [Transaction] = []
         var importSummary = ImportSummary(processedCount: 0, mergedCount: 0, keepExistingCount: 0, keepNewCount: 0, keepBothCount: 0)
 

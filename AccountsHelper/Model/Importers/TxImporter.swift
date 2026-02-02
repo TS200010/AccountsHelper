@@ -60,11 +60,11 @@ protocol TxImporter {
 
 extension TxImporter {
     // MARK: --- Temporary Context Creation
-    static func makeTemporaryContext(parent: NSManagedObjectContext) -> NSManagedObjectContext {
-        let tempContext = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
-        tempContext.parent = parent
-        return tempContext
-    }
+//    static func makeTemporaryContext(parent: NSManagedObjectContext) -> NSManagedObjectContext {
+//        let tempContext = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
+//        tempContext.parent = parent
+//        return tempContext
+//    }
 
     // MARK: --- CSV Parser
     /// Handles quotes, multi-line fields, trims trailing empty headers

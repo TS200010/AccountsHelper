@@ -29,6 +29,7 @@ struct AccountsHelperApp: App {
         
         // Any other setup
         assert(MergeField.allCases.count == gNumTransactionAttributes, "MergeField count mismatch! Did you add a new field?")
+        
     }
     
     // MARK: --- Body

@@ -71,9 +71,9 @@ struct InspectorReconciliation: View {
                         .background(.ultraThinMaterial)
                         .cornerRadius(12)
                         
-                        // MARK: --- Balance
+                        // MARK: --- Ending Balance
                         HStack {
-                            Text("Balance:").bold()
+                            Text("Ending Balance:").bold()
                             Text("\(rec.endingBalance.formattedAsCurrency(rec.currency))")
 //                            Text("\(rec.endingBalance.formatted(.number.precision(.fractionLength(2)))) \(rec.currency.description)")
                             Spacer()
@@ -91,6 +91,8 @@ struct InspectorReconciliation: View {
                         .padding()
                         .background(.ultraThinMaterial)
                         .cornerRadius(12)
+                        
+                        
                         
                         // MARK: --- Balance Status
                         HStack {

@@ -18,7 +18,7 @@ import SwiftUI
 var gUseLiveStore = true
 #else
 // MARK: --- macOS
-var gUseLiveStore = false
+var gUseLiveStore = true
 #endif
 
 // MARK: --- To force upload the Schema (do this on iOS - seems to be more reliable there)
