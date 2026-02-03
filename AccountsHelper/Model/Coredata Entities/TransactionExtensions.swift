@@ -121,16 +121,16 @@ extension Transaction {
         get { txAmount - splitAmount }
     }
 
-    // Raw Amounts in GBP
-    var splitAmountInGBP: Decimal {
+    // Raw Amounts in UKL
+    var splitAmountInUKL: Decimal {
         assert(exchangeRate != 0)
-        let converted = splitAmount / exchangeRate   // convert to GBP
+        let converted = splitAmount / exchangeRate   // convert to UKL
 //        let value = converted + commissionAmount     // add commission
         if converted.isNaN { return Decimal(0) }
         return converted
     }
     
-    var txAmountInGBP: Decimal {
+    var txAmountInUKL: Decimal {
         assert(exchangeRate != 0)
         let value = txAmount / exchangeRate
 //        let value = txAmount / exchangeRate + commissionAmount
@@ -138,8 +138,8 @@ extension Transaction {
         return value
     }
 
-    // Computed Amounts in GBP
-    var splitRemainderAmountInGBP: Decimal {
+    // Computed Amounts in UKL
+    var splitRemainderAmountInUKL: Decimal {
         assert(exchangeRate != 0)
         let converted = splitRemainderAmount / exchangeRate
         let value = converted// + commissionAmount     // add commission
@@ -147,8 +147,8 @@ extension Transaction {
         return value
     }
 
-    var totalAmountInGBP: Decimal {
-        let total = splitAmountInGBP + splitRemainderAmountInGBP + commissionAmount
+    var totalAmountInUKL: Decimal {
+        let total = splitAmountInUKL + splitRemainderAmountInUKL + commissionAmount
         var roundedTotal = Decimal()
         var totalCopy = total
         NSDecimalRound(&roundedTotal, &totalCopy, 2, .plain)
@@ -171,7 +171,7 @@ extension Transaction {
     
     
     // MARK: --- CommissionAmountAsString
-    // Commission amount always in GBP
+    // Commission amount always in UKL
     func commissionAmountAsString( withSymbol: ShowCurrencySymbolsEnum = .always ) -> String? {
         let amount = NSDecimalNumber(decimal: commissionAmount)
         if amount == 0 { return gDefaultZeroAmountRepresentation }
@@ -187,7 +187,7 @@ extension Transaction {
         let fx = NSDecimalNumber(decimal: exchangeRate)
         if fx == 0 || fx == 1 { return gDefaultZeroAmountRepresentation }
         switch currency {
-        case .GBP:
+        case .UKL:
             return String(format: "%.4f", fx.doubleValue)
         case .JPY:
             return String(format: "%.4f", fx.doubleValue)
@@ -201,7 +201,7 @@ extension Transaction {
         let fx = NSDecimalNumber(decimal: exchangeRate)
         if fx == 0 || fx == 1 { return gDefaultZeroAmountRepresentation }
         switch currency {
-        case .GBP:
+        case .UKL:
             return String(format: "%.2f", fx.doubleValue)
         case .JPY:
             return String(format: "%.0f", fx.doubleValue)
@@ -254,18 +254,18 @@ extension Transaction {
     
     // MARK: --- TxAmountDualCurrencyAsString
     func totalAmountDualCurrencyAsString( withSymbol: ShowCurrencySymbolsEnum = .always ) -> String {
-        // NOTE: Here we are correctly mixin txAmount and totalAmount as we want to display the original transaction amount in say Yen and also the GBP amount posted on statements.
+        // NOTE: Here we are correctly mixin txAmount and totalAmount as we want to display the original transaction amount in say Yen and also the UKL amount posted on statements.
         var s1 = txAmountAsString(withSymbol: withSymbol)
         // There should be no commission in this case so it is safe to retrun txAmountAsString
-        if currency == .GBP { return s1 }
+        if currency == .UKL { return s1 }
         if withSymbol == .never { s1 = "" }
         if s1 != "" { s1 += "\n" }
         // Now we convert the totalAmount for display as stated earlier.
-        let s2 = AmountFormatter.anyAmountAsString( amount: totalAmountInGBP, currency: .GBP, withSymbol: withSymbol )
+        let s2 = AmountFormatter.anyAmountAsString( amount: totalAmountInUKL, currency: .UKL, withSymbol: withSymbol )
 #if os(macOS)
         return "\(s1)\(s2)"
 #else
-//            return wip + " " + transaction.totalAmountInGBP.formattedAsCurrency( .GBP )
+//            return wip + " " + transaction.totalAmountInUKL.formattedAsCurrency( .UKL )
         return "\(s1)"
 #endif
     }
@@ -353,7 +353,7 @@ extension Transaction {
             transaction.txAmountCD = isCredit ? amount : -amount
             
             switch currency {
-            case .GBP: transaction.exchangeRateCD = 100
+            case .UKL: transaction.exchangeRateCD = 100
             case .USD: transaction.exchangeRateCD = Int32.random(in: 120...150)
             case .JPY: transaction.exchangeRateCD = Int32.random(in: 15_000...21_000)
             case .EUR: transaction.exchangeRateCD = Int32.random(in: 120...150)

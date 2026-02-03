@@ -65,8 +65,8 @@ struct TransactionStruct {
         splitAmount != Decimal(0)
     }
     
-    /// Total in GBP after applying exchange rate and commission, rounded to 2 decimal places
-    var totalInGBP: Decimal {
+    /// Total in UKL after applying exchange rate and commission, rounded to 2 decimal places
+    var totalInUKL: Decimal {
         let total = txAmount * exchangeRate + commissionAmount
         var roundedTotal = Decimal()
         var copy = total
@@ -81,7 +81,7 @@ struct TransactionStruct {
         accountNumber: String? = nil,
         address: String? = nil,
         category: Category = .unknown,
-        currency: Currency = .GBP,
+        currency: Currency = .UKL,
         debitCredit: DebitCredit = .DR,
         exchangeRate: Decimal = 1.0,
         explanation: String? = nil,
@@ -146,7 +146,7 @@ struct TransactionStruct {
         txAmount = 0
         category = .unknown
         splitCategory = .unknown
-        currency = .GBP
+        currency = .UKL
         debitCredit = .DR
         exchangeRate = 1.0
         payee = ""

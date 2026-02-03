@@ -53,7 +53,7 @@ struct InspectCategoryBreakdown: View {
                                     Text(transaction.transactionDate != nil ? dateFormatter.string(from: transaction.transactionDate!) : "N/A")
                                         .font(.body)
                                     Spacer()
-                                    let amount = (transaction.totalAmountInGBP as NSDecimalNumber?)?.doubleValue ?? 0
+                                    let amount = (transaction.totalAmountInUKL as NSDecimalNumber?)?.doubleValue ?? 0
                                     Text(String(format: "%.2f %@", amount, transaction.currency.description))
                                         .font(.body)
                                         .bold()

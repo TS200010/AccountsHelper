@@ -107,8 +107,8 @@ class AMEXCSVImporter: TxImporter {
                 newTx.address = addressTemp
                 newTx.extendedDetails = extendedDetailsTemp
                 
-                if currencyParsedTemp == .GBP || currencyParsedTemp == .unknown {
-                    newTx.currency = .GBP
+                if currencyParsedTemp == .UKL || currencyParsedTemp == .unknown {
+                    newTx.currency = .UKL
                     newTx.exchangeRate = 1
                     newTx.txAmount = txAmountTemp
                 } else {

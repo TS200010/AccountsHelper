@@ -119,7 +119,7 @@ class BofSCSVImporter: TxImporter {
                 newTx.payer = .tony
                 newTx.account = account
                 newTx.accountNumber = accountTemp
-                newTx.currency = .GBP
+                newTx.currency = .UKL
                 newTx.exchangeRate = 1
                 
                 let snapshot: [Transaction] =

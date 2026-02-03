@@ -17,12 +17,12 @@ struct TransactionValidatableTests {
     struct MockTransaction: TransactionValidatable {
         var txAmount: Decimal = 100
         var category: AccountsHelper.Category = .FoodHousehold
-        var currency: Currency = .GBP
+        var currency: Currency = .UKL
         var debitCredit: DebitCredit = .DR
         var exchangeRate: Decimal = 1.0
         var payee: String? = "Tesco"
         var payer: Payer = .tony
-        var account: ReconcilableAccounts = .CashGBP
+        var account: ReconcilableAccounts = .CashUKL
         var splitRemainderCategory: AccountsHelper.Category = .FoodHousehold
         var transactionDate: Date? = Date()
         

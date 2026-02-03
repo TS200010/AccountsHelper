@@ -9,7 +9,7 @@ import Foundation
 
 struct CounterRelationships {
     static let all: [CounterPair] = [
-        .init(from: .BofSPV, to: .CashGBP, name: "ATM Withdrawal"),
+        .init(from: .BofSPV, to: .CashUKL, name: "ATM Withdrawal"),
         .init(from: .BofSPV, to: .AMEX,    name: "AMEX Payment"),
         .init(from: .BofSPV, to: .VISA,    name: "VISA Payment")
     ]

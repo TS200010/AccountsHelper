@@ -11,7 +11,7 @@ import ItMkLibrary
 @objc enum ReconcilableAccounts: Int32, CaseIterable, Codable, HasStringRepresentation, CustomStringConvertible, Identifiable {
 
     // MARK: --- Cases
-    case CashGBP    = 1
+    case CashUKL    = 1
     case CashUSD    = 2
     case CashEUR    = 3
     case CashYEN    = 4
@@ -37,19 +37,19 @@ import ItMkLibrary
     // MARK: --- Currency of Account
     var currency: Currency {
         switch self {
-        case .CashGBP:    return .GBP
+        case .CashUKL:    return .UKL
         case .CashUSD:    return .USD
         case .CashEUR:    return .EUR
         case .CashYEN:    return .JPY
-        case .AMEX:       return .GBP
-        case .VISA:       return .GBP
-        case .BofSPV:     return .GBP
-        case .BofSCA:     return .GBP
-        case .LloydsC:    return .GBP
-        case .BofSIASA:   return .GBP
-        case .BofSISS:    return .GBP
-        case .BofSYP:     return .GBP
-        case .ItMkEquity: return .GBP
+        case .AMEX:       return .UKL
+        case .VISA:       return .UKL
+        case .BofSPV:     return .UKL
+        case .BofSCA:     return .UKL
+        case .LloydsC:    return .UKL
+        case .BofSIASA:   return .UKL
+        case .BofSISS:    return .UKL
+        case .BofSYP:     return .UKL
+        case .ItMkEquity: return .UKL
         case .unknown:    return .unknown
         }
     }
@@ -57,7 +57,7 @@ import ItMkLibrary
     // MARK: --- Human-readable Description
     var description: String {
         switch self {
-        case .CashGBP:    return String(localized: "Cash GBP")
+        case .CashUKL:    return String(localized: "Cash UKL")
         case .CashUSD:    return String(localized: "Cash USD")
         case .CashEUR:    return String(localized: "Cash EUR")
         case .CashYEN:    return String(localized: "Cash YEN")
@@ -77,7 +77,7 @@ import ItMkLibrary
     // MARK: --- Code for Reconciliation
     var code: String {
         switch self {
-        case .CashGBP:    return "CASH_GBP"
+        case .CashUKL:    return "CASH_UKL"
         case .CashUSD:    return "CASH_USD"
         case .CashEUR:    return "CASH_EUR"
         case .CashYEN:    return "CASH_YEN"
@@ -97,7 +97,7 @@ import ItMkLibrary
     // MARK: --- Int Conversion Helpers
     static func fromInt(_ i: Int) -> ReconcilableAccounts {
         switch i {
-        case 1:          return .CashGBP
+        case 1:          return .CashUKL
         case 2:          return .CashUSD
         case 3:          return .CashEUR
         case 4:          return .CashYEN
@@ -123,20 +123,20 @@ import ItMkLibrary
     // MARK: --- CurrencyCODE
     var currencyCode: String {
         switch self {
-        case .CashGBP:    return "GBP"
+        case .CashUKL:    return "UKL"
         case .CashUSD:    return "USD"
         case .CashEUR:    return "EUR"
         case .CashYEN:    return "YEN"
-        case .AMEX:       return "GBP"
-        case .VISA:       return "GBP"
-        case .BofSPV:     return "GBP"
-        case .BofSCA:     return "GBP"
-        case .LloydsC:    return "GBP"
-        case .BofSIASA:   return "GBP"
-        case .BofSISS:    return "GBP"
-        case .BofSYP:     return "GBP"
-        case .ItMkEquity: return "GBP"
-        case .unknown:    return "GBP"
+        case .AMEX:       return "UKL"
+        case .VISA:       return "UKL"
+        case .BofSPV:     return "UKL"
+        case .BofSCA:     return "UKL"
+        case .LloydsC:    return "UKL"
+        case .BofSIASA:   return "UKL"
+        case .BofSISS:    return "UKL"
+        case .BofSYP:     return "UKL"
+        case .ItMkEquity: return "UKL"
+        case .unknown:    return "UKL"
         }
     }
     

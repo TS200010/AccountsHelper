@@ -106,11 +106,11 @@ extension AddOrEditTransactionView {
                                         return transactionData.txAmount
                                     } else {
                                         guard counterFXRate > 0 else { return 0 }
-                                        // Convert via GBP
-                                        let gbpValue = transactionData.currency == .GBP
+                                        // Convert via UKL
+                                        let UKLValue = transactionData.currency == .UKL
                                         ? transactionData.txAmount
                                         : transactionData.txAmount / transactionData.exchangeRate
-                                        return gbpValue * counterFXRate
+                                        return UKLValue * counterFXRate
                                     }
                                 },
                                 set: { _ in }

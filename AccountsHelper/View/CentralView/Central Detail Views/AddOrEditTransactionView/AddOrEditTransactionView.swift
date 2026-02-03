@@ -67,7 +67,7 @@ struct AddOrEditTransactionView: View {
         transactionData.txAmount != 0 &&
         (transactionData.payee?.isEmpty == false) &&
         transactionData.category != .unknown &&
-        (transactionData.currency == .GBP ||
+        (transactionData.currency == .UKL ||
          (transactionData.exchangeRate != 0 && (transactionData.currency == .JPY ? transactionData.exchangeRate < 300 : true)))
     }
     

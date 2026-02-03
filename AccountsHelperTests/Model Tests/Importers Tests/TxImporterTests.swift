@@ -12,7 +12,7 @@ struct MockImporter: TxImporter {
     }
     
     static var displayName: String = "Mock"
-    static var paymentMethod: ReconcilableAccounts = .CashGBP
+    static var paymentMethod: ReconcilableAccounts = .CashUKL
     static var importType: ImportType = .csv
 
 //    @MainActor
@@ -89,14 +89,14 @@ struct TxImporterTests {
 
         let existing = Transaction(context: context)
         existing.txAmount = 100
-        existing.account = .CashGBP
+        existing.account = .CashUKL
         existing.transactionDate = date
 
         let snapshot = [existing]
 
         let newTx = Transaction(context: context)
         newTx.txAmount = 100
-        newTx.account = .CashGBP
+        newTx.account = .CashUKL
         newTx.transactionDate = date
 
         let candidate = MockImporter.findMergeCandidateInSnapshot(newTx: newTx, snapshot: snapshot)
@@ -132,7 +132,7 @@ struct TxImporterTests {
         let context = CoreDataTestHelpers.makeInMemoryContext()
         let existing = Transaction(context: context)
         existing.txAmount = 10
-        existing.account = .CashGBP
+        existing.account = .CashUKL
         existing.transactionDate = Date()
 
         let snapshot = [existing]

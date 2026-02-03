@@ -10,8 +10,8 @@ import Foundation
 // MARK: --- Extension to sum transactions including splits
 extension Array where Element == Transaction {
     
-    // MARK: --- Sum by Category including Splits (GBP)
-    func sumByCategoryIncludingSplitsInGBPXXX() -> [Category: Decimal] {
+    // MARK: --- Sum by Category including Splits (UKL)
+    func sumByCategoryIncludingSplitsInUKLXXX() -> [Category: Decimal] {
         var result: [Category: Decimal] = [:]
         
         // Initialize all categories to 0
@@ -21,18 +21,18 @@ extension Array where Element == Transaction {
         
         // Sum transaction amounts by category including splits
         for tx in self {
-            let splitAmt = tx.splitAmountInGBP
+            let splitAmt = tx.splitAmountInUKL
             if !splitAmt.isNaN {
                 result[tx.splitCategory, default: 0] += splitAmt
             } else {
-                print("⚠️ NaN splitAmountInGBP in tx:", tx)
+                print("⚠️ NaN splitAmountInUKL in tx:", tx)
             }
 
-            let remainderAmt = tx.splitRemainderAmountInGBP
+            let remainderAmt = tx.splitRemainderAmountInUKL
             if !remainderAmt.isNaN {
                 result[tx.splitRemainderCategory, default: 0] += remainderAmt
             } else {
-                print("⚠️ NaN splitRemainderAmountInGBP in tx:", tx)
+                print("⚠️ NaN splitRemainderAmountInUKL in tx:", tx)
             }
         }
         

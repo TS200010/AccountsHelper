@@ -29,7 +29,7 @@ struct PaymentMethodTests {
 
     @Test
     func testDescription() async throws {
-        #expect(ReconcilableAccounts.CashGBP.description == "Cash GBP")
+        #expect(ReconcilableAccounts.CashUKL.description == "Cash UKL")
         #expect(ReconcilableAccounts.CashUSD.description == "Cash USD")
         #expect(ReconcilableAccounts.CashEUR.description == "Cash EUR")
         #expect(ReconcilableAccounts.CashYEN.description == "Cash YEN")
@@ -42,20 +42,20 @@ struct PaymentMethodTests {
 
     @Test
     func testCurrencyMapping() async throws {
-        #expect(ReconcilableAccounts.CashGBP.currency == .GBP)
+        #expect(ReconcilableAccounts.CashUKL.currency == .UKL)
         #expect(ReconcilableAccounts.CashUSD.currency == .USD)
         #expect(ReconcilableAccounts.CashEUR.currency == .EUR)
         #expect(ReconcilableAccounts.CashYEN.currency == .JPY)
-        #expect(ReconcilableAccounts.AMEX.currency == .GBP)
-        #expect(ReconcilableAccounts.VISA.currency == .GBP)
-        #expect(ReconcilableAccounts.BofSPV.currency == .GBP)
-        #expect(ReconcilableAccounts.BofSCA.currency == .GBP)
+        #expect(ReconcilableAccounts.AMEX.currency == .UKL)
+        #expect(ReconcilableAccounts.VISA.currency == .UKL)
+        #expect(ReconcilableAccounts.BofSPV.currency == .UKL)
+        #expect(ReconcilableAccounts.BofSCA.currency == .UKL)
         #expect(ReconcilableAccounts.unknown.currency == .unknown)
     }
 
     @Test
     func testCodeMapping() async throws {
-        #expect(ReconcilableAccounts.CashGBP.code == "CASH_GBP")
+        #expect(ReconcilableAccounts.CashUKL.code == "CASH_UKL")
         #expect(ReconcilableAccounts.CashUSD.code == "CASH_USD")
         #expect(ReconcilableAccounts.CashEUR.code == "CASH_EUR")
         #expect(ReconcilableAccounts.CashYEN.code == "CASH_YEN")
@@ -68,7 +68,7 @@ struct PaymentMethodTests {
 
     @Test
     func testFromIntAndInt32() async throws {
-        #expect(ReconcilableAccounts.fromInt(1) == .CashGBP)
+        #expect(ReconcilableAccounts.fromInt(1) == .CashUKL)
         #expect(ReconcilableAccounts.fromInt(2) == .CashUSD)
         #expect(ReconcilableAccounts.fromInt(3) == .CashEUR)
         #expect(ReconcilableAccounts.fromInt(4) == .CashYEN)
@@ -79,7 +79,7 @@ struct PaymentMethodTests {
         #expect(ReconcilableAccounts.fromInt(99) == .unknown)
         #expect(ReconcilableAccounts.fromInt(999) == .unknown)
 
-        #expect(ReconcilableAccounts.fromInt32(1) == .CashGBP)
+        #expect(ReconcilableAccounts.fromInt32(1) == .CashUKL)
         #expect(ReconcilableAccounts.fromInt32(2) == .CashUSD)
         #expect(ReconcilableAccounts.fromInt32(3) == .CashEUR)
         #expect(ReconcilableAccounts.fromInt32(4) == .CashYEN)

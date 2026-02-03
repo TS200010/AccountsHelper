@@ -29,7 +29,7 @@ extension AddOrEditTransactionView {
                 
                 LabeledPicker(label: "Currency", selection: $transactionData.currency, isValid: transactionData.isCurrencyValid())
                 
-                if transactionData.currency != .GBP {
+                if transactionData.currency != .UKL {
                     LabeledDecimalField(label: "Exchange Rate", amount: $transactionData.exchangeRate, isValid: transactionData.isExchangeRateValid())
                 }
                 

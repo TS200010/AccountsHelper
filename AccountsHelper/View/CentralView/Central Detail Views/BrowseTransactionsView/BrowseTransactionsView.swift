@@ -701,7 +701,7 @@ extension BrowseTransactionsView {
                 tableCell(
                     AmountFormatter.anyAmountAsString(
                         amount: row.runningBalance,
-                        currency: .GBP,
+                        currency: .UKL,
                         withSymbol: showCurrencySymbols
                     ), for: row, alignment: .trailing
                 )
@@ -1051,15 +1051,15 @@ extension BrowseTransactionsView {
         // Compute checked totals as strings
         
         var checkedTotalAsString: String {
-            return AmountFormatter.anyAmountAsString(amount: checkedTotal, currency: .GBP, withSymbol: showCurrencySymbols)
+            return AmountFormatter.anyAmountAsString(amount: checkedTotal, currency: .UKL, withSymbol: showCurrencySymbols)
         }
         
         var positiveCheckedTotalAsString: String {
-            return AmountFormatter.anyAmountAsString(amount: positiveCheckedTotal, currency: .GBP, withSymbol: showCurrencySymbols)
+            return AmountFormatter.anyAmountAsString(amount: positiveCheckedTotal, currency: .UKL, withSymbol: showCurrencySymbols)
         }
 
         var negativeCheckedTotalAsString: String {
-            return AmountFormatter.anyAmountAsString(amount: negativeCheckedTotal, currency: .GBP, withSymbol: showCurrencySymbols)
+            return AmountFormatter.anyAmountAsString(amount: negativeCheckedTotal, currency: .UKL, withSymbol: showCurrencySymbols)
         }
         
         var openingBalanceAsString: String {
@@ -1131,7 +1131,7 @@ extension BrowseTransactionsView {
                     .foregroundColor(.orange)
 
                 // Target / Ending Balance
-                Text("Target:\n \(rec.endingBalanceAsString())")
+                Text("Target:\n \(rec.closingBalanceAsString())")
                     .fontWeight(.semibold)
                     .foregroundColor(.blue)
 
@@ -1189,8 +1189,8 @@ extension BrowseTransactionsView {
                       let rDate = rhs.transaction.transactionDate else { return false }
                 return ascending ? (lDate < rDate) : (lDate > rDate)
             case .txAmount:
-                let lAmount = lhs.transaction.txAmountInGBP
-                let rAmount = rhs.transaction.txAmountInGBP
+                let lAmount = lhs.transaction.txAmountInUKL
+                let rAmount = rhs.transaction.txAmountInUKL
                 return ascending ? (lAmount < rAmount) : (lAmount > rAmount)
             default:
                 if let l = sortColumn.stringKey(for: lhs),
@@ -1202,7 +1202,7 @@ extension BrowseTransactionsView {
             }
         }
         
-        // MARK: --- Compute running balances (GBP only)
+        // MARK: --- Compute running balances (UKL only)
         if let account = selectedAccount, sortColumn == .transactionDate {
             // Get previous reconciliation balance if available
             var balance: Decimal = 0
@@ -1215,7 +1215,7 @@ extension BrowseTransactionsView {
             
             // Apply running balance
             for i in 0..<rows.count {
-                rows[i].runningBalance = balance - rows[i].transaction.txAmountInGBP
+                rows[i].runningBalance = balance - rows[i].transaction.txAmountInUKL
                 balance = rows[i].runningBalance
             }
         }

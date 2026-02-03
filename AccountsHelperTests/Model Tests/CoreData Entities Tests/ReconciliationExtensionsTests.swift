@@ -103,15 +103,15 @@ struct ReconciliationExtensionsTests {
     func testCurrencyOverrideForAMEXAndVISA() async throws {
         let rec = makeReconciliation(account: .AMEX)
         rec.currency = .USD
-        #expect(rec.currency == .GBP) // AMEX overrides to GBP
+        #expect(rec.currency == .UKL) // AMEX overrides to UKL
     }
 
     @Test
     func testEndingBalanceAndConversions() async throws {
         let rec = makeReconciliation(endingBalance: 200.50)
         #expect(rec.endingBalance == 200.50)
-        #expect(rec.endingBalanceInGBP == 200.50)
-        #expect(rec.newBalanceInGBP == 200.50)
+        #expect(rec.endingBalanceInUKL == 200.50)
+        #expect(rec.newBalanceInUKL == 200.50)
     }
 
     @Test
@@ -188,13 +188,13 @@ struct ReconciliationExtensionsTests {
 
 
     @Test
-    func testTransactionsTotalInGBPSumsAmounts() async throws {
+    func testTransactionsTotalInUKLSumsAmounts() async throws {
         let rec = makeReconciliation()
         
         _ = makeTransaction(reconciliation: rec, amount: 10, date: rec.transactionStartDate)
         _ = makeTransaction(reconciliation: rec, amount: 15, date: rec.transactionStartDate)
         
-        #expect(try rec.transactionsTotalInGBP(in: context) == 25)
+        #expect(try rec.transactionsTotalInUKL(in: context) == 25)
     }
 
     // MARK: --- Fetch Helpers Tests
@@ -229,16 +229,16 @@ struct ReconciliationExtensionsTests {
     }
 
     @Test
-    func testPreviousBalanceInGBPReturnsZeroIfNoPrevious() async throws {
+    func testPreviousBalanceInUKLReturnsZeroIfNoPrevious() async throws {
         let rec = makeReconciliation()
-        #expect(rec.previousBalanceInGBP == 0)
+        #expect(rec.previousBalanceInUKL == 0)
     }
 
     @Test
-    func testPreviousBalanceInGBPReturnsCorrectValue() async throws {
+    func testPreviousBalanceInUKLReturnsCorrectValue() async throws {
         let prev = makeReconciliation(month: 9, endingBalance: 120)
         let rec = makeReconciliation(month: 10)
-        #expect(rec.previousBalanceInGBP == 120)
+        #expect(rec.previousBalanceInUKL == 120)
     }
 
     @Test

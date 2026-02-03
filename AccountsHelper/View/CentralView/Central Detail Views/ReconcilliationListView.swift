@@ -224,7 +224,7 @@ extension ReconcilliationListView {
                         
                         TableColumn("Ending Balance") { row in
                             //                        Text(row.rec.endingBalance.formattedAsCurrency(row.rec.currency))
-                            Text(row.rec.endingBalanceAsString())
+                            Text(row.rec.closingBalanceAsString())
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .foregroundColor(row.rec.closed ? .blue : (hasInvalidTransactions(row) ? .red : .primary))
                                 .contentShape(Rectangle())
@@ -387,7 +387,7 @@ extension ReconcilliationListView {
                 txAmount: \(newTx.txAmount)
                 debitCredit: \(newTx.debitCredit)
                 currency: \(newTx.currency)
-                gap (GBP): \(gap)
+                gap (UKL): \(gap)
                 """)
             
             try context.save()

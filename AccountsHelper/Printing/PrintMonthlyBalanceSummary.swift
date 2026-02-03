@@ -32,34 +32,28 @@ extension ReconcilliationListView {
         // --- UKL Current Assets Table
         report.append("UKL\n")
         report.append("Current Assets at Start of Month\n")
-        let currentAssets = [
-            "UKL Cash B/F",
-            "BofS Classic B/F",
-            "BofS Joint B/F",
-            "Pension Hold B/F",
-            "ItMk Equity",
-            "Mum B/F"
+
+        let currentAssetsAccounts: [ReconcilableAccounts] = [
+            .CashUKL,
+            .BofSCA,
+            .BofSPV,
+            .BofSIASA,
+            .BofSYP,
+            .BofSISS,
+            .ItMkEquity,
+            .AMEX,
+            .VISA,
+            .CashYEN,
+            
         ]
-        for item in currentAssets {
-            // UKL Cash B/F ONLY
-            if item == "UKL Cash B/F",
-               let cashRec = recIndex[.CashGBP] {
 
-                let line = String(
-                    format: "\t%-30@ %15@\n",
-                    item as NSString,
-                    cashRec.openingBalanceAsString() as NSString
-                )
-                report.append(line)
-
-            } else {
-                let line = String(
-                    format: "\t%-30@ %15@\n",
-                    item as NSString,
-                    "" as NSString
-                )
-                report.append(line)
-            }
+        for account in currentAssetsAccounts {
+            let label = "\(account.description) B/F"
+            report.append(formattedBalanceLine(
+                label: label,
+                account: account,
+                reconciliationsByAccount: recIndex
+            ))
         }
         report.append("Total Current Assets at Start of Month\n\n")
         
@@ -151,26 +145,15 @@ extension ReconcilliationListView {
     }
     
     // MARK: --- formattedBalanceLine
-    func formattedBalanceLine(
-        label: String,
-        account: ReconcilableAccounts?,
-        reconciliationsByAccount: [ReconcilableAccounts: Reconciliation],
-        useOpeningBalance: Bool = true
-    ) -> String {
 
-        var balanceStr = ""
-
-        if let account = account,
-           let rec = reconciliationsByAccount[account] {
-
-            balanceStr = useOpeningBalance
-                ? rec.openingBalanceAsString()
-                : rec.closingBalanceAsString()
+        
+        func formattedBalanceLine(label: String, account: ReconcilableAccounts, reconciliationsByAccount: [ReconcilableAccounts: Reconciliation]) -> String {
+            let amountColumn = 40
+            let amount: Decimal = reconciliationsByAccount[account]?.openingBalance ?? 0
+            let amountStr = AmountFormatter.anyAmountAsString(amount: amount, currency: account.currency, withSymbol: .always)
+            let paddingCount = max(1, amountColumn - label.count - amountStr.count)
+            let padding = String(repeating: " ", count: paddingCount)
+            return "\t\(label)\(padding)\(amountStr)\n"
         }
-
-        return String(format: "\t%-30@ %15@\n", label as NSString, balanceStr as NSString)
-    }
-
-
 }
 

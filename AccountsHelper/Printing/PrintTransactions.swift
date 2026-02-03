@@ -71,7 +71,7 @@ extension BrowseTransactionsView {
             let dateStr     = tx.transactionDate?.formatted(date: .numeric, time: .omitted) ?? ""
             let categoryStr = tx.category.description
             let amountStr   = tx.txAmountAsString( withSymbol: showCurrencySymbols )
-            let fxStr       = tx.currency != .GBP ? (tx.exchangeRateAsString() ?? "") : ""
+            let fxStr       = tx.currency != .UKL ? (tx.exchangeRateAsString() ?? "") : ""
             let splitStr    = tx.splitAmount != 0 ?  tx.splitAmountAsString( withSymbol: showCurrencySymbols ) : ""
             let splitCatStr = tx.splitAmount != 0 ?  tx.splitCategory.description : ""
             let payeeStr    = String((tx.payee ?? "" ).prefix(15))
@@ -92,7 +92,7 @@ extension BrowseTransactionsView {
         func appendSummaryLine(title: String, amount: Decimal) {
             let amountStr = AmountFormatter.anyAmountAsString(
                 amount: amount,
-                currency: transactions.first?.currency ?? .GBP,
+                currency: transactions.first?.currency ?? .UKL,
                 withSymbol: showCurrencySymbols
             )
             

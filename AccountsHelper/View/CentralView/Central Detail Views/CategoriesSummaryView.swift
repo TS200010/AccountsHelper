@@ -90,7 +90,7 @@ struct CategoriesSummaryView: View {
             else if amount > 0 { result.totalDR += amount }
         }
 //        for tx in transactions {
-//            let amount = tx.txAmountInGBP
+//            let amount = tx.txAmountInUKL
 //            if amount < 0 {
 //                result.totalCR += amount
 //            } else if amount > 0 {

@@ -18,7 +18,7 @@ struct TransactionExtensionsTests {
         amount: Decimal = 100,
         splitAmount: Decimal = 40,
         commission: Decimal = 5,
-        currency: Currency = .GBP,
+        currency: Currency = .UKL,
         paymentMethod: ReconcilableAccounts = .VISA,
         date: Date = Date(),
         context: NSManagedObjectContext
@@ -41,31 +41,31 @@ struct TransactionExtensionsTests {
     // MARK: --- Computed Properties
 
     @Test
-    func testSplitAmountInGBPCalculatesCorrectly() async throws {
-        let tx = makeTransaction(amount: 100, splitAmount: 50, commission: 5, currency: .GBP, context: context)
-        #expect(tx.splitAmountInGBP == Decimal(50 + 5))
+    func testSplitAmountInUKLCalculatesCorrectly() async throws {
+        let tx = makeTransaction(amount: 100, splitAmount: 50, commission: 5, currency: .UKL, context: context)
+        #expect(tx.splitAmountInUKL == Decimal(50 + 5))
     }
 
     @Test
-    func testSplitRemainderAmountInGBPCalculatesCorrectly() async throws {
-        let tx = makeTransaction(amount: 100, splitAmount: 40, currency: .GBP, context: context)
-        #expect(tx.splitRemainderAmountInGBP == Decimal(60))
+    func testSplitRemainderAmountInUKLCalculatesCorrectly() async throws {
+        let tx = makeTransaction(amount: 100, splitAmount: 40, currency: .UKL, context: context)
+        #expect(tx.splitRemainderAmountInUKL == Decimal(60))
     }
 
     @Test
-    func testTotalAmountInGBPSumsSplitAndRemainder() async throws {
-        let tx = makeTransaction(amount: 200, splitAmount: 50, commission: 10, currency: .GBP, context: context)
-        #expect(tx.totalAmountInGBP == Decimal(50 + 10 + 150))
+    func testTotalAmountInUKLSumsSplitAndRemainder() async throws {
+        let tx = makeTransaction(amount: 200, splitAmount: 50, commission: 10, currency: .UKL, context: context)
+        #expect(tx.totalAmountInUKL == Decimal(50 + 10 + 150))
     }
 
     @Test
     func testSplitAmountEdgeCases() async throws {
         let tx1 = makeTransaction(amount: 100, splitAmount: 0, commission: 0, context: context)
-        #expect(tx1.splitAmountInGBP == 0)
+        #expect(tx1.splitAmountInUKL == 0)
 
         let tx2 = makeTransaction(amount: 100, splitAmount: 100, commission: 10, context: context)
-        #expect(tx2.splitRemainderAmountInGBP == 0)
-        #expect(tx2.totalAmountInGBP == Decimal(110))
+        #expect(tx2.splitRemainderAmountInUKL == 0)
+        #expect(tx2.totalAmountInUKL == Decimal(110))
     }
 
     // MARK: --- Exchange Rate
@@ -74,8 +74,8 @@ struct TransactionExtensionsTests {
     func testSplitAmountWithNonDefaultExchangeRate() async throws {
         let tx = makeTransaction(amount: 100, splitAmount: 50, commission: 5, currency: .USD, context: context)
         tx.exchangeRate = 2
-        #expect(tx.splitAmountInGBP == Decimal(50)/2 + 5)
-        #expect(tx.splitRemainderAmountInGBP == Decimal(50)/2)
+        #expect(tx.splitAmountInUKL == Decimal(50)/2 + 5)
+        #expect(tx.splitRemainderAmountInUKL == Decimal(50)/2)
     }
 
     @Test
@@ -94,16 +94,16 @@ struct TransactionExtensionsTests {
     }
 
     @Test
-    func testTxAmountAsStringForGBP() async throws {
-        let tx = makeTransaction(amount: 123.45, currency: .GBP, context: context)
+    func testTxAmountAsStringForUKL() async throws {
+        let tx = makeTransaction(amount: 123.45, currency: .UKL, context: context)
         #expect(tx.txAmountAsString() == "123.45")
     }
 
     @Test
     func testExchangeRateAsStringForDifferentCurrencies() async throws {
-        let txGBP = makeTransaction(currency: .GBP, context: context)
-        txGBP.exchangeRate = 123.45
-        #expect(txGBP.exchangeRateAsString() == "123.45")
+        let txUKL = makeTransaction(currency: .UKL, context: context)
+        txUKL.exchangeRate = 123.45
+        #expect(txUKL.exchangeRateAsString() == "123.45")
 
         let txJPY = makeTransaction(currency: .JPY, context: context)
         txJPY.exchangeRate = 1000
@@ -120,8 +120,8 @@ struct TransactionExtensionsTests {
         let now = Date()
 
         // Create two identical transactions
-        let tx1 = makeTransaction(amount: 100, currency: .GBP, paymentMethod: .VISA, date: now, context: context)
-        let tx2 = makeTransaction(amount: 100, currency: .GBP, paymentMethod: .VISA, date: now, context: context)
+        let tx1 = makeTransaction(amount: 100, currency: .UKL, paymentMethod: .VISA, date: now, context: context)
+        let tx2 = makeTransaction(amount: 100, currency: .UKL, paymentMethod: .VISA, date: now, context: context)
         try context.save()
 
         // Verify both transactions exist
@@ -130,7 +130,7 @@ struct TransactionExtensionsTests {
         #expect(allTxs.count == 2)
 
         // Prepare TransactionStruct to compare against
-        let temp = TransactionStruct( currency: .GBP, paymentMethod: .VISA, txAmount: 100,
+        let temp = TransactionStruct( currency: .UKL, paymentMethod: .VISA, txAmount: 100,
             transactionDate: now
         )
 
@@ -204,7 +204,7 @@ struct TransactionExtensionsTests {
     func testGenerateRandomTransactionsProducesCorrectCountAndDateRange() async throws {
         let startDate = Date()
         let endDate = startDate.addingTimeInterval(3600*24*10)
-        let txs = Transaction.generateRandomTransactions(for: .VISA, currency: .GBP, startDate: startDate, endDate: endDate, count: 10, in: context)
+        let txs = Transaction.generateRandomTransactions(for: .VISA, currency: .UKL, startDate: startDate, endDate: endDate, count: 10, in: context)
         #expect(txs.count == 10)
         for tx in txs {
             #expect(tx.transactionDate! >= startDate && tx.transactionDate! <= endDate)

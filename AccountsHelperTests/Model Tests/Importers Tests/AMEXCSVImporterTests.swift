@@ -164,7 +164,7 @@ struct AMEXCSVImporterParsingTests {
         let tx = results.first!
         #expect(tx.payee == "Test Payee")
         #expect(tx.txAmount == Decimal(100))
-        #expect(tx.currency == .GBP)
+        #expect(tx.currency == .UKL)
         #expect(tx.payer.name == "Me")
     }
 

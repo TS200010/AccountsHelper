@@ -77,7 +77,7 @@ struct AddOrEditReconciliationView: View {
             if let rec = reconciliationToEdit {
                 selectedAccount = rec.account
                 statementDate = rec.statementDate ?? Date()
-                endingBalance = rec.endingBalanceAsString()  // show as string
+                endingBalance = rec.closingBalanceAsString()  // show as string
                 selectedYear  = Int(rec.periodYear)
                 selectedMonth = Int(rec.periodMonth)
             }

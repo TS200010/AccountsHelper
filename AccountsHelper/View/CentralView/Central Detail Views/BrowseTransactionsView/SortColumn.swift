@@ -10,7 +10,7 @@ import Foundation
 // MARK: --- SortColumn
 enum SortColumn: CaseIterable, Identifiable {
     case category, currency, debitCredit, exchangeRate,
-         payee, payer, account, reconciliation, transactionDate, txAmount
+         payee, payer, account, reconciliation, timestamp, transactionDate, txAmount
 
     var id: Self { self }
 
@@ -24,6 +24,7 @@ enum SortColumn: CaseIterable, Identifiable {
         case .payee:           return "person"
         case .payer:           return "person.crop.circle"
         case .reconciliation:  return "checkmark.seal"
+        case .timestamp:       return "clock"
         case .transactionDate: return "calendar"
         case .txAmount:        return "sum"
         }
@@ -39,6 +40,7 @@ enum SortColumn: CaseIterable, Identifiable {
         case .payer:           return "Payer"
         case .account:   return "Account"
         case .reconciliation:  return "Reconciliation"
+        case .timestamp:       return "Timestamp"
         case .transactionDate: return "Date"
         case .txAmount:        return "Amount"
         }
@@ -54,6 +56,7 @@ enum SortColumn: CaseIterable, Identifiable {
         case .payer:           return row.payer
         case .account:         return row.account
         case .reconciliation:  return row.reconciliationPeriod
+        case .timestamp:       return row.timestamp
         case .transactionDate: return row.transactionDate
         case .txAmount:        return row.txAmount
         }

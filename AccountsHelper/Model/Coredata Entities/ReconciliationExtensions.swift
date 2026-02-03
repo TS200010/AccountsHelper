@@ -49,7 +49,7 @@ extension Reconciliation {
         set {
             switch account {
             case .AMEX, .VISA, .BofSPV:
-                currencyCD = Currency.GBP.rawValue
+                currencyCD = Currency.UKL.rawValue
             default:
                 currencyCD = newValue.rawValue
             }
@@ -125,15 +125,15 @@ extension Reconciliation {
         return gap
     }
     
-    // MARK: --- NetTransactionsInGBP
-    var netTransactionsInGBP: Decimal {
+    // MARK: --- NetTransactionsInUKL
+    var netTransactionsInUKL: Decimal {
         let txs = transactionsArray
-        let sum = txs.reduce(Decimal(0)) { $0 + $1.totalAmountInGBP }
+        let sum = txs.reduce(Decimal(0)) { $0 + $1.totalAmountInUKL }
         return -sum
     }
-//    var netTransactionsInGBP: Decimal {
+//    var netTransactionsInUKL: Decimal {
 //        guard let context = self.managedObjectContext else { return 0 }
-//        let sum =  (try? fetchCandidateTransactions( ).reduce(Decimal(0)) { $0 + $1.totalAmountInGBP }) ?? 0
+//        let sum =  (try? fetchCandidateTransactions( ).reduce(Decimal(0)) { $0 + $1.totalAmountInUKL }) ?? 0
 //        // Negate the total as we are storing a +ve number for money going out ie a Debit
 //        // If we do not negate it the arithmatic does not work.
 //        return -sum
@@ -166,7 +166,7 @@ extension Reconciliation {
 extension Reconciliation {
     
     // MARK: --- EndingBalanceAsString
-    func endingBalanceAsString() -> String {
+    func closingBalanceAsString() -> String {
         return AmountFormatter.anyAmountAsString(amount: endingBalance, currency: currency)
     }
     
@@ -359,10 +359,10 @@ extension Reconciliation {
         try context.save()
     }
 
-    // MARK: --- TransactionsTotalInGBP
-//    func transactionsTotalInGBP(in context: NSManagedObjectContext) throws -> Decimal {
+    // MARK: --- TransactionsTotalInUKL
+//    func transactionsTotalInUKL(in context: NSManagedObjectContext) throws -> Decimal {
 //        let txs = try fetchCandidateTransactions(in: context)
-//        return txs.reduce(Decimal(0)) { $0 + $1.totalAmountInGBP }
+//        return txs.reduce(Decimal(0)) { $0 + $1.totalAmountInUKL }
 //    }
     
     // MARK: --- SumInNativeCurrency
@@ -374,9 +374,9 @@ extension Reconciliation {
 //            
 //            let total: Decimal
 //            switch currency {
-//            case .GBP:
-//                // Sum all transactions in GBP
-//                total = txs.reduce(Decimal(0)) { $0 + $1.txAmountInGBP }
+//            case .UKL:
+//                // Sum all transactions in UKL
+//                total = txs.reduce(Decimal(0)) { $0 + $1.txAmountInUKL }
 //            default:
 //                // Sum all transactions in their native currency
 //                total = txs.reduce(Decimal(0)) { $0 + $1.txAmount }

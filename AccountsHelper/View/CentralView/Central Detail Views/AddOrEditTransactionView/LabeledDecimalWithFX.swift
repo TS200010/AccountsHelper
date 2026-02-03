@@ -25,8 +25,8 @@ extension AddOrEditTransactionView {
         
         @State private var text: String = ""
         
-        private var amountInGBP: Decimal? {
-            guard currency != .GBP && fxRate != Decimal(0) else { return nil }
+        private var amountInUKL: Decimal? {
+            guard currency != .UKL && fxRate != Decimal(0) else { return nil }
             return amount / fxRate
         }
         
@@ -90,8 +90,8 @@ extension AddOrEditTransactionView {
                 }
                 
                 // FX display
-                if let gbp = amountInGBP {
-                    Text("GBP: \(formatDecimal(gbp))")
+                if let UKL = amountInUKL {
+                    Text("UKL: \(formatDecimal(UKL))")
                         .foregroundColor(.secondary)
                 }
                 
@@ -127,8 +127,8 @@ extension AddOrEditTransactionView {
         
         @State private var text: String = ""
         
-        private var amountInGBP: Decimal? {
-            guard currency != .GBP && fxRate != Decimal(0) else { return nil }
+        private var amountInUKL: Decimal? {
+            guard currency != .UKL && fxRate != Decimal(0) else { return nil }
             return amount / fxRate
         }
         
@@ -178,8 +178,8 @@ extension AddOrEditTransactionView {
                 }
                 
                 // FX display
-                if let gbp = amountInGBP {
-                    Text("GBP: \(formatDecimal(gbp))")
+                if let UKL = amountInUKL {
+                    Text("UKL: \(formatDecimal(UKL))")
                         .foregroundColor(.secondary)
                 }
                 

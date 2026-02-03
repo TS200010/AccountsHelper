@@ -26,13 +26,13 @@ extension AddOrEditTransactionView {
                 var counterData = transactionData
                 counterData.account = counterAccount
                 counterData.currency = counterAccount.currency
-                counterData.exchangeRate = (counterData.currency == .GBP) ? 1 : counterFXRate
+                counterData.exchangeRate = (counterData.currency == .UKL) ? 1 : counterFXRate
 
-                let amountInGBP: Decimal = (transactionData.currency == .GBP)
+                let amountInUKL: Decimal = (transactionData.currency == .UKL)
                     ? transactionData.txAmount
                     : transactionData.txAmount / transactionData.exchangeRate
 
-                counterData.txAmount = -amountInGBP * counterData.exchangeRate
+                counterData.txAmount = -amountInUKL * counterData.exchangeRate
                 counterData.apply(to: counterTx)
 
                 // Preserve link
@@ -48,13 +48,13 @@ extension AddOrEditTransactionView {
 
                 counterData.account = counterAccount
                 counterData.currency = counterAccount.currency
-                counterData.exchangeRate = (counterData.currency == .GBP) ? 1 : counterFXRate
+                counterData.exchangeRate = (counterData.currency == .UKL) ? 1 : counterFXRate
 
-                let amountInGBP: Decimal = (transactionData.currency == .GBP)
+                let amountInUKL: Decimal = (transactionData.currency == .UKL)
                     ? transactionData.txAmount
                     : transactionData.txAmount / transactionData.exchangeRate
 
-                counterData.txAmount = -amountInGBP * counterData.exchangeRate
+                counterData.txAmount = -amountInUKL * counterData.exchangeRate
                 counterData.apply(to: counterTx)
 
                 // Link them

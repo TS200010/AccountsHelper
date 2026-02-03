@@ -86,7 +86,7 @@ import AppKit   // macOS only (for NSImage)
  tx.debitCredit = lastField == "CR" ? .CR : .DR
  
  // Currency
- tx.currency = .GBP
+ tx.currency = .UKL
  tx.exchangeRate = 1
  
  tx.account = account
