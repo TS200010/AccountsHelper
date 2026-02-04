@@ -106,12 +106,6 @@ extension ReconcilliationListView {
         }
         .frame(minWidth: 400, minHeight: 300)
     }
-//    private var editReconciliationSheet: some View {
-//        NavigationStack {
-//            EditReconcilationView()
-//        }
-//        .frame(minWidth: 400, minHeight: 300)
-//    }
 }
 
 // MARK: --- CONFIRMATION DIALOGS
@@ -148,6 +142,8 @@ extension ReconcilliationListView {
         Button("OK", role: .cancel) { }
     }
 }
+
+
 // MARK: --- CONTENT VIEW
 extension ReconcilliationListView {
     
@@ -265,6 +261,7 @@ extension ReconcilliationListView {
 
 // MARK: --- FETCH HELPERS
 extension ReconcilliationListView {
+    
     // MARK: --- refreshRows
     private func refreshRows() {
         do {
@@ -281,6 +278,7 @@ extension ReconcilliationListView {
         }
     }
     
+    
     // MARK: --- GroupedReconciliationRows
     private var groupedReconciliationRows: [(period: AccountingPeriod, rows: [ReconciliationRow])] {
         let dict = Dictionary(grouping: reconciliationRows) { $0.rec.accountingPeriod }
@@ -291,10 +289,12 @@ extension ReconcilliationListView {
             }
     }
     
+    
     // MARK: --- HasInvalidTransactions
     private func hasInvalidTransactions(_ row: ReconciliationRow) -> Bool {
         !(row.rec.isValid( ))
     }
+    
     
     // MARK: --- DeleteReconciliation
     private func deleteReconciliation(_ objectID: NSManagedObjectID) {
@@ -325,6 +325,7 @@ extension ReconcilliationListView {
             }
         }
     }
+    
     
     // MARK: --- CloseReconciliation
     private func closeReconciliation(_ objectID: NSManagedObjectID) {
@@ -357,6 +358,7 @@ extension ReconcilliationListView {
         }
     }
 }
+
 
 // MARK: --- CONTEXT MENU HELPERS
 extension ReconcilliationListView {
@@ -398,6 +400,7 @@ extension ReconcilliationListView {
         }
     }
     
+    
     // MARK: --- CategoryTotals
     fileprivate func categoryTotals(for row: ReconciliationRow) -> [Category: Decimal] {
         var totals: [Category: Decimal] = [:]
@@ -408,6 +411,7 @@ extension ReconcilliationListView {
 
         return totals
     }
+    
     
     // MARK: --- ExportXLSSummary
     private func exportXLSSummary(for row: ReconciliationRow) {
@@ -435,6 +439,7 @@ extension ReconcilliationListView {
     }
 }
 
+
 // MARK: --- VIEW CONTEXT MENU
 extension ReconcilliationListView {
     
@@ -457,7 +462,8 @@ extension ReconcilliationListView {
             
             let windowDays = 14
             let calendar = Calendar.current
-            let start = calendar.date(byAdding: .day, value: -windowDays, to: row.rec.transactionStartDate)!
+            let start = row.rec.earliestOpenTransactionDate()
+//            let start = calendar.date(byAdding: .day, value: -windowDays, to: row.rec.transactionStartDate)!
             let end   = calendar.date(byAdding: .day, value:  windowDays, to: row.rec.transactionEndDate)!
 
             let predicate = NSPredicate(

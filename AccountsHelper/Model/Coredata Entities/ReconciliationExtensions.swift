@@ -315,6 +315,42 @@ extension Reconciliation {
 //        }
     }
     
+    // MARK: --- EarliestOpenTransactionDate
+    func earliestOpenTransactionDate() -> Date {
+        guard let context = managedObjectContext else {
+            return .distantPast
+        }
+
+        let request = NSFetchRequest<NSDictionary>(entityName: "Transaction")
+
+        let minExpr = NSExpressionDescription()
+        minExpr.name = "minDate"
+        minExpr.expression = NSExpression(
+            forFunction: "min:",
+            arguments: [NSExpression(forKeyPath: "transactionDate")]
+        )
+        minExpr.expressionResultType = .dateAttributeType
+
+        request.resultType = .dictionaryResultType
+        request.propertiesToFetch = [minExpr]
+
+        request.predicate = NSPredicate(
+            format: """
+            accountCD == %d AND
+            (reconciliation == nil OR reconciliation.closed == NO)
+            """,
+            account.rawValue
+        )
+
+        do {
+            let result = try context.fetch(request)
+            return (result.first?["minDate"] as? Date) ?? .distantPast
+        } catch {
+            print("earliestOpenTransactionDate fetch failed:", error)
+            return .distantPast
+        }
+    }
+
 
     // MARK: --- KEEP AS WE REALLY SHOULD BE USING THIS I THINK BUT IN THE VIEW WE ARE MAKING OUR OWN
     // MARK: --- TransactionsPredicate
@@ -542,5 +578,19 @@ extension Reconciliation {
         )
         request.fetchLimit = 1
         return try context.fetch(request).first
+    }
+}
+
+// MARK: --- OTHER HELPERS
+
+// MARK: --- PreviousPeriod
+extension Reconciliation {
+    
+    static func previousPeriod(month: Int, year: Int) -> (month: Int, year: Int) {
+        if month == 1 {
+            return (12, year - 1)
+        } else {
+            return (month - 1, year)
+        }
     }
 }

@@ -41,10 +41,11 @@ extension ReconcilliationListView {
             .BofSYP,
             .BofSISS,
             .ItMkEquity,
-            .AMEX,
+            .unknown, // Skip a line in the report
             .VISA,
+            .AMEX,
+            .unknown, // Skip a line in the report
             .CashYEN,
-            
         ]
 
         for account in currentAssetsAccounts {
@@ -55,8 +56,8 @@ extension ReconcilliationListView {
                 reconciliationsByAccount: recIndex
             ))
         }
-        report.append("Total Current Assets at Start of Month\n\n")
-        
+        report.append("Total Current Assets at Start of Period\n\n")
+/*
         // --- Long Term Assets Table
         report.append("Long Term Assets at Start of Month\n")
         let longTermAssets = [
@@ -82,6 +83,7 @@ extension ReconcilliationListView {
         
         // --- You can continue each major section the same way
         
+ */
         // MARK: --- Print
         printReport(report)
 #endif
@@ -145,15 +147,43 @@ extension ReconcilliationListView {
     }
     
     // MARK: --- formattedBalanceLine
-
-        
-        func formattedBalanceLine(label: String, account: ReconcilableAccounts, reconciliationsByAccount: [ReconcilableAccounts: Reconciliation]) -> String {
-            let amountColumn = 40
-            let amount: Decimal = reconciliationsByAccount[account]?.openingBalance ?? 0
-            let amountStr = AmountFormatter.anyAmountAsString(amount: amount, currency: account.currency, withSymbol: .always)
-            let paddingCount = max(1, amountColumn - label.count - amountStr.count)
-            let padding = String(repeating: " ", count: paddingCount)
-            return "\t\(label)\(padding)\(amountStr)\n"
+    func formattedBalanceLine(label: String, account: ReconcilableAccounts, reconciliationsByAccount: [ReconcilableAccounts: Reconciliation]) -> String {
+        if label.hasPrefix( "Unk" ) {
+            return "\n"
         }
+        let amountColumn = 40
+        let amount = openingBalance(for: account)
+        let amountStr = AmountFormatter.anyAmountAsString(amount: amount, currency: account.currency, withSymbol: .always)
+        let paddingCount = max(1, amountColumn - label.count - amountStr.count)
+        let padding = String(repeating: " ", count: paddingCount)
+        return "\t\(label)\(padding)\(amountStr)\n"
+    }
+    
+    // MARK: --- openingBalance
+    func openingBalance(for account: ReconcilableAccounts) -> Decimal {
+        guard let (currentMonth, currentYear) = resolveSelectedPeriod() else { return 0 }
+        
+        var month = currentMonth
+        var year = currentYear
+        
+        // Try current period first
+        if let rec = indexReconciliationsByAccount(month: month, year: year, context: context)[account],
+           rec.openingBalance != 0 {
+            return rec.openingBalance
+        }
+        
+        // Look back until we find an ending balance
+        for _ in 1...12 { // max 12 months back to prevent infinite loop
+            (month, year) = Reconciliation.previousPeriod(month: month, year: year)
+            
+            if let prevRec = indexReconciliationsByAccount(month: month, year: year, context: context)[account],
+               prevRec.endingBalance != 0 {
+                return prevRec.endingBalance
+            }
+        }
+        
+        return 0
+    }
+
 }
 

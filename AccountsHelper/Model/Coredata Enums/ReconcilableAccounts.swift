@@ -70,7 +70,7 @@ import ItMkLibrary
         case .BofSISS:    return String(localized: "BofS ISS 43")
         case .BofSYP:     return String(localized: "BofS YP 06")
         case .ItMkEquity: return String(localized: "ItMk Equity")
-        case .unknown:    return String(localized: "Unknown")
+        case .unknown:    return String(localized: "Unknown")   // Do not change this string or Reporting will break!
         }
     }
 
