@@ -68,6 +68,7 @@ class AppState {
     var selectedInspectorTransactionIDs: [NSManagedObjectID] = []
     var selectedReconciliationID: NSManagedObjectID? = nil
     var inspectorRefreshTrigger: Int = 0 // Dummy trigger to force SwiftUI updates
+    var lastUsedDate: Date = Date()
 
     private(set) var centralViewStack: [CentralViewsEnum] = []
 

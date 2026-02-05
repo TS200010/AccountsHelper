@@ -94,7 +94,7 @@ struct TransactionStruct {
         splitCategory: Category = .unknown,
         txAmount: Decimal = 0,
         timestamp: Date? = Date(),
-        transactionDate: Date? = Date(),
+        transactionDate: Date? = nil,
         commissionAmount: Decimal = 0
     ) {
         self.accountNumber = accountNumber

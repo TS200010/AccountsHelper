@@ -14,7 +14,7 @@ struct AddOrEditTransactionView: View {
     
     // MARK: --- Environment
     @Environment(\.managedObjectContext) internal var viewContext
-    @Environment(AppState.self) private var appState
+    @Environment(AppState.self) internal var appState
     @Environment(\.dismiss) private var dismiss
     
     // MARK: --- State

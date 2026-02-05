@@ -31,18 +31,18 @@ class CategoryMatcher {
     
     // MARK: --- Helpers
     
-    private func isPayPal(_ input: String) -> Bool {
-        let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.uppercased().hasPrefix("PAYPAL")
-    }
+//    private func isPayPal(_ input: String) -> Bool {
+//        let trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+//        return trimmed.uppercased().hasPrefix("PAYPAL")
+//    }
 
     // MARK: --- Matching
 
     /// Find the best matching Category for an input string
     func matchCategory(for input: String) -> Category {
-        if isPayPal(input) {
-            return .unknown
-        }
+//        if isPayPal(input) {
+//            return .unknown
+//        }
         let normalized = normalize(input)
 
         let request: NSFetchRequest<CategoryMapping> = CategoryMapping.fetchRequest()
@@ -113,9 +113,9 @@ class CategoryMatcher {
 
     /// Teach a new mapping. Creates or updates a CategoryMapping and reapplies it to unknown transactions.
     func teachMapping(for input: String, category: Category) {
-        if isPayPal(input) {
-            return
-        }
+//        if isPayPal(input) {
+//            return
+//        }
         let normalized = normalize(input)
 
         context.performAndWait {
@@ -162,7 +162,8 @@ class CategoryMatcher {
 
             var changed = false
             for tx in transactions {
-                if let payee = tx.payee, !payee.isEmpty, !isPayPal(payee) {
+                if let payee = tx.payee, !payee.isEmpty {
+//                if let payee = tx.payee, !payee.isEmpty, !isPayPal(payee) {
                     let matched = self.matchCategory(for: payee)
                     if matched != .unknown {
                         tx.category = matched

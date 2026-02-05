@@ -18,8 +18,13 @@ extension AddOrEditTransactionView {
                 LabeledDatePicker(
                     label: "TX Date",
                     date: Binding(
-                        get: { transactionData.transactionDate ?? Date() },
-                        set: { transactionData.transactionDate = $0 }
+                        get: { transactionData.transactionDate ?? appState.lastUsedDate },
+//                        get: { transactionData.transactionDate ?? Date() },
+//                        set: { transactionData.transactionDate = $0 }
+                        set: { newDate in
+                            transactionData.transactionDate = newDate
+                            appState.lastUsedDate = newDate
+                        }
                     ),
                     displayedComponents: [.date],
                     isValid: transactionData.isTransactionDateValid()
