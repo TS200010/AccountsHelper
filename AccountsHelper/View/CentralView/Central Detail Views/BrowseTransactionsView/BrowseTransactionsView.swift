@@ -209,52 +209,60 @@ extension BrowseTransactionsView {
 
     // MARK: --- ContextMenu
     @ViewBuilder
-    private func contextMenu(for row: TransactionRow) -> some View {
+    private func editContextMenu(for row: TransactionRow) -> some View {
         
-        if selectedTransactionIDs.contains(row.id) {
-            
-            if selectedTransactionIDs.count == 1 {
-                Button("Edit Transaction") {
-                    safeUIUpdate { selectedTransactionIDs = [row.id] }
-                    appState.selectedTransactionID = row.id
-                    appState.pushCentralView(.editTransaction(existingTransaction: row.transaction))
-                    appState.refreshInspector()
+//        if selectionActive {
+//            Button("Edit Transaction") {
+//                safeUIUpdate { selectedTransactionIDs = [row.id] }
+//                appState.selectedTransactionID = row.id
+//                appState.pushCentralView(.editTransaction(existingTransaction: row.transaction))
+//                appState.refreshInspector()
+//            }
+//        } else {
+//            
+            if  selectedTransactionIDs.contains(row.id) {
+                
+                if selectedTransactionIDs.count == 1 {
+                    Button("Edit Transaction") {
+                        safeUIUpdate { selectedTransactionIDs = [row.id] }
+                        appState.selectedTransactionID = row.id
+                        appState.pushCentralView(.editTransaction(existingTransaction: row.transaction))
+                        appState.refreshInspector()
+                    }
+                    .disabled(anySelectedTransactionClosed)
+                    
+                    Button(role: .destructive) {
+                        // Remove pairing only, not deleting transaction
+                        row.transaction.pairID = nil
+                        try? viewContext.save()
+                        appState.refreshInspector()
+                    } label: {
+                        Label("Unlink Pair", systemImage: "link.badge.minus")
+                    }
                 }
-                .disabled(anySelectedTransactionClosed)
+                
+                if selectedTransactionIDs.count == 2 {
+                    Button("Merge Transactions") {
+                        mergeCandidates = transactions.filter { selectedTransactionIDs.contains($0.objectID) }
+                        appState.pushCentralView(.mergeTransactionsView(mergeCandidates))
+                        appState.refreshInspector()
+                    }
+                    .disabled(anySelectedTransactionClosed)
+                    Divider()
+                }
                 
                 Button(role: .destructive) {
-                    // Remove pairing only, not deleting transaction
-                    row.transaction.pairID = nil
-                    try? viewContext.save()
-                    appState.refreshInspector()
+                    safeUIUpdate {
+                        transactionsToDelete = selectedTransactionIDs
+                        showingDeleteConfirmation = true
+                    }
                 } label: {
-                    Label("Unlink Pair", systemImage: "link.badge.minus")
-                }
-                
-            }
-        
-            
-            if selectedTransactionIDs.count == 2 {
-                Button("Merge Transactions") {
-                    mergeCandidates = transactions.filter { selectedTransactionIDs.contains($0.objectID) }
-                    appState.pushCentralView(.mergeTransactionsView(mergeCandidates))
-                    appState.refreshInspector()
+                    Label("Delete Transaction(s)", systemImage: "trash")
                 }
                 .disabled(anySelectedTransactionClosed)
-                Divider()
             }
-            
-            Button(role: .destructive) {
-                safeUIUpdate {
-                    transactionsToDelete = selectedTransactionIDs
-                    showingDeleteConfirmation = true
-                }
-            } label: {
-                Label("Delete Transaction(s)", systemImage: "trash")
-            }
-            .disabled(anySelectedTransactionClosed)
         }
-    }
+//    }
 
     // MARK: --- MultiLineTableCell
     @ViewBuilder
@@ -274,12 +282,9 @@ extension BrowseTransactionsView {
         }
         .padding(.leading, alignment == .trailing ? 0 : 6)
         .padding(.trailing, alignment == .trailing ? 6 : 0)
-        .frame(maxWidth: .infinity,
-               alignment: alignment == .trailing ? .trailing : .leading)
-//        .padding(.leading, 6)
-//        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: alignment == .trailing ? .trailing : .leading)
         .contentShape(Rectangle())
-        .contextMenu { contextMenu(for: row) }
+//        .contextMenu { editContextMenu(for: row) }
     }
 
     // MARK: --- TableCell
@@ -305,7 +310,7 @@ extension BrowseTransactionsView {
         .padding(.leading, 6)
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
-        .contextMenu { contextMenu(for: row) }
+//        .contextMenu { editContextMenu(for: row) }
     }
 
     // MARK: --- TransactionsTable
@@ -380,10 +385,13 @@ extension BrowseTransactionsView {
                                     appState: appState,
                                     index: index
                                 )
+//                                .contentShape(Rectangle())       // ← Add this
                                 .focusable(true)
 //                                .focusRing(.none) // Disable blue focusRing
                                 .focused($focusedRowIndex, equals: index)
                                 .onTapGesture { focusedRowIndex = index }
+//                                .contextMenu { editContextMenu(for: row) }
+//                                .allowsHitTesting(true)         // ← Optional safety
                                 .onMoveCommand { direction in
                                     switch direction {
                                     case .up:
@@ -408,11 +416,11 @@ extension BrowseTransactionsView {
                                     default: break
                                     }
                                 }
+                                .contextMenu { editContextMenu(for: row) }
                             }
                         }
                     }
                     .frame(minHeight: 300)
-//                    .frame(maxWidth: .infinity)
                 }
                 .onAppear {
                     updateColumnWidths(for: availableWidth)
@@ -730,9 +738,10 @@ extension BrowseTransactionsView {
         .onTapGesture {
             #if os(macOS)
             if selectionActive {
+
                 guard let recID = appState.selectedReconciliationID,
                       let rec = reconciliations.first(where: { $0.objectID == recID }) else { return }
-
+                
                 if row.transaction.reconciliation == rec {
                     // Unassign transaction from reconciliation
                     row.transaction.reconciliation = nil
@@ -740,14 +749,16 @@ extension BrowseTransactionsView {
                     // Assign transaction to reconciliation
                     row.transaction.reconciliation = rec
                 }
-
+                
                 try? viewContext.save()
                 updateRunningTotals()  // This now uses reconciliation as the source of truth
                 
-//                // Toggle only the checkbox when selection mode is active
-//                row.checked.toggle()
-//                row.transaction.checked = row.checked
-//                try? viewContext.save()
+                // Update selection safely on the main thread
+                safeUIUpdate {
+                    selectedTransactionIDs.wrappedValue = [row.id]
+                    lastClickedRowIndex = index
+                }
+                
             } else {
                 safeUIUpdate {
                     let modifiers = NSEvent.modifierFlags
@@ -778,8 +789,7 @@ extension BrowseTransactionsView {
             safeUIUpdate { selectedTransactionIDs.wrappedValue = [row.id] }
             #endif
         }
-
-        .contextMenu { contextMenu(for: row) }
+//        .contextMenu { contextMenu(for: row) }
         #else
         tableCell(row.iOSRowForDisplay, for: row)
             .contentShape(Rectangle())
@@ -1229,14 +1239,18 @@ extension BrowseTransactionsView {
 // MARK: --- VIEW HELPERS
 extension BrowseTransactionsView {
     
+    
     // Helper for the row background
     @ViewBuilder
     private func rowBackground(for index: Int, row: TransactionRow) -> some View {
 #if os(macOS)
         
-        if selectionActive {
-            Color.clear
-        } else if selectedTransactionIDs.contains(row.id) {
+//        if selectionActive {
+//            Rectangle()
+//                .fill(Color.clear)
+////            Color.clear
+//        } else
+        if selectedTransactionIDs.contains(row.id) {
             let prevSelected = index > 0 && selectedTransactionIDs.contains(filteredTransactionRows[index-1].id)
             let nextSelected = index < filteredTransactionRows.count-1 && selectedTransactionIDs.contains(filteredTransactionRows[index+1].id)
             

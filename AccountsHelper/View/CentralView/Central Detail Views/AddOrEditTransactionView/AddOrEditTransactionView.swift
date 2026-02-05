@@ -45,20 +45,6 @@ struct AddOrEditTransactionView: View {
         self.onSave = onSave
     }
     
-//    init(transactionID: NSManagedObjectID?, context: NSManagedObjectContext, onSave: ((TransactionStruct) -> Void)? = nil) {
-//        if let transactionID,
-//           let transaction = try? context.existingObject(with: transactionID) as? Transaction {
-//            let structData = TransactionStruct(from: transaction)
-//            _transactionData = State(initialValue: structData)
-//            _splitTransaction = State(initialValue: structData.isSplit)
-//            self.existingTransaction = transaction
-//        } else {
-//            _transactionData = State(initialValue: TransactionStruct())
-//            _splitTransaction = State(initialValue: false)
-//            self.existingTransaction = nil
-//        }
-//        self.onSave = onSave
-//    }
     
     // MARK: --- CanSave
     private var canSave: Bool {
