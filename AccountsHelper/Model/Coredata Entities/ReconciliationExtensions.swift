@@ -579,6 +579,15 @@ extension Reconciliation {
         request.fetchLimit = 1
         return try context.fetch(request).first
     }
+    
+    static func fetchAll(for period: AccountingPeriod, context: NSManagedObjectContext) throws -> [Reconciliation] {
+        let request: NSFetchRequest<Reconciliation> = Reconciliation.fetchRequest()
+        request.predicate = NSPredicate(
+            format: "periodYear == %d AND periodMonth == %d",
+            period.year, period.month
+        )
+        return try context.fetch(request)
+    }
 }
 
 // MARK: --- OTHER HELPERS

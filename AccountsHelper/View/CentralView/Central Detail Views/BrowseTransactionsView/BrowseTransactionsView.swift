@@ -1028,24 +1028,122 @@ extension BrowseTransactionsView {
     // MARK: --- BuildFilteredPredicate
     private func buildFilteredPredicate() -> NSPredicate? {
         var predicates: [NSPredicate] = []
-        
-        // --- Payment Method Filter
-        if let method = selectedAccount {
-            predicates.append(NSPredicate(format: "accountCD == %@", NSNumber(value: method.rawValue)))
-        }
-        
-        // --- Accounting Period / Date Filter
-        if let method = selectedAccount, let period = selectedAccountingPeriod {
-            if let reconciliation = try? Reconciliation.fetchOne(for: period, account: method, context: viewContext) {
-                let start = reconciliation.transactionStartDate as NSDate
-                let end = reconciliation.transactionEndDate as NSDate
-                predicates.append(NSPredicate(format: "transactionDate >= %@ AND transactionDate <= %@", start, end))
+
+        // -------------------------------------------------
+        // Accounting Period filter
+        // -------------------------------------------------
+        if let period = selectedAccountingPeriod {
+
+            let request: NSFetchRequest<Reconciliation> = Reconciliation.fetchRequest()
+            request.predicate = NSPredicate(
+                format: "periodYear == %d AND periodMonth == %d",
+                period.year,
+                period.month
+            )
+
+            let reconciliations = (try? viewContext.fetch(request)) ?? []
+
+            var accountPeriodPredicates: [NSPredicate] = []
+
+            for rec in reconciliations {
+
+                // If a specific account is selected, ignore others
+                if let selectedAccount,
+                   rec.accountCD != selectedAccount.rawValue {
+                    continue
+                }
+
+//                guard
+                let start = rec.transactionStartDate
+                let end = rec.transactionEndDate
+//                else { continue }
+
+                accountPeriodPredicates.append(
+                    NSPredicate(
+                        format: "accountCD == %d AND transactionDate >= %@ AND transactionDate <= %@",
+                        rec.accountCD,
+                        start as NSDate,
+                        end as NSDate
+                    )
+                )
             }
+
+            // If no valid reconciliations, return nothing
+            guard !accountPeriodPredicates.isEmpty else {
+                return NSPredicate(value: false)
+            }
+
+            predicates.append(
+                NSCompoundPredicate(orPredicateWithSubpredicates: accountPeriodPredicates)
+            )
         }
-        
+
+        // -------------------------------------------------
+        // No period selected ("All")
+        // -------------------------------------------------
+        else if let selectedAccount {
+            // Only account filter applies when period == All
+            predicates.append(
+                NSPredicate(format: "accountCD == %d", selectedAccount.rawValue)
+            )
+        }
+
+        // -------------------------------------------------
+        // Final predicate
+        // -------------------------------------------------
         guard !predicates.isEmpty else { return nil }
         return NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
     }
+
+//    private func buildFilteredPredicate() -> NSPredicate? {
+//        var predicates: [NSPredicate] = []
+//
+//        // --- Accounting Period / Date Filter
+//        if let period = selectedAccountingPeriod {
+//            // If account is selected, use it; otherwise, get all reconciliations for the period
+//            if let account = selectedAccount {
+//                if let reconciliation = try? Reconciliation.fetchOne(for: period, account: account, context: viewContext) {
+//                    let start = reconciliation.transactionStartDate as NSDate
+//                    let end = reconciliation.transactionEndDate as NSDate
+//                    predicates.append(NSPredicate(format: "transactionDate >= %@ AND transactionDate <= %@", start, end))
+//                    
+//                    // Also filter by account as before
+//                    predicates.append(NSPredicate(format: "accountCD == %@", NSNumber(value: account.rawValue)))
+//                }
+//            } else {
+//                // No account selected — include all transactions in the period
+//                if let reconciliation = try? Reconciliation.fetchOne(for: period, account: <#ReconcilableAccounts#>, context: viewContext) {
+//                    let start = reconciliation.transactionStartDate as NSDate
+//                    let end = reconciliation.transactionEndDate as NSDate
+//                    predicates.append(NSPredicate(format: "transactionDate >= %@ AND transactionDate <= %@", start, end))
+//                }
+//            }
+//        }
+//
+//        guard !predicates.isEmpty else { return nil }
+//        return NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+//    }
+
+//    private func buildFilteredPredicate() -> NSPredicate? {
+//        var predicates: [NSPredicate] = []
+//        
+//        // --- Payment Method Filter
+//        if let method = selectedAccount {
+//            predicates.append(NSPredicate(format: "accountCD == %@", NSNumber(value: method.rawValue)))
+//        }
+//        
+//        // --- Accounting Period / Date Filter
+//        if let method = selectedAccount, let period = selectedAccountingPeriod {
+//            if let reconciliation = try? Reconciliation.fetchOne(for: period, account: method, context: viewContext) {
+//                let start = reconciliation.transactionStartDate as NSDate
+//                let end = reconciliation.transactionEndDate as NSDate
+//                predicates.append(NSPredicate(format: "transactionDate >= %@ AND transactionDate <= %@", start, end))
+//            }
+//        }
+//        
+//        guard !predicates.isEmpty else { return nil }
+//        return NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+//    }
     
     
     // MARK: --- RefreshFetchRequest
@@ -1057,6 +1155,23 @@ extension BrowseTransactionsView {
     
     // MARK: --- WorkingToolbar
     private var workingToolbar: some View {
+        
+        func accountsForPeriod(_ period: AccountingPeriod?) -> [ReconcilableAccounts] {
+            guard let period = selectedAccountingPeriod else {
+                // All periods: return all accounts that have any reconciliation
+                let request: NSFetchRequest<Reconciliation> = Reconciliation.fetchRequest()
+                let recs = (try? viewContext.fetch(request)) ?? []
+                let accounts = Set(recs.compactMap { ReconcilableAccounts(rawValue: $0.accountCD) })
+                return Array(accounts).sorted { $0.description < $1.description }
+            }
+
+            // Fetch all reconciliations for this period
+            let recs = (try? Reconciliation.fetchAll(for: period, context: viewContext)) ?? []
+
+            // Map to account enum, remove duplicates
+            let accounts = Set(recs.compactMap { ReconcilableAccounts(rawValue: $0.accountCD) })
+            return Array(accounts).sorted { $0.description < $1.description }
+        }
         
         // Compute checked totals as strings
         
@@ -1094,25 +1209,46 @@ extension BrowseTransactionsView {
             if allowFiltering {
                 // --- Account Picker
                 Picker("Account", selection: $selectedAccount) {
-                    Text("All").tag(nil as ReconcilableAccounts?)
-                    ForEach(ReconcilableAccounts.allCases.filter { $0 != .unknown }, id: \.self) { method in
-                        Text(method.description).tag(method as ReconcilableAccounts?)
+                    Text("All accounts").tag(nil as ReconcilableAccounts?)
+
+                    ForEach(accountsForPeriod(selectedAccountingPeriod), id: \.self) { account in
+                        Text(account.description)
+                            .tag(Optional(account))
                     }
                 }
                 .pickerStyle(MenuPickerStyle())
-                
-                // --- Accounting Period Picker (only show if a payment method is selected)
-                if let method = selectedAccount {
-                    Picker("Period", selection: $selectedAccountingPeriod) {
-                        Text("All").tag(nil as AccountingPeriod?)
-                        
-                        // Only show periods that have reconciliations for this method
-                        ForEach(accountingPeriodsForAccount(method), id: \.self) { period in
-                            Text(period.displayStringWithOpening).tag(Optional(period))
-                        }
+
+                // --- Accounting Period Picker (always visible)
+                Picker("Period", selection: $selectedAccountingPeriod) {
+                    Text("All periods").tag(nil as AccountingPeriod?)
+                    ForEach(uniqueAccountingPeriods, id: \.self) { period in
+                        Text(period.displayStringWithOpening)
+                            .tag(Optional(period))
                     }
-                    .pickerStyle(MenuPickerStyle())
                 }
+                .pickerStyle(MenuPickerStyle())
+
+//                // --- Account Picker
+//                Picker("Account", selection: $selectedAccount) {
+//                    Text("All").tag(nil as ReconcilableAccounts?)
+//                    ForEach(ReconcilableAccounts.allCases.filter { $0 != .unknown }, id: \.self) { method in
+//                        Text(method.description).tag(method as ReconcilableAccounts?)
+//                    }
+//                }
+//                .pickerStyle(MenuPickerStyle())
+//                
+//                // --- Accounting Period Picker (only show if a payment method is selected)
+//                if let method = selectedAccount {
+//                    Picker("Period", selection: $selectedAccountingPeriod) {
+//                        Text("All").tag(nil as AccountingPeriod?)
+//                        
+//                        // Only show periods that have reconciliations for this method
+//                        ForEach(accountingPeriodsForAccount(method), id: \.self) { period in
+//                            Text(period.displayStringWithOpening).tag(Optional(period))
+//                        }
+//                    }
+//                    .pickerStyle(MenuPickerStyle())
+//                }
             }
             
             // --- Checked Total
