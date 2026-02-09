@@ -48,7 +48,7 @@ extension Reconciliation {
         get { Currency(rawValue: currencyCD) ?? .unknown }
         set {
             switch account {
-            case .AMEX, .VISA, .BofSPV:
+            case .AMEX, .VISA, .BofSPV_82:
                 currencyCD = Currency.UKL.rawValue
             default:
                 currencyCD = newValue.rawValue
@@ -318,7 +318,7 @@ extension Reconciliation {
     // MARK: --- EarliestOpenTransactionDate
     func earliestOpenTransactionDate() -> Date {
         guard let context = managedObjectContext else {
-            return .distantPast
+            return transactionStartDate
         }
 
         let request = NSFetchRequest<NSDictionary>(entityName: "Transaction")
@@ -337,19 +337,56 @@ extension Reconciliation {
         request.predicate = NSPredicate(
             format: """
             accountCD == %d AND
+            transactionDate < %@ AND
             (reconciliation == nil OR reconciliation.closed == NO)
             """,
-            account.rawValue
+            account.rawValue,
+            transactionStartDate as NSDate
         )
 
         do {
             let result = try context.fetch(request)
-            return (result.first?["minDate"] as? Date) ?? .distantPast
+            return (result.first?["minDate"] as? Date) ?? transactionStartDate
         } catch {
             print("earliestOpenTransactionDate fetch failed:", error)
-            return .distantPast
+            return transactionStartDate
         }
     }
+
+//    func earliestOpenTransactionDate() -> Date {
+//        guard let context = managedObjectContext else {
+//            return .distantPast
+//        }
+//
+//        let request = NSFetchRequest<NSDictionary>(entityName: "Transaction")
+//
+//        let minExpr = NSExpressionDescription()
+//        minExpr.name = "minDate"
+//        minExpr.expression = NSExpression(
+//            forFunction: "min:",
+//            arguments: [NSExpression(forKeyPath: "transactionDate")]
+//        )
+//        minExpr.expressionResultType = .dateAttributeType
+//
+//        request.resultType = .dictionaryResultType
+//        request.propertiesToFetch = [minExpr]
+//
+//        request.predicate = NSPredicate(
+//            format: """
+//            accountCD == %d AND
+//            (reconciliation == nil OR reconciliation.closed == NO)
+//            """,
+//            account.rawValue
+//        )
+//
+//        do {
+//            let result = try context.fetch(request)
+//            return (result.first?["minDate"] as? Date) ?? .distantPast
+//        } catch {
+//            print("earliestOpenTransactionDate fetch failed:", error)
+//            return .distantPast
+//        }
+//    }
 
 
     // MARK: --- KEEP AS WE REALLY SHOULD BE USING THIS I THINK BUT IN THE VIEW WE ARE MAKING OUR OWN
@@ -535,7 +572,7 @@ extension Reconciliation {
 
 // MARK: --- FETCH HELPERS
 extension Reconciliation {
-
+    
     static func fetch(
         for period: AccountingPeriod,
         context: NSManagedObjectContext
@@ -551,7 +588,7 @@ extension Reconciliation {
         ]
         return try context.fetch(request)
     }
-
+    
     static func fetch(
         for period: AccountingPeriod,
         account: ReconcilableAccounts,
@@ -565,7 +602,7 @@ extension Reconciliation {
         request.sortDescriptors = [NSSortDescriptor(key: "statementDate", ascending: true)]
         return try context.fetch(request)
     }
-
+    
     static func fetchOne(
         for period: AccountingPeriod,
         account: ReconcilableAccounts,

@@ -19,12 +19,14 @@ extension AddOrEditTransactionView {
         // --- Save counter transaction if active
         if counterTransactionActive,
            let counterAccount = counterAccount,
+           let counterCategory = counterCategory,
            counterAccount != .unknown {
 
             // --- If counter already exists, update it
             if let counterTx = tx.counterTransaction(in: viewContext) {
                 var counterData = transactionData
                 counterData.account = counterAccount
+                counterData.category = counterCategory
                 counterData.currency = counterAccount.currency
                 counterData.exchangeRate = (counterData.currency == .UKL) ? 1 : counterFXRate
 
@@ -47,6 +49,7 @@ extension AddOrEditTransactionView {
                 var counterData = transactionData
 
                 counterData.account = counterAccount
+                counterData.category = counterCategory
                 counterData.currency = counterAccount.currency
                 counterData.exchangeRate = (counterData.currency == .UKL) ? 1 : counterFXRate
 

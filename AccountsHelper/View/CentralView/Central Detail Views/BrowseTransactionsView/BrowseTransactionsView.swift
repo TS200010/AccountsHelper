@@ -211,58 +211,60 @@ extension BrowseTransactionsView {
     @ViewBuilder
     private func editContextMenu(for row: TransactionRow) -> some View {
         
-//        if selectionActive {
-//            Button("Edit Transaction") {
-//                safeUIUpdate { selectedTransactionIDs = [row.id] }
-//                appState.selectedTransactionID = row.id
-//                appState.pushCentralView(.editTransaction(existingTransaction: row.transaction))
-//                appState.refreshInspector()
-//            }
-//        } else {
-//            
-            if  selectedTransactionIDs.contains(row.id) {
-                
-                if selectedTransactionIDs.count == 1 {
-                    Button("Edit Transaction") {
-                        safeUIUpdate { selectedTransactionIDs = [row.id] }
-                        appState.selectedTransactionID = row.id
-                        appState.pushCentralView(.editTransaction(existingTransaction: row.transaction))
-                        appState.refreshInspector()
-                    }
-                    .disabled(anySelectedTransactionClosed)
-                    
-                    Button(role: .destructive) {
-                        // Remove pairing only, not deleting transaction
-                        row.transaction.pairID = nil
-                        try? viewContext.save()
-                        appState.refreshInspector()
-                    } label: {
-                        Label("Unlink Pair", systemImage: "link.badge.minus")
-                    }
-                }
-                
-                if selectedTransactionIDs.count == 2 {
-                    Button("Merge Transactions") {
-                        mergeCandidates = transactions.filter { selectedTransactionIDs.contains($0.objectID) }
-                        appState.pushCentralView(.mergeTransactionsView(mergeCandidates))
-                        appState.refreshInspector()
-                    }
-                    .disabled(anySelectedTransactionClosed)
-                    Divider()
-                }
-                
-                Button(role: .destructive) {
-                    safeUIUpdate {
-                        transactionsToDelete = selectedTransactionIDs
-                        showingDeleteConfirmation = true
-                    }
-                } label: {
-                    Label("Delete Transaction(s)", systemImage: "trash")
+        if  selectedTransactionIDs.contains(row.id) {
+            
+            if selectedTransactionIDs.count == 1 {
+                Button("Edit Transaction") {
+                    safeUIUpdate { selectedTransactionIDs = [row.id] }
+                    appState.selectedTransactionID = row.id
+                    appState.pushCentralView(.editTransaction(existingTransaction: row.transaction))
+                    appState.refreshInspector()
                 }
                 .disabled(anySelectedTransactionClosed)
+                
+                Button(role: .destructive) {
+                    // Remove pairing only, not deleting transaction
+                    row.transaction.pairID = nil
+                    try? viewContext.save()
+                    appState.refreshInspector()
+                } label: {
+                    Label("Unlink Pair", systemImage: "link.badge.minus")
+                }
             }
+            
+            if selectedTransactionIDs.count == 2 {
+                Button("Merge Transactions") {
+                    mergeCandidates = transactions.filter { selectedTransactionIDs.contains($0.objectID) }
+                    appState.pushCentralView(.mergeTransactionsView(mergeCandidates))
+                    appState.refreshInspector()
+                }
+                .disabled(anySelectedTransactionClosed)
+                Divider()
+            }
+            
+            Button(role: .destructive) {
+                safeUIUpdate {
+                    transactionsToDelete = selectedTransactionIDs
+                    showingDeleteConfirmation = true
+                }
+            } label: {
+                Label("Delete Transaction(s)", systemImage: "trash")
+            }
+            .disabled(anySelectedTransactionClosed)
+            
+            Button("Force Unclose") {
+                safeUIUpdate {
+                    row.checked = false
+                    row.transaction.closed = false
+                    try? viewContext.save()
+                    appState.refreshInspector()
+                }
+            }
+            .foregroundColor(.red)
+            .disabled(row.transaction.closed)
         }
-//    }
+    }
+
 
     // MARK: --- MultiLineTableCell
     @ViewBuilder
@@ -385,13 +387,9 @@ extension BrowseTransactionsView {
                                     appState: appState,
                                     index: index
                                 )
-//                                .contentShape(Rectangle())       // ← Add this
                                 .focusable(true)
-//                                .focusRing(.none) // Disable blue focusRing
                                 .focused($focusedRowIndex, equals: index)
                                 .onTapGesture { focusedRowIndex = index }
-//                                .contextMenu { editContextMenu(for: row) }
-//                                .allowsHitTesting(true)         // ← Optional safety
                                 .onMoveCommand { direction in
                                     switch direction {
                                     case .up:
@@ -429,8 +427,6 @@ extension BrowseTransactionsView {
                     updateColumnWidths(for: newWidth)
                 }
                 // --- Constrain VStack to the width of the available window
-//                .frame(minWidth: proxy.size.width, alignment: .leading)
-//                .frame(maxWidth: .infinity, alignment: .leading)
                 .frame(width: proxy.size.width, alignment: .leading)
                 .if(gViewCheck) { view in view.border(.red).padding(.leading, 0) }
             }
@@ -487,45 +483,13 @@ extension BrowseTransactionsView {
         let total = widths.values.reduce(0, +)
         if total > availableWidth {
             let excess = total - availableWidth
-//            let lastKey = widths.keys.last!
-//            widths[lastKey]! -= excess
             widths["Split"]! -= excess
         }
 
         columnWidths = widths
         print(availableWidth, columnWidths.values.reduce(0, +))
     }
-
-//    private func updateScaledWidths(for availableWidth: CGFloat) {
-//        let minWidth: CGFloat = 60
-//
-//        let totalRequested = columnWidths.values.reduce(0, +)
-//
-//        // If columns fit, use intent directly
-//        if totalRequested <= availableWidth {
-//            scaledColumnWidths = columnWidths
-//            return
-//        }
-//
-//        // Otherwise, scale proportionally (render-only)
-//        let scale = availableWidth / totalRequested
-//
-//        scaledColumnWidths = columnWidths.mapValues {
-//            max(minWidth, $0 * scale)
-//        }
-//    }
-
-//    private func updateScaledWidths(for availableWidth: CGFloat) {
-//        let minWidth: CGFloat = 60
-//        let totalRequested = columnWidths.values.reduce(0, +)
-//
-//        // Scale to fit availableWidth proportionally
-//        // 16 is to not entirely fill available space
-//        let scaleFactor = (availableWidth - 50) / totalRequested
-//        scaledColumnWidths = columnWidths.mapValues { max(minWidth, $0 * scaleFactor) }
-//    }
 #endif
-
 
 
     // MARK: --- ResizeColumn
@@ -533,88 +497,10 @@ extension BrowseTransactionsView {
     private func resizeColumn(title: String, delta: CGFloat) {
         let minWidth: CGFloat = 60
         guard let current = columnWidths[title] else { return }
-
+        
         columnWidths[title] = max(minWidth, current + delta)
-
-        // Reflect immediately
-//        scaledColumnWidths = columnWidths
     }
-//    private func resizeColumn(title: String, delta: CGFloat) {
-//        guard let currentWidth = columnWidths[title], availableWidth > 0 else { return }
-//
-//        let minWidth: CGFloat = 60
-//        let maxWidth: CGFloat = availableWidth * 0.8 // optional upper bound
-//
-//        var newWidth = currentWidth + delta
-//        newWidth = max(minWidth, min(maxWidth, newWidth))
-//        columnWidths[title] = newWidth
-//
-//        // Now adjust other columns to fit availableWidth
-//        let totalWidth = columnWidths.values.reduce(0, +)
-//        if totalWidth > availableWidth {
-//            var remainingExcess = totalWidth - availableWidth
-//
-//            // Shrink other columns proportionally (or from the right)
-//            let flexibleColumns = columnWidths.keys.filter { $0 != title }
-//            for key in flexibleColumns.reversed() {
-//                guard let width = columnWidths[key] else { continue }
-//                let shrinkable = max(width - minWidth, 0)
-//                if shrinkable >= remainingExcess {
-//                    columnWidths[key] = width - remainingExcess
-//                    remainingExcess = 0
-//                    break
-//                } else {
-//                    columnWidths[key] = width - shrinkable
-//                    remainingExcess -= shrinkable
-//                }
-//            }
-//        }
-//
-//        scaledColumnWidths = columnWidths
-////        UserDefaults.standard.set(columnWidths.mapValues { Double($0) }, forKey: gColumnWidthsKey)
-//    }
-
-//    private func resizeColumn(title: String, delta: CGFloat) {
-//        guard let currentWidth = columnWidths[title], availableWidth > 0 else { return }
-//
-//        let minWidth: CGFloat = 60
-//        let newWidth = max(minWidth, currentWidth + delta)
-//        columnWidths[title] = newWidth
-//
-//        // Total width after resize
-//        let totalWidth = columnWidths.values.reduce(0, +)
-//
-//        // If total exceeds availableWidth, shrink flexible columns
-//        if totalWidth > availableWidth {
-//            var remainingExcess = totalWidth - availableWidth
-//
-//            // Flexible columns excluding the dragged one
-//            let flexibleColumns = columnWidths.keys.filter { $0 != title }
-//
-//            for key in flexibleColumns.reversed() { // shrink from right
-//                guard let width = columnWidths[key] else { continue }
-//                let shrinkable = max(width - minWidth, 0)
-//                if shrinkable >= remainingExcess {
-//                    columnWidths[key] = width - remainingExcess
-//                    remainingExcess = 0
-//                    break
-//                } else {
-//                    columnWidths[key] = width - shrinkable
-//                    remainingExcess -= shrinkable
-//                }
-//            }
-//
-//            // Clamp dragged column if still over
-//            if remainingExcess > 0 {
-//                columnWidths[title] = max(minWidth, newWidth - remainingExcess)
-//            }
-//        }
-//
-//        scaledColumnWidths = columnWidths
-//        // Save
-//        UserDefaults.standard.set(columnWidths.mapValues { Double($0) }, forKey: gColumnWidthsKey)
-//    }
-    #endif
+#endif
 
     // MARK: --- TransactionRowView
     @ViewBuilder
@@ -789,7 +675,6 @@ extension BrowseTransactionsView {
             safeUIUpdate { selectedTransactionIDs.wrappedValue = [row.id] }
             #endif
         }
-//        .contextMenu { contextMenu(for: row) }
         #else
         tableCell(row.iOSRowForDisplay, for: row)
             .contentShape(Rectangle())
@@ -815,8 +700,6 @@ extension BrowseTransactionsView {
                 .truncationMode(.tail)
                 .font(.custom("SF Mono Medium", size: 14))
                 .frame(width: (columnWidths[title] ?? width) - handleWidth, height: macOSRowHeight, alignment: .leading)
-//                .background(Color.gray.opacity(0.1))
-//                .border(Color.gray.opacity(0.3), width: 0.5)
             
             // --- Drag handle
             Rectangle()
@@ -826,8 +709,6 @@ extension BrowseTransactionsView {
                 .gesture(
                     DragGesture(minimumDistance: 0)
                         .onChanged { value in
-//                            let val2 = (value.translation.width > 0 ? 1 : -1 )
-//                            resizeColumn(title: title, delta: CGFloat(val2))
                             resizeColumn(title: title, delta: value.translation.width)
                             updateColumnWidths(for: availableWidth)
                         }
@@ -1029,9 +910,7 @@ extension BrowseTransactionsView {
     private func buildFilteredPredicate() -> NSPredicate? {
         var predicates: [NSPredicate] = []
 
-        // -------------------------------------------------
         // Accounting Period filter
-        // -------------------------------------------------
         if let period = selectedAccountingPeriod {
 
             let request: NSFetchRequest<Reconciliation> = Reconciliation.fetchRequest()
@@ -1053,10 +932,8 @@ extension BrowseTransactionsView {
                     continue
                 }
 
-//                guard
                 let start = rec.transactionStartDate
                 let end = rec.transactionEndDate
-//                else { continue }
 
                 accountPeriodPredicates.append(
                     NSPredicate(
@@ -1078,9 +955,7 @@ extension BrowseTransactionsView {
             )
         }
 
-        // -------------------------------------------------
         // No period selected ("All")
-        // -------------------------------------------------
         else if let selectedAccount {
             // Only account filter applies when period == All
             predicates.append(
@@ -1088,63 +963,11 @@ extension BrowseTransactionsView {
             )
         }
 
-        // -------------------------------------------------
         // Final predicate
-        // -------------------------------------------------
         guard !predicates.isEmpty else { return nil }
         return NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
     }
 
-//    private func buildFilteredPredicate() -> NSPredicate? {
-//        var predicates: [NSPredicate] = []
-//
-//        // --- Accounting Period / Date Filter
-//        if let period = selectedAccountingPeriod {
-//            // If account is selected, use it; otherwise, get all reconciliations for the period
-//            if let account = selectedAccount {
-//                if let reconciliation = try? Reconciliation.fetchOne(for: period, account: account, context: viewContext) {
-//                    let start = reconciliation.transactionStartDate as NSDate
-//                    let end = reconciliation.transactionEndDate as NSDate
-//                    predicates.append(NSPredicate(format: "transactionDate >= %@ AND transactionDate <= %@", start, end))
-//                    
-//                    // Also filter by account as before
-//                    predicates.append(NSPredicate(format: "accountCD == %@", NSNumber(value: account.rawValue)))
-//                }
-//            } else {
-//                // No account selected — include all transactions in the period
-//                if let reconciliation = try? Reconciliation.fetchOne(for: period, account: <#ReconcilableAccounts#>, context: viewContext) {
-//                    let start = reconciliation.transactionStartDate as NSDate
-//                    let end = reconciliation.transactionEndDate as NSDate
-//                    predicates.append(NSPredicate(format: "transactionDate >= %@ AND transactionDate <= %@", start, end))
-//                }
-//            }
-//        }
-//
-//        guard !predicates.isEmpty else { return nil }
-//        return NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
-//    }
-
-//    private func buildFilteredPredicate() -> NSPredicate? {
-//        var predicates: [NSPredicate] = []
-//        
-//        // --- Payment Method Filter
-//        if let method = selectedAccount {
-//            predicates.append(NSPredicate(format: "accountCD == %@", NSNumber(value: method.rawValue)))
-//        }
-//        
-//        // --- Accounting Period / Date Filter
-//        if let method = selectedAccount, let period = selectedAccountingPeriod {
-//            if let reconciliation = try? Reconciliation.fetchOne(for: period, account: method, context: viewContext) {
-//                let start = reconciliation.transactionStartDate as NSDate
-//                let end = reconciliation.transactionEndDate as NSDate
-//                predicates.append(NSPredicate(format: "transactionDate >= %@ AND transactionDate <= %@", start, end))
-//            }
-//        }
-//        
-//        guard !predicates.isEmpty else { return nil }
-//        return NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
-//    }
-    
     
     // MARK: --- RefreshFetchRequest
     private func refreshFetchRequest() {

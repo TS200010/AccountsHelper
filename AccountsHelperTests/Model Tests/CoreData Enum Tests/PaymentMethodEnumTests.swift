@@ -35,8 +35,8 @@ struct PaymentMethodTests {
         #expect(ReconcilableAccounts.CashYEN.description == "Cash YEN")
         #expect(ReconcilableAccounts.AMEX.description == "AMEX")
         #expect(ReconcilableAccounts.VISA.description == "VISA")
-        #expect(ReconcilableAccounts.BofSPV.description == "BofS PV")
-        #expect(ReconcilableAccounts.BofSCA.description == "BofS CA")
+        #expect(ReconcilableAccounts.BofSPV_82.description == "BofS PV")
+        #expect(ReconcilableAccounts.BofSCA_64.description == "BofS CA")
         #expect(ReconcilableAccounts.unknown.description == "Unknown")
     }
 
@@ -48,8 +48,8 @@ struct PaymentMethodTests {
         #expect(ReconcilableAccounts.CashYEN.currency == .JPY)
         #expect(ReconcilableAccounts.AMEX.currency == .UKL)
         #expect(ReconcilableAccounts.VISA.currency == .UKL)
-        #expect(ReconcilableAccounts.BofSPV.currency == .UKL)
-        #expect(ReconcilableAccounts.BofSCA.currency == .UKL)
+        #expect(ReconcilableAccounts.BofSPV_82.currency == .UKL)
+        #expect(ReconcilableAccounts.BofSCA_64.currency == .UKL)
         #expect(ReconcilableAccounts.unknown.currency == .unknown)
     }
 
@@ -61,8 +61,8 @@ struct PaymentMethodTests {
         #expect(ReconcilableAccounts.CashYEN.code == "CASH_YEN")
         #expect(ReconcilableAccounts.AMEX.code == "AMEX")
         #expect(ReconcilableAccounts.VISA.code == "VISA")
-        #expect(ReconcilableAccounts.BofSPV.code == "BOFS_PV")
-        #expect(ReconcilableAccounts.BofSCA.code == "BOFS_CA")
+        #expect(ReconcilableAccounts.BofSPV_82.code == "BOFS_PV")
+        #expect(ReconcilableAccounts.BofSCA_64.code == "BOFS_CA")
         #expect(ReconcilableAccounts.unknown.code == "UNKNOWN")
     }
 
@@ -74,8 +74,8 @@ struct PaymentMethodTests {
         #expect(ReconcilableAccounts.fromInt(4) == .CashYEN)
         #expect(ReconcilableAccounts.fromInt(5) == .AMEX)
         #expect(ReconcilableAccounts.fromInt(6) == .VISA)
-        #expect(ReconcilableAccounts.fromInt(7) == .BofSPV)
-        #expect(ReconcilableAccounts.fromInt(8) == .BofSCA)
+        #expect(ReconcilableAccounts.fromInt(7) == .BofSPV_82)
+        #expect(ReconcilableAccounts.fromInt(8) == .BofSCA_64)
         #expect(ReconcilableAccounts.fromInt(99) == .unknown)
         #expect(ReconcilableAccounts.fromInt(999) == .unknown)
 
@@ -85,8 +85,8 @@ struct PaymentMethodTests {
         #expect(ReconcilableAccounts.fromInt32(4) == .CashYEN)
         #expect(ReconcilableAccounts.fromInt32(5) == .AMEX)
         #expect(ReconcilableAccounts.fromInt32(6) == .VISA)
-        #expect(ReconcilableAccounts.fromInt32(7) == .BofSPV)
-        #expect(ReconcilableAccounts.fromInt32(8) == .BofSCA)
+        #expect(ReconcilableAccounts.fromInt32(7) == .BofSPV_82)
+        #expect(ReconcilableAccounts.fromInt32(8) == .BofSCA_64)
         #expect(ReconcilableAccounts.fromInt32(999) == .unknown)
     }
 

@@ -9,9 +9,9 @@ import Foundation
 
 struct CounterRelationships {
     static let all: [CounterPair] = [
-        .init(from: .BofSPV, to: .CashUKL, name: "ATM Withdrawal"),
-        .init(from: .BofSPV, to: .AMEX,    name: "AMEX Payment"),
-        .init(from: .BofSPV, to: .VISA,    name: "VISA Payment")
+        .init(from: .BofSPV_82, to: .CashUKL, name: "ATM Withdrawal"),
+        .init(from: .BofSPV_82, to: .AMEX,    name: "AMEX Payment"),
+        .init(from: .BofSPV_82, to: .VISA,    name: "VISA Payment")
     ]
 
     static func matches(for method: ReconcilableAccounts) -> [CounterPair] {

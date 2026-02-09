@@ -25,6 +25,7 @@ struct AddOrEditTransactionView: View {
     @State internal var counterTransactionActive: Bool = false
     @State internal var counterAccount: ReconcilableAccounts? = nil
     @State internal var counterFXRate: Decimal = 0
+    @State internal var counterCategory: Category? = nil
     @State internal var counterExistsOnLoad: Bool = false
     
     // MARK: --- External
@@ -110,6 +111,7 @@ struct AddOrEditTransactionView: View {
                 counterTransaction:   $counterTransactionActive,
                 counterAccount:       $counterAccount,
                 counterFXRate:        $counterFXRate,
+                counterCategory:      $counterCategory,
                 canRemoveCounter:     !counterExistsOnLoad
             )
             .frame(minWidth: 300)
@@ -165,14 +167,12 @@ struct AddOrEditTransactionView: View {
         // Mark counter mode active
         counterTransactionActive = true
 
-        // Set counter account
+        // Set counter account fields
         counterAccount = counterTx.account
-
-        // Set FX rate
+        counterCategory = counterTx.category
         counterFXRate = counterTx.exchangeRate
 
         // Now populate UI fields for counter currency
-        // Note: you may need to adjust based on your actual fields
         transactionData.currency = counterTx.currency
         transactionData.txAmount = counterTx.txAmount
     }
@@ -186,11 +186,13 @@ struct AddOrEditTransactionView: View {
         if let counterTx = tx.counterTransaction(in: viewContext) {
             counterTransactionActive = true
             counterAccount = counterTx.account
+            counterCategory = counterTx.category
             counterFXRate = counterTx.exchangeRate
             counterExistsOnLoad = true
         } else {
             counterTransactionActive = false
             counterAccount = nil
+            counterCategory = nil
             counterFXRate = 0
             counterExistsOnLoad = false
         }

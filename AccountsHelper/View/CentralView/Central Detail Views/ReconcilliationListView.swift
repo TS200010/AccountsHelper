@@ -466,6 +466,7 @@ extension ReconcilliationListView {
 //            let start = calendar.date(byAdding: .day, value: -windowDays, to: row.rec.transactionStartDate)!
             let end   = calendar.date(byAdding: .day, value:  windowDays, to: row.rec.transactionEndDate)!
 
+            print( start as NSDate, end as NSDate )
             let predicate = NSPredicate(
                 format: "accountCD == %d AND transactionDate >= %@ AND transactionDate <= %@",
                 row.rec.account.rawValue,

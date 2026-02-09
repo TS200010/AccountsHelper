@@ -16,6 +16,7 @@ extension AddOrEditTransactionView {
         @Binding var counterTransaction: Bool
         @Binding var counterAccount: ReconcilableAccounts?
         @Binding var counterFXRate: Decimal
+        @Binding var counterCategory: Category?
         let canRemoveCounter: Bool
         
         // Suggested counter methods based on Account + Category
@@ -86,9 +87,9 @@ extension AddOrEditTransactionView {
                             )
                         }
                         
-                        // --- Bottom Picker: Manual Payment Method (any) ---
+                        // --- Bottom Picker: Account
                         LabeledPicker(
-                            label: "Chosen Counter Pmt",
+                            label: "Counter Account",
                             selection: Binding(
                                 get: { counterAccount ?? .unknown },
                                 set: { counterAccount = $0 }
@@ -96,9 +97,19 @@ extension AddOrEditTransactionView {
                             isValid: counterAccount != nil && counterAccount != .unknown
                         )
                         
+                        // --- Bottom Picker: Category
+                        LabeledPicker(
+                            label: "Counter Category",
+                            selection: Binding(
+                                get: { counterCategory ?? .unknown },
+                                set: { counterCategory = $0 }
+                            ),
+                            isValid: counterCategory != nil && counterCategory != .unknown
+                        )
+                        
                         // --- Amount Box ---
                         LabeledDecimalWithFX(
-                            label: "Counter Pmt Amount",
+                            label: "Counter Account Amount",
                             amount: Binding(
                                 get: {
                                     guard let method = counterAccount else { return transactionData.txAmount }

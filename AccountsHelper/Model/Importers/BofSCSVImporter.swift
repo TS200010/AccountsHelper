@@ -145,6 +145,9 @@ class BofSCSVImporter: TxImporter {
                     let pid = UUID()
                     newTx.pairID = pid
                     counter.pairID = pid
+                    // Assign categories based on the OTHER transaction’s account
+                    newTx.category = counter.account.pairCode
+                    counter.category = newTx.account.pairCode
                 }
 
                 // MARK: --- Duplicate Checking
@@ -255,22 +258,11 @@ class BofSCSVImporter: TxImporter {
             // 5. Different accounts
             let differentAccount = existing.account != newTx.account
 
-            // 6. Transfer-like
-//            let looksLikeTransfer =
-//                Self.looksLikeTransfer(existing) &&
-//                Self.looksLikeTransfer(newTx)
-
-            // 7. Optional description cross-reference
-//            let descriptionMatch =
-//                Self.descriptionsReferenceEachOther(existing, newTx)
-
             return
                 oppositeSign &&
                 sameAmount &&
                 sameDate &&
-                differentAccount// &&
-//                looksLikeTransfer // &&
-//                descriptionMatch
+                differentAccount
         }
 
         return wip
@@ -323,27 +315,5 @@ class BofSCSVImporter: TxImporter {
 
         return false
     }
-
-
-    
-    // MARK: --- looksLikeTransfer
-//    static func looksLikeTransfer(_ tx: Transaction) -> Bool {
-//        guard let explanation = tx.explanation?.uppercased() else { return false }
-//        return explanation.contains("TFR")
-//            || explanation.contains("FPI")
-//            || explanation.contains("FPO")
-//    }
-//    
-    // MARK: --- descriptionsReferenceEachOther
-//    static func descriptionsReferenceEachOther(_ a: Transaction, _ b: Transaction) -> Bool {
-//        guard
-//            let aRef = a.accountNumber,
-//            let bRef = b.accountNumber
-//        else { return true } // allow if missing
-//
-//        return a.payee?.contains(bRef) == true
-//            || b.payee?.contains(aRef) == true
-//    }
-
 }
 
