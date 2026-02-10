@@ -118,7 +118,10 @@ extension TxImporter {
 
             // Must be same account
             guard existing.account == newTx.account else { continue }
-
+            
+            // Skip closed transactions
+            guard existing.closed else { continue }
+                
             // Must have dates
             guard let existingDate = existing.transactionDate,
                   let newDate = newTx.transactionDate else { continue }
