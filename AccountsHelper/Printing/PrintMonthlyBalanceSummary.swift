@@ -101,6 +101,22 @@ extension ReconcilliationListView {
         report.append( reportLineForATotal(descr: "T/F To AltCoin", category: .unknown, account: .BofSCA_64))
         report.append( reportLineForATotal(descr: "T/F To BofS Joint", category: .ToBofSPV_82, account: .BofSCA_64))
         
+        report.append("\nBofS Classic Credits\n")
+        report.append( reportLineForATotal(descr: "BofS Classic Div Income", category: .IntDivIncome, account: .BofSCA_64))
+        report.append( reportLineForATotal(descr: "BofS Classic Other Income", category: .OtherIncome, account: .BofSCA_64))
+        report.append( reportLineForATotal(descr: "BofS Classic Pension Income", category: .StatePensionT, account: .BofSCA_64))
+        
+        report.append("\nItMk Equity\n")
+        report.append( reportLineForATotal(descr: "ItMk Income in Month", category: .OtherIncome, account: .ItMkEquity))
+        report.append( reportLineForATotal(descr: "T/F From BofS Joint", category: .ToBofSPV_82, account: .ItMkEquity))
+        
+        report.append("\nUKL Cash Credits\n")
+        report.append( reportLineForATotal(descr: "Misc UKL Cash Income", category: .OtherIncome, account: .CashUKL))
+        report.append( reportLineForATotal(descr: "T/F from BofS Joint", category: .ToBofSPV_82, account: .CashUKL))
+        report.append( reportLineForATotal(descr: "T/F from YEN Cash", category: .ToCashYEN, account: .CashUKL))
+        
+        
+        
         
         
         // --- YEN Current Assets Table
