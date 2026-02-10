@@ -1157,6 +1157,10 @@ extension BrowseTransactionsView {
                 guard let lDate = lhs.transaction.transactionDate,
                       let rDate = rhs.transaction.transactionDate else { return false }
                 return ascending ? (lDate < rDate) : (lDate > rDate)
+            case .timestamp:
+                guard let lDate = lhs.transaction.timestamp,
+                      let rDate = rhs.transaction.timestamp else { return false }
+                return ascending ? (lDate < rDate) : (lDate > rDate)
             case .txAmount:
                 let lAmount = lhs.transaction.txAmountInUKL
                 let rAmount = rhs.transaction.txAmountInUKL

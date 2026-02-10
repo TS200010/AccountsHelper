@@ -38,7 +38,7 @@ enum SortColumn: CaseIterable, Identifiable {
         case .exchangeRate:    return "Fx"
         case .payee:           return "Payee"
         case .payer:           return "Payer"
-        case .account:   return "Account"
+        case .account:         return "Account"
         case .reconciliation:  return "Reconciliation"
         case .timestamp:       return "Timestamp"
         case .transactionDate: return "Date"

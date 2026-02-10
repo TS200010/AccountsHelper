@@ -24,6 +24,7 @@ import ItMkLibrary
     case BofSISS_43    = 11
     case BofSYP_06     = 12
     case ItMkEquity = 13
+    case TMB        = 14
     case unknown    = 99
 
     // MARK: --- Identifiable
@@ -37,32 +38,33 @@ import ItMkLibrary
     // MARK: --- Currency of Account
     var currency: Currency {
         switch self {
-        case .CashUKL:    return .UKL
-        case .CashUSD:    return .USD
-        case .CashEUR:    return .EUR
-        case .CashYEN:    return .JPY
-        case .AMEX:       return .UKL
-        case .VISA:       return .UKL
+        case .CashUKL:       return .UKL
+        case .CashUSD:       return .USD
+        case .CashEUR:       return .EUR
+        case .CashYEN:       return .JPY
+        case .AMEX:          return .UKL
+        case .VISA:          return .UKL
         case .BofSPV_82:     return .UKL
         case .BofSCA_64:     return .UKL
         case .LloydsC_68:    return .UKL
         case .BofSIASA_62:   return .UKL
         case .BofSISS_43:    return .UKL
         case .BofSYP_06:     return .UKL
-        case .ItMkEquity: return .UKL
-        case .unknown:    return .unknown
+        case .ItMkEquity:    return .UKL
+        case .TMB:           return .JPY
+        case .unknown:       return .unknown
         }
     }
 
     // MARK: --- Human-readable Description
     var description: String {
         switch self {
-        case .CashUKL:    return String(localized: "Cash UKL")
-        case .CashUSD:    return String(localized: "Cash USD")
-        case .CashEUR:    return String(localized: "Cash EUR")
-        case .CashYEN:    return String(localized: "Cash YEN")
-        case .AMEX:       return String(localized: "AMEX")
-        case .VISA:       return String(localized: "VISA")
+        case .CashUKL:       return String(localized: "Cash UKL")
+        case .CashUSD:       return String(localized: "Cash USD")
+        case .CashEUR:       return String(localized: "Cash EUR")
+        case .CashYEN:       return String(localized: "Cash YEN")
+        case .AMEX:          return String(localized: "AMEX")
+        case .VISA:          return String(localized: "VISA")
         case .BofSPV_82:     return String(localized: "BofS PV 82")
         case .BofSCA_64:     return String(localized: "BofS CA 64")
         case .LloydsC_68:    return String(localized: "Lloyds C 68")
@@ -70,6 +72,7 @@ import ItMkLibrary
         case .BofSISS_43:    return String(localized: "BofS ISS 43")
         case .BofSYP_06:     return String(localized: "BofS YP 06")
         case .ItMkEquity:    return String(localized: "ItMk Equity")
+        case .TMB:           return String(localized: "TMB")
         case .unknown:       return String(localized: "Unknown")   // Do not change this string or Reporting will break!
         }
     }
@@ -90,6 +93,7 @@ import ItMkLibrary
         case .BofSISS_43:    return "BOFS_ISS_56"
         case .BofSYP_06:     return "BOFS_YP_57"
         case .ItMkEquity:    return "ITMK_EQUITY"
+        case .TMB:           return "TMB"
         case .unknown:       return "UNKNOWN"
         }
     }
@@ -110,6 +114,7 @@ import ItMkLibrary
         case .BofSISS_43:    return .ToBofSISS_43
         case .BofSYP_06:     return .ToBofSYP_06
         case .ItMkEquity:    return .ToItMkEquity
+        case .TMB:           return .ToTMB
         case .unknown:       return .unknown
         }
     }
@@ -130,6 +135,7 @@ import ItMkLibrary
         case 11:             return .BofSISS_43
         case 12:             return .BofSYP_06
         case 13:             return .ItMkEquity
+        case 14:             return .TMB
         case 99:             return .unknown
         default:             return .unknown
         }
@@ -156,6 +162,7 @@ import ItMkLibrary
         case .BofSISS_43:     return "UKL"
         case .BofSYP_06:      return "UKL"
         case .ItMkEquity:     return "UKL"
+        case .TMB:            return "YEN"
         case .unknown:        return "UKL"
         }
     }

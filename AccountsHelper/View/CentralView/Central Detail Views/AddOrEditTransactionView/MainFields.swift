@@ -19,8 +19,6 @@ extension AddOrEditTransactionView {
                     label: "TX Date",
                     date: Binding(
                         get: { transactionData.transactionDate ?? appState.lastUsedDate },
-//                        get: { transactionData.transactionDate ?? Date() },
-//                        set: { transactionData.transactionDate = $0 }
                         set: { newDate in
                             transactionData.transactionDate = newDate
                             appState.lastUsedDate = newDate
@@ -29,6 +27,21 @@ extension AddOrEditTransactionView {
                     displayedComponents: [.date],
                     isValid: transactionData.isTransactionDateValid()
                 )
+                
+//                LabeledDatePicker(
+//                    label: "TX Date",
+//                    date: Binding(
+//                        get: { transactionData.transactionDate ?? appState.lastUsedDate },
+////                        get: { transactionData.transactionDate ?? Date() },
+////                        set: { transactionData.transactionDate = $0 }
+//                        set: { newDate in
+//                            transactionData.transactionDate = newDate
+//                            appState.lastUsedDate = newDate
+//                        }
+//                    ),
+//                    displayedComponents: [.date],
+//                    isValid: transactionData.isTransactionDateValid()
+//                )
                 
                 LabeledPicker(label: "Payer", selection: $transactionData.payer, isValid: transactionData.isPayerValid())
                 
