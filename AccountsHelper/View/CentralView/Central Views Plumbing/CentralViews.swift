@@ -12,7 +12,10 @@ import ItMkLibrary
 struct CentralViews: View {
     
     // MARK: --- Environment
+    @Environment(\.managedObjectContext) private var viewContext
     @Environment(AppState.self) var appState
+    @AppStorageEnum("showCurrencySymbols", defaultValue: .always)
+    private var showCurrencySymbols: ShowCurrencySymbolsEnum
 
     // MARK: --- Body
     var body: some View {
@@ -121,7 +124,20 @@ struct CentralViews: View {
             
             // TODO: Remove the let here
         case .categoriesSummary(let predicate):
-            CategoriesSummaryView( /*predicate: predicate*/ )
+            if let recID = appState.selectedReconciliationID,
+               let rec = try? viewContext.existingObject(with: recID) as? Reconciliation {
+
+                let vm = CategoriesSummaryVM(
+                    reconciliation: rec,
+                    showCurrencySymbols: showCurrencySymbols
+                )
+
+                CategoriesSummaryView(vm: vm)
+
+            } else {
+                Text("No reconciliation selected")
+            }
+//            CategoriesSummaryView( /*predicate: predicate*/ )
             
         case .exportCD:
             ExportCD()

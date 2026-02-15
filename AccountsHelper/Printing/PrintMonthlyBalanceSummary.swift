@@ -13,7 +13,7 @@ extension ReconcilliationListView {
 
     func printMonthlyBalanceSummary() {
 #if os(macOS)
-        let report = NSMutableString()
+//        let report = NSMutableString()
         
         // Resolve period
         guard let (month, year) = resolvePreviousPeriod() else { return }
@@ -33,7 +33,22 @@ extension ReconcilliationListView {
             context: context
         )
 
-        report.append(reportHeader(title: "Monthly Balance Summary", viewContext: context, appState: appState))
+        // MARK: --- Create Report String
+        let report = NSMutableString()
+        
+        // MARK: --- Build the report header
+        let headerData: ReportHeaderData
+            headerData = ReportHeaderData(
+                title: "Monthly Balance Summary",
+                accountDescription: nil,
+                periodMonth: Int32( currentMonth ),
+                periodYear: Int32( currentYear ),
+                statementDate: nil
+            )
+        
+        
+        report.append( reportHeader( headerData ) )
+//        report.append(reportHeader(title: "Monthly Balance Summary", viewContext: context, appState: appState))
         report.append("\n\n")
         
         // --- UKL Current Assets Table
@@ -151,6 +166,12 @@ extension ReconcilliationListView {
     }
     
     // MARK: --- HELPERS
+    // MARK: --- resolveSelectedReconciliation
+    private func resolveSelectedReconciliation() -> Reconciliation? {
+        guard let recID = appState.selectedReconciliationID else { return nil }
+        return try? context.existingObject(with: recID) as? Reconciliation
+    }
+    
     // MARK: --- resolveSelectedPeriod
     func resolveSelectedPeriod() -> (month: Int, year: Int)? {
         guard
@@ -312,11 +333,20 @@ extension ReconcilliationListView {
         
         // Fetch all transactions for this account in the current period
         let request: NSFetchRequest<Transaction> = Transaction.fetchRequest()
-        let startDate = Calendar.current.date(from: DateComponents(year: year, month: month, day: 1))!
-        let endDate: Date = {
-            let comps = DateComponents(year: year, month: month + 1, day: 1)
-            return Calendar.current.date(from: comps)?.addingTimeInterval(-1) ?? Date.distantFuture
-        }()
+        guard let reconciliation = resolveSelectedReconciliation(),
+              let startDate = reconciliation.previousStatementDate,
+              let endDate = reconciliation.statementDate
+        else {
+            // If no reconciliation selected or no dates, return zero line
+            return ""
+        }
+
+
+//        let startDate = Calendar.current.date(from: DateComponents(year: year, month: month, day: 1))!
+//        let endDate: Date = {
+//            let comps = DateComponents(year: year, month: month + 1, day: 1)
+//            return Calendar.current.date(from: comps)?.addingTimeInterval(-1) ?? Date.distantFuture
+//        }()
         
         request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
             NSPredicate(format: "accountCD == %d", account.rawValue),

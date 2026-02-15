@@ -9,6 +9,8 @@ import CoreData
 
 struct CategoriesSummaryView: View {
     
+    let vm: CategoriesSummaryVM
+    
     // MARK: --- Environment
     @Environment(\.managedObjectContext) internal var viewContext
     @Environment(AppState.self) internal var appState
@@ -22,7 +24,7 @@ struct CategoriesSummaryView: View {
 //    @FetchRequest private var transactions: FetchedResults<Transaction>
 
     // MARK: --- Resolved aggregate
-    private var reconciliation: Reconciliation? {
+    var reconciliation: Reconciliation? {
         guard let id = appState.selectedReconciliationID else { return nil }
         return try? viewContext.existingObject(with: id) as? Reconciliation
     }
@@ -41,67 +43,12 @@ struct CategoriesSummaryView: View {
         }
     }
     
-//    // MARK: --- Init
-//    init(predicate: NSPredicate? = nil, isPrinting: Bool = false) {
-//        _transactions = FetchRequest(
-//            sortDescriptors: [NSSortDescriptor(keyPath: \Transaction.transactionDate, ascending: true)],
-//            predicate: predicate
-//        )
-//    }
-    
     // MARK: --- Local Variables
     private var currency: Currency? {
         transactions.first?.account.currency
     }
-    
-    // MARK: --- SummaryTotals
-    internal struct SummaryTotals {
-        var startBalance: Decimal = 0
-        var endBalance: Decimal = 0
-        var totalCR: Decimal = 0
-        var totalDR: Decimal = 0
-        var total: Decimal { get { totalCR + totalDR } }
-        var currency: Currency = .unknown
-    }
-    
-    // MARK: --- Computed summaryTotals
-    internal var summaryTotals: SummaryTotals {
-        var result = SummaryTotals()
-        result.currency = currency ?? .unknown
-        
-        // Identify reconciliation if present
-        let reconciliation: Reconciliation? = {
-            if let recID = appState.selectedReconciliationID,
-               let rec = try? viewContext.existingObject(with: recID) as? Reconciliation {
-                return rec
-            }
-            return nil
-        }()
-        
-        // Compute start balance
-        if let rec = reconciliation {
-            result.startBalance = rec.previousEndingBalance
-        }
-        
-        // Sum all tx amounts
-        for posting in transactions.postings {
-            let amount = posting.amount
-            if amount < 0 { result.totalCR += amount }
-            else if amount > 0 { result.totalDR += amount }
-        }
-//        for tx in transactions {
-//            let amount = tx.txAmountInUKL
-//            if amount < 0 {
-//                result.totalCR += amount
-//            } else if amount > 0 {
-//                result.totalDR += amount
-//            }
-//        }
-        
-        // Compute ending balance
-        result.endBalance = result.startBalance - result.total
-        return result
-    }
+
+
     
     // MARK: --- CategoryRow
     internal struct CategoryRow: Identifiable, Hashable {
@@ -157,7 +104,9 @@ extension CategoriesSummaryView {
     private var printToolbarItem: some ToolbarContent {
         ToolbarItem(placement: .automatic) {
             Button {
-                printCategoriesSummary()
+                let report = CategoriesSummaryReportRenderer.buildReport(from: vm)
+                printReport(report)
+//                printCategoriesSummary()
             } label: {
                 Label("Print Summary", systemImage: "printer")
             }
@@ -167,17 +116,17 @@ extension CategoriesSummaryView {
     // MARK: --- HeaderView (Balances and Totals)
     private var headerView: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Starting Balance: \(summaryTotals.startBalance.formattedAsCurrency(summaryTotals.currency))")
+            Text("Starting Balance: \(vm.totals.startBalance.formattedAsCurrency(vm.totals.currency))")
                 .font(.headline)
             
             HStack(spacing: 40) {
-                Text("Total CRs: \(summaryTotals.totalCR.formattedAsCurrency(summaryTotals.currency))")
-                Text("Total DRs: \(summaryTotals.totalDR.formattedAsCurrency(summaryTotals.currency))")
-                Text("Net Total: \(summaryTotals.total.formattedAsCurrency(summaryTotals.currency))")
+                Text("Total CRs: \(vm.totals.totalCR.formattedAsCurrency(vm.totals.currency))")
+                Text("Total DRs: \(vm.totals.totalDR.formattedAsCurrency(vm.totals.currency))")
+                Text("Net Total: \(vm.totals.total.formattedAsCurrency(vm.totals.currency))")
             }
             .font(.subheadline)
             
-            Text("Ending Balance: \(summaryTotals.endBalance.formattedAsCurrency(summaryTotals.currency))")
+            Text("Ending Balance: \(vm.totals.endBalance.formattedAsCurrency(vm.totals.currency))")
                 .font(.headline)
         }
         .padding(.horizontal, 10)

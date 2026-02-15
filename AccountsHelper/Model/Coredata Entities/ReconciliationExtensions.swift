@@ -102,7 +102,7 @@ extension Reconciliation {
     }
     
     // MARK: --- previousStatementDate
-    func previousStatementDate() -> Date? {
+    var previousStatementDate: Date? {
         if let context = self.managedObjectContext,
            let previous = try? Reconciliation.fetchPrevious(for: self.account, before: self.statementDate ?? Date.distantPast, context: context) {
             return previous.statementDate
@@ -399,7 +399,7 @@ extension Reconciliation {
             predicates.append(NSPredicate(format: "periodKey == %@", periodKey ?? ""))
         } else {
             // Open: transactions within reconciliation date range ±14 days
-            if let start = previousStatementDate(), let end = statementDate {
+            if let start = previousStatementDate, let end = statementDate {
                 let adjustedStart = Calendar.current.date(byAdding: .day, value: -14, to: start)! as NSDate
                 let adjustedEnd   = Calendar.current.date(byAdding: .day, value: 14, to: end)! as NSDate
                 predicates.append(NSPredicate(format: "transactionDate >= %@ AND transactionDate <= %@", adjustedStart, adjustedEnd))
@@ -627,11 +627,11 @@ extension Reconciliation {
     }
 }
 
-// MARK: --- OTHER HELPERS
 
-// MARK: --- PreviousPeriod
+// MARK: --- OTHER HELPERS
 extension Reconciliation {
     
+    // MARK: --- PreviousPeriod
     static func previousPeriod(month: Int, year: Int) -> (month: Int, year: Int) {
         if month == 1 {
             return (12, year - 1)
@@ -639,4 +639,26 @@ extension Reconciliation {
             return (month - 1, year)
         }
     }
+
+    // MARK: --- PreviousStatementDate
+    func previousStatementDate(in context: NSManagedObjectContext) -> Date? {
+        guard let previous = try? Reconciliation.fetchPrevious(for: self.account, before: self.statementDate ?? Date.distantPast, context: context) else {
+            return nil
+        }
+        return previous.statementDate
+    }
+
+    // MARK: --- Totals
+    var totals: (startBalance: Decimal, totalCR: Decimal, totalDR: Decimal, endBalance: Decimal) {
+        let startBalance = previousEndingBalance
+
+        let postings = self.transactionsArray.postings 
+        let totalCR = postings.filter { $0.amount < 0 }.reduce(Decimal(0)) { $0 + $1.amount }
+        let totalDR = postings.filter { $0.amount > 0 }.reduce(Decimal(0)) { $0 + $1.amount }
+        let total = totalCR + totalDR
+        let endBalance = startBalance - total
+
+        return (startBalance, totalCR, totalDR, endBalance)
+    }
 }
+
