@@ -15,6 +15,7 @@ import ItMkLibrary
     case USD      = 2
     case JPY      = 3
     case EUR      = 4
+    case CHF      = 5
     case unknown  = 99
     
     // MARK: --- Identifiable
@@ -39,6 +40,9 @@ import ItMkLibrary
         case "JAPANESE YEN":    return .JPY
         case "JAPANESEYEN":     return .JPY
         case "EUR":             return .EUR
+        case "EUROPEAN UNION EURO":
+                                return .EUR
+        case "SWISS FRANC":     return .CHF
         default:                return .unknown
         }
     }
@@ -50,6 +54,7 @@ import ItMkLibrary
         case 2: return .USD
         case 3: return .JPY
         case 4: return .EUR
+        case 5: return .CHF
         default: return .unknown
         }
     }
@@ -65,6 +70,7 @@ import ItMkLibrary
         case .USD:     return String(localized: "USD")
         case .JPY:     return String(localized: "JPY")
         case .EUR:     return String(localized: "EUR")
+        case .CHF:     return String(localized: "CHF")
         case .unknown: return String(localized: "Unknown")
         }
     }
@@ -80,6 +86,7 @@ import ItMkLibrary
         case .USD: return Locale(identifier: "en_US")
         case .EUR: return Locale(identifier: "de_DE")
         case .JPY: return Locale(identifier: "ja_JP")
+        case .CHF: return Locale(identifier: "de_CH")
         default:   return Locale.current
         }
     }

@@ -357,6 +357,7 @@ extension Transaction {
             case .USD: transaction.exchangeRateCD = Int32.random(in: 120...150)
             case .JPY: transaction.exchangeRateCD = Int32.random(in: 15_000...21_000)
             case .EUR: transaction.exchangeRateCD = Int32.random(in: 120...150)
+            case .CHF: transaction.exchangeRateCD = Int32.random(in: 120...150)
             case .unknown: transaction.exchangeRateCD = 0
             }
             
