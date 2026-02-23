@@ -414,29 +414,66 @@ extension ReconcilliationListView {
     
     
     // MARK: --- ExportXLSSummary
-    private func exportXLSSummary(for row: ReconciliationRow) {
-        #if os(macOS)
-        let totals = categoryTotals(for: row)
+#if os(macOS)
+private func exportXLSSummary(for reconciliations: [ReconciliationRow]) {
+    guard !reconciliations.isEmpty else { return }
 
-        let text = Category.allCases.map { category in
+    // 1. Build header row: "Category" + account names
+    let headerRow = ["Category"] + reconciliations.map { $0.rec.account.description }
+    var rows: [String] = [headerRow.joined(separator: "\t")]
+
+    // 2. Loop through all categories
+    for category in Category.allCases {
+        var rowValues: [String] = [category.description]
+        
+        for row in reconciliations {
+            let totals = categoryTotals(for: row)
             let total = totals[category] ?? 0
-            return """
-            \(category.description)\t\(AmountFormatter.anyAmountAsString(
+            let formatted = AmountFormatter.anyAmountAsString(
                 amount: total,
                 currency: row.rec.account.currency,
                 withSymbol: .never
-            ))
-"""
-//            return "\(category.description)\t\(total.string2f)"
-        }.joined(separator: "\n")
-
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.setString(text, forType: .string)
-
-        showingXLSConfirmation = true
-        #endif
+            )
+            rowValues.append(formatted)
+        }
+        
+        rows.append(rowValues.joined(separator: "\t"))
     }
+
+    // 3. Join all rows into tab-delimited text
+    let text = rows.joined(separator: "\n")
+
+    // 4. Copy to pasteboard
+    let pasteboard = NSPasteboard.general
+    pasteboard.clearContents()
+    pasteboard.setString(text, forType: .string)
+
+    showingXLSConfirmation = true
+}
+#endif
+//    private func exportXLSSummary(for row: ReconciliationRow) {
+//        #if os(macOS)
+//        let totals = categoryTotals(for: row)
+//
+//        let text = Category.allCases.map { category in
+//            let total = totals[category] ?? 0
+//            return """
+//            \(category.description)\t\(AmountFormatter.anyAmountAsString(
+//                amount: total,
+//                currency: row.rec.account.currency,
+//                withSymbol: .never
+//            ))
+//"""
+////            return "\(category.description)\t\(total.string2f)"
+//        }.joined(separator: "\n")
+//
+//        let pasteboard = NSPasteboard.general
+//        pasteboard.clearContents()
+//        pasteboard.setString(text, forType: .string)
+//
+//        showingXLSConfirmation = true
+//        #endif
+//    }
 }
 
 
@@ -495,7 +532,12 @@ extension ReconcilliationListView {
             Label("Monthly Balance Summary", systemImage: "chart.bar")
         }
         
-        Button { exportXLSSummary(for: row) } label: {
+        Button {
+            if let firstRow = reconciliationRows.first {
+                // Get all rows in the same period as the first row
+                let rowsInPeriod = groupedReconciliationRows.first { $0.period == firstRow.rec.accountingPeriod }?.rows ?? []
+                exportXLSSummary(for: rowsInPeriod)
+            } } label: {
             Label("XLS Summary", systemImage: "doc.on.doc")
         }
 
