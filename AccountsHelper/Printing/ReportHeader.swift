@@ -17,32 +17,70 @@ struct ReportHeaderData {
 }
 
 func reportHeader(_ data: ReportHeaderData) -> String {
+    var header = ""
 
-    var header = String()
+    // Title
     header.append(data.title)
-
-    if let account = data.accountDescription {
-        header.append(" — \(account)\n")
-
-        let periodStr: String
-        if let m = data.periodMonth, let y = data.periodYear {
-            periodStr = "\(m)/\(y)"
-        } else {
-            periodStr = "-"
-        }
-
-        let statementDateStr =
-            data.statementDate?
-                .formatted(date: .numeric, time: .omitted)
-            ?? "-"
-
-        header.append("Period: \(periodStr) | Statement Date: \(statementDateStr)\n")
-    } else {
-        header.append("\n")
+    
+    // Optional account description
+    if let account = data.accountDescription, !account.isEmpty {
+        header.append(" — \(account)")
     }
+    header.append("\n") // always end line after title/account
+
+    // Period
+    let periodStr: String
+    if let m = data.periodMonth, let y = data.periodYear {
+        periodStr = "\(m)/\(y)"
+        header.append("Period: \(periodStr)  ")
+    }
+
+    // Statement date§
+    if let statementDateStr = data.statementDate {
+        let str = statementDateStr.formatted(date: .numeric, time: .omitted)
+        header.append("Statement Date: \(str)  ")
+    }
+
+    // Current print timestamp
+    let nowFormatter = DateFormatter()
+    nowFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+    let nowStr = nowFormatter.string(from: Date())
+    header.append("Report generated: \(nowStr)\n")
+
+    // 6️⃣ Separator line
+    header.append(String(repeating: "-", count: 80))
+    header.append("\n")
 
     return header
 }
+
+//func reportHeader(_ data: ReportHeaderData) -> String {
+//
+//    var header = String()
+//    header.append(data.title)
+//
+//    if let account = data.accountDescription {
+//        header.append(" — \(account)\n")
+//
+//        let periodStr: String
+//        if let m = data.periodMonth, let y = data.periodYear {
+//            periodStr = "\(m)/\(y)"
+//        } else {
+//            periodStr = "-"
+//        }
+//
+//        let statementDateStr =
+//            data.statementDate?
+//                .formatted(date: .numeric, time: .omitted)
+//            ?? "-"
+//
+//        header.append("Period: \(periodStr) | Statement Date: \(statementDateStr)\n")
+//    } else {
+//        header.append("\n")
+//    }
+//
+//    return header
+//}
 //
 //func reportHeader( title: String, viewContext: NSManagedObjectContext, appState: AppState) -> String {
 //    
