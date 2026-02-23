@@ -25,7 +25,7 @@ class BofSCSVImporter: TxImporter {
 //        let tempContext = makeTemporaryContext(parent: context)
         let tempContext = context
         var createdTransactions: [Transaction] = []
-        var importSummary = ImportSummary(processedCount: 0, mergedCount: 0, keepExistingCount: 0, keepNewCount: 0, keepBothCount: 0)
+        var importSummary = ImportSummary(processedCount: 0, exactDuplicateCount: 0, mergedCount: 0, keepExistingCount: 0, keepNewCount: 0, keepBothCount: 0)
 
         do {
             let csvData = try String(contentsOf: fileURL, encoding: .utf8)
@@ -134,6 +134,7 @@ class BofSCSVImporter: TxImporter {
                     snapshot: snapshot
                 ) {
                     tempContext.delete(newTx)
+                    print("Skipped exact duplicate transaction: \(newTx.payee ?? "Unknown Payee") on \(newTx.transactionDate ?? Date()) for \(newTx.txAmount)")
                     continue
                 }
                 

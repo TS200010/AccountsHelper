@@ -478,37 +478,6 @@ extension ReconcilliationListView {
             Label("Transactions", systemImage: "list.bullet")
         }
 
-        Button {
-            appState.selectedReconciliationID = row.id
-            context.perform {
-                do {
-                    // Remove all transactions from this reconciliation
-                    for tx in row.rec.transactions?.allObjects as? [Transaction] ?? [] {
-                        tx.reconciliation = nil
-                    }
-                    try context.save()
-                    
-                    DispatchQueue.main.async {
-                        refreshRows()
-                        appState.refreshInspector()
-                    }
-                    
-                    // Optional: register undo
-                    undoManager?.registerUndo(withTarget: context) { ctx in
-                        for tx in row.rec.transactions?.allObjects as? [Transaction] ?? [] {
-                            tx.reconciliation = row.rec
-                        }
-                        try? ctx.save()
-                    }
-                    undoManager?.setActionName("Reset Checked Transactions")
-                } catch {
-                    print("Failed to reset transactions: \(error)")
-                    context.rollback()
-                }
-            }
-        } label: {
-            Label("Reset Checked", systemImage: "arrow.uturn.backward.circle")
-        }
         
         Button {
             let predicate = NSPredicate(
@@ -522,7 +491,7 @@ extension ReconcilliationListView {
             Label("Categories Summary", systemImage: "doc.text.magnifyingglass")
         }
         
-        Button { printMonthlyBalanceSummary()} label: {
+        Button { printMonthlyBalanceSummary() } label: {
             Label("Monthly Balance Summary", systemImage: "chart.bar")
         }
         
@@ -567,6 +536,13 @@ extension ReconcilliationListView {
         
         Divider()
         
+        Button { printFullSummary() } label: {
+            Label("Print Full Summary", systemImage: "checkmark.square.fill")
+        }
+
+        
+        Divider()
+        
         Button(role: .destructive) {
             appState.selectedReconciliationID = row.id
             showingDeleteConfirmation = true
@@ -574,5 +550,38 @@ extension ReconcilliationListView {
             Label("Delete", systemImage: "trash")
         }
         .disabled(!row.rec.canDelete( ))
+
+        
+        Button (role: .destructive) {
+            appState.selectedReconciliationID = row.id
+            context.perform {
+                do {
+                    // Remove all transactions from this reconciliation
+                    for tx in row.rec.transactions?.allObjects as? [Transaction] ?? [] {
+                        tx.reconciliation = nil
+                    }
+                    try context.save()
+                    
+                    DispatchQueue.main.async {
+                        refreshRows()
+                        appState.refreshInspector()
+                    }
+                    
+                    // Optional: register undo
+                    undoManager?.registerUndo(withTarget: context) { ctx in
+                        for tx in row.rec.transactions?.allObjects as? [Transaction] ?? [] {
+                            tx.reconciliation = row.rec
+                        }
+                        try? ctx.save()
+                    }
+                    undoManager?.setActionName("Reset Checked Transactions")
+                } catch {
+                    print("Failed to reset transactions: \(error)")
+                    context.rollback()
+                }
+            }
+        } label: {
+            Label("Reset Checked", systemImage: "arrow.uturn.backward.circle")
+        }
     }
 }

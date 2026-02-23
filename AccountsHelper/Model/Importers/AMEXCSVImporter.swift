@@ -22,7 +22,7 @@ class AMEXCSVImporter: TxImporter {
     ) async -> ImportSummary {
         
         var createdTransactions: [Transaction] = []
-        var importSummary = ImportSummary(processedCount: 0, mergedCount: 0, keepExistingCount: 0, keepNewCount: 0, keepBothCount: 0)
+        var importSummary = ImportSummary(processedCount: 0, exactDuplicateCount: 0, mergedCount: 0, keepExistingCount: 0, keepNewCount: 0, keepBothCount: 0)
 
         do {
             let csvData = try String(contentsOf: fileURL, encoding: .utf8)
@@ -125,8 +125,8 @@ class AMEXCSVImporter: TxImporter {
                 // Check for duplicates in createdTransactions + existing context
                 if let existing = Self.findMergeCandidateInSnapshot(newTx: newTx, snapshot: createdTransactions + existingSnapshot) {
                     
-                    print("Existing: \(existing.comparableFieldsRepresentation())")
-                    print("New: \(newTx.comparableFieldsRepresentation())")
+//                    print("Existing: \(existing.comparableFieldsRepresentation())")
+//                    print("New: \(newTx.comparableFieldsRepresentation())")
                     
                     if existing.comparableFieldsRepresentation() == newTx.comparableFieldsRepresentation() {
                         // Already identical, skip

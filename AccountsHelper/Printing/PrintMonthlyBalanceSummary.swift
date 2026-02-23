@@ -10,8 +10,14 @@ import SwiftUI
 import PrintingKit
 
 extension ReconcilliationListView {
-
+    
     func printMonthlyBalanceSummary() {
+        spoolMonthlyBalanceSummary()
+        let spooler = ReportSpooler.shared
+        spooler.print()
+    }
+
+    func spoolMonthlyBalanceSummary() {
 #if os(macOS)
 //        let report = NSMutableString()
         
@@ -101,7 +107,7 @@ extension ReconcilliationListView {
         report.append("\nBofS Joint Income\n")
         report.append( reportLineForATotal(descr: "NCR Pension", category: .NCRPension, account: .BofSPV_82))
         report.append( reportLineForATotal(descr: "Interest Income", category: .IntDivIncome, account: .BofSPV_82))
-        report.append( reportLineForATotal(descr: "Other Income", category: .OtherIncome, account: .BofSPV_82))
+        report.append( reportLineForATotal(descr: "Other Income", category: .OtherIncomePV, account: .BofSPV_82))
         
         report.append("\nBofS Joint Transfers to/from Current Assets\n")
         report.append( reportLineForATotal(descr: "T/F to TMB Japan", category: .ToTMB, account: .BofSPV_82))
@@ -118,21 +124,17 @@ extension ReconcilliationListView {
         
         report.append("\nBofS Classic Credits\n")
         report.append( reportLineForATotal(descr: "BofS Classic Div Income", category: .IntDivIncome, account: .BofSCA_64))
-        report.append( reportLineForATotal(descr: "BofS Classic Other Income", category: .OtherIncome, account: .BofSCA_64))
+        report.append( reportLineForATotal(descr: "BofS Classic Other Income", category: .OtherIncomeCA, account: .BofSCA_64))
         report.append( reportLineForATotal(descr: "BofS Classic Pension Income", category: .StatePensionT, account: .BofSCA_64))
         
         report.append("\nItMk Equity\n")
-        report.append( reportLineForATotal(descr: "ItMk Income in Month", category: .OtherIncome, account: .ItMkEquity))
-        report.append( reportLineForATotal(descr: "T/F From BofS Joint", category: .ToBofSPV_82, account: .ItMkEquity))
+        report.append( reportLineForATotal(descr: "ItMk PnL (Loss is +ve)", category: .ItMkIncome, account: .ItMkEquity))
+        report.append( reportLineForATotal(descr: "T/F To BofS Joint", category: .ToBofSPV_82, account: .ItMkEquity))
         
         report.append("\nUKL Cash Credits\n")
-        report.append( reportLineForATotal(descr: "Misc UKL Cash Income", category: .OtherIncome, account: .CashUKL))
+        report.append( reportLineForATotal(descr: "Misc UKL Cash Income", category: .OtherIncomeCash, account: .CashUKL))
         report.append( reportLineForATotal(descr: "T/F from BofS Joint", category: .ToBofSPV_82, account: .CashUKL))
         report.append( reportLineForATotal(descr: "T/F from YEN Cash", category: .ToCashYEN, account: .CashUKL))
-        
-        
-        
-        
         
         // --- YEN Current Assets Table
         report.append("\nYEN\n")
@@ -140,6 +142,7 @@ extension ReconcilliationListView {
         report.append("\t" + String(repeating: " ", count: 32) + "Previous           Closing\n")
         let YENAssetsAccounts: [ReconcilableAccounts] = [
             .CashYEN,
+            .TMB
         ]
         for account in YENAssetsAccounts {
             let label = "\(account.description) B/F"
@@ -157,11 +160,11 @@ extension ReconcilliationListView {
             )
         }
 
-        
-        
-
+        // MARK: --- Spool
+        let spooler = ReportSpooler.shared
+        spooler.append( report as String )
         // MARK: --- Print
-        printReport(report)
+//        printReport(report)
 #endif
     }
     
@@ -203,7 +206,7 @@ extension ReconcilliationListView {
     }
 
     // MARK: --- fetchReconciliationsForPeriod
-    func fetchReconciliationsForPeriod(month: Int, year: Int) throws -> [Reconciliation] {
+    func fetchReconciliationsForPeriod(month: Int, year: Int) -> [Reconciliation] {
         let request: NSFetchRequest<Reconciliation> = Reconciliation.fetchRequest()
         
         request.predicate = NSPredicate(
@@ -216,7 +219,7 @@ extension ReconcilliationListView {
             NSSortDescriptor(keyPath: \Reconciliation.accountCD, ascending: true)
         ]
         
-        return try context.fetch(request)
+        return (try? context.fetch(request)) ?? []
     }
 
     // MARK: --- indexReconciliationsByAccount
@@ -328,18 +331,19 @@ extension ReconcilliationListView {
               category != .unknown else {
             let zeroStr = AmountFormatter.anyAmountAsString(amount: 0, currency: account.currency, withSymbol: .always)
             let padding = max(1, 40 - descr.count - zeroStr.count)
-            return "\t\(descr)" + String(repeating: "-", count: padding) + zeroStr + "\n"
+            return "\t\(descr)" + String(repeating: " ", count: padding) + zeroStr + "\n"
         }
         
         // Fetch all transactions for this account in the current period
-        let request: NSFetchRequest<Transaction> = Transaction.fetchRequest()
-        guard let reconciliation = resolveSelectedReconciliation(),
-              let startDate = reconciliation.previousStatementDate,
-              let endDate = reconciliation.statementDate
-        else {
-            // If no reconciliation selected or no dates, return zero line
-            return ""
-        }
+//        let request: NSFetchRequest<Transaction> = Transaction.fetchRequest()
+//        guard let reconciliation = resolveSelectedReconciliation() //,
+////              let startDate = reconciliation.previousStatementDate,
+////              let endDate = reconciliation.statementDate
+//        else {
+//            // If no reconciliation selected or no dates, return zero line
+//            return ""
+//        }
+
 
 
 //        let startDate = Calendar.current.date(from: DateComponents(year: year, month: month, day: 1))!
@@ -348,13 +352,26 @@ extension ReconcilliationListView {
 //            return Calendar.current.date(from: comps)?.addingTimeInterval(-1) ?? Date.distantFuture
 //        }()
         
-        request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
-            NSPredicate(format: "accountCD == %d", account.rawValue),
-            NSPredicate(format: "transactionDate >= %@ AND transactionDate <= %@", startDate as NSDate, endDate as NSDate),
-            NSPredicate(format: "categoryCD == %d OR splitCategoryCD == %d OR categoryCD == %d", category.rawValue, category.rawValue, category.rawValue)
-        ])
+//        request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+//            NSPredicate(format: "accountCD == %d", account.rawValue),
+//            NSPredicate(format: "transactionDate >= %@ AND transactionDate <= %@", startDate as NSDate, endDate as NSDate),
+//            NSPredicate(format: "categoryCD == %d OR splitCategoryCD == %d OR categoryCD == %d", category.rawValue, category.rawValue, category.rawValue)
+//        ])
+//        
+//        let transactionsForCategory: [Transaction] = (try? context.fetch(request)) ?? []
+
+        let reconciliations: [Reconciliation] = fetchReconciliationsForPeriod(month: month, year: year)
+        let allTransactions: [Transaction] = reconciliations.flatMap { rec in
+            (rec.transactions as? Set<Transaction>) ?? []
+        }
+        let transactionsForCategory: [Transaction] = allTransactions.filter { tx in
+            tx.accountCD == account.rawValue &&
+            (category == .unknown || tx.categoryCD == category.rawValue || tx.splitCategoryCD == category.rawValue)
+        }
         
-        let transactionsForCategory: [Transaction] = (try? context.fetch(request)) ?? []
+        print(transactionsForCategory.count)
+
+        
         
         // Sum amounts in account currency
         let totalAmount = transactionsForCategory.reduce(Decimal(0)) { sum, tx in

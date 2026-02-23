@@ -29,6 +29,7 @@ enum MergeResult {
 // MARK: --- ImportSummary
 struct ImportSummary {
     var processedCount: Int
+    var exactDuplicateCount: Int
     var mergedCount: Int
     var keepExistingCount: Int
     var keepNewCount: Int
@@ -120,7 +121,7 @@ extension TxImporter {
             guard existing.account == newTx.account else { continue }
             
             // Skip closed transactions
-            guard existing.closed else { continue }
+            guard !existing.closed else { continue }
                 
             // Must have dates
             guard let existingDate = existing.transactionDate,

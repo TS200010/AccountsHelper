@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct TransactionPosting {
+struct TransactionPosting: Hashable {
     let category: Category
     let amount: Decimal
 }

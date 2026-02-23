@@ -57,7 +57,10 @@ import ItMkLibrary
     case ToItMkEquity       = 101
     
     case IntDivIncome       = 60
-    case OtherIncome        = 61
+    case OtherIncomePV      = 61
+    case ItMkIncome         = 62
+    case OtherIncomeCA      = 63
+    case OtherIncomeCash    = 64
     
     case StatePensionT      = 70
     case StatePensionY      = 71
@@ -130,7 +133,10 @@ import ItMkLibrary
         case .ToCashEUR:        return String(localized: "ToEurCash")
         case .ToItMkEquity:     return String(localized: "ToItMkEquity")
         case .IntDivIncome:     return String(localized: "IntDivIncome")
-        case .OtherIncome:      return String(localized: "OtherIncome")
+        case .OtherIncomePV:    return String(localized: "OtherIncomePV")
+        case .ItMkIncome:       return String(localized: "ItMkIncome")
+        case .OtherIncomeCA:    return String(localized: "OtherIncomeCA")
+        case .OtherIncomeCash:  return String(localized: "OtherIncomeCash")
         case .StatePensionT:    return String(localized: "StatePensionT")
         case .StatePensionY:    return String(localized: "StatePensionY")
         case .NCRPension:       return String(localized: "NCRPension")

@@ -536,3 +536,22 @@ extension Transaction {
         }
     }
 }
+
+// MARK: --- TransactionPosting generation
+extension Transaction {
+    var postings: [TransactionPosting] {
+        var result: [TransactionPosting] = []
+
+        // Split portion
+        if splitAmount != 0 {
+            let convertedSplit = convertToPaymentCurrency(amount: splitAmount)
+            result.append(TransactionPosting(category: splitCategory, amount: convertedSplit))
+        }
+
+        // Remainder + commission
+        let convertedRemainder = convertToPaymentCurrency(amount: splitRemainderAmount) + commissionAmount
+        result.append(TransactionPosting(category: splitRemainderCategory, amount: convertedRemainder))
+
+        return result
+    }
+}

@@ -147,13 +147,36 @@ extension CategoriesSummaryView {
         }
         .id(showCurrencySymbols) // Forces the Table to rebuild when this changes
         .onChange(of: selectedCategoryID) { _, newValue in
-            if let id = newValue,
-               let row = categoryRows.first(where: { $0.id == id }) {
-                appState.selectedInspectorTransactionIDs = row.transactionIDs
-                appState.selectedInspectorView = .viewCategoryBreakdown
-            } else {
+            guard let id = newValue,
+                  let row = categoryRows.first(where: { $0.id == id }),
+                  let reconciliation = reconciliation else {
                 appState.selectedInspectorTransactionIDs = []
+                return
             }
+
+            // Build the same predicate we use for the context menu
+            let predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+                NSPredicate(format: "reconciliation == %@", reconciliation),
+                NSCompoundPredicate(orPredicateWithSubpredicates: [
+                    NSPredicate(format: "categoryCD == %d", row.id),
+                    NSPredicate(format: "splitCategoryCD == %d", row.id)
+                ])
+//                NSPredicate(format: "categoryCD == %d", row.id)
+            ])
+
+            // Create fetch request and assign predicate
+            let fetchRequest: NSFetchRequest<Transaction> = Transaction.fetchRequest()
+            fetchRequest.predicate = predicate
+
+            // Fetch transactions for the inspector
+            let transactionsForInspector = (try? viewContext.fetch(fetchRequest)) ?? []
+
+            // Pass their objectIDs to the inspector
+            appState.selectedInspectorTransactionIDs = transactionsForInspector.map { $0.objectID }
+
+            // Update the inspector view
+            appState.selectedInspectorView = .viewCategoryBreakdown
+
         }
         #if os(macOS)
         .tableStyle(.inset(alternatesRowBackgrounds: true))
@@ -172,7 +195,24 @@ extension CategoriesSummaryView {
         .contentShape(Rectangle())
         .contextMenu {
             Button("Transactions") {
-                let predicate = NSPredicate(format: "categoryCD == %d", row.id)
+                guard let reconciliation = reconciliation else { return }
+
+                let predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+                    // Must belong to this reconciliation
+                    NSPredicate(format: "reconciliation == %@", reconciliation),
+
+                    // Match the row's category in any relevant field
+                    NSCompoundPredicate(orPredicateWithSubpredicates: [
+                        NSPredicate(format: "categoryCD == %d", row.id),
+                        NSPredicate(format: "splitCategoryCD == %d", row.id)
+                    ])
+                    // Must match the row's category
+//                    NSPredicate(format: "categoryCD == %d", row.id),
+
+                    // Optional: if you want to limit to a specific account as well
+                    // NSPredicate(format: "accountCD == %d", someAccountID)
+                ])
+//                let predicate = NSPredicate(format: "categoryCD == %d", row.id)
                 appState.pushCentralView(.browseTransactions(predicate))
             }
         }
