@@ -122,13 +122,23 @@ extension TxImporter {
             
             // Skip closed transactions
             guard !existing.closed else { continue }
+            
+            // For AMEX, If reference exists and matches, treat as exact duplicate — skip
+            if existing.account == .AMEX {
+                if let newRef = newTx.reference, !newRef.isEmpty,
+                   let existingRef = existing.reference, !existingRef.isEmpty,
+                   newRef == existingRef {
+                    // Matching reference — no need to merge
+                    return nil
+                }
+            }
                 
             // Must have dates
             guard let existingDate = existing.transactionDate,
                   let newDate = newTx.transactionDate else { continue }
 
             // -----------------------------
-            // DAILY OD INT — STRICT ONLY
+            // DAILY OD INT — STRICT ONLY and only relavent to BofS Transactions
             // -----------------------------
             if isDailyODInterest(newTx) {
 
