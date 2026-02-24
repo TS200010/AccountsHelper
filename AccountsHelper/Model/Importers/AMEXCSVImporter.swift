@@ -115,7 +115,8 @@ class AMEXCSVImporter: TxImporter {
                     newTx.currency = currencyParsedTemp
                     newTx.exchangeRate = exchangeRateParsedTemp
                     newTx.txAmount = txAmountParsedTemp
-                    newTx.commissionAmount = commissionAmountParsedTemp
+                    // Commission has the same sign as the txAmount ALWAYS 
+                    newTx.commissionAmount = commissionAmountParsedTemp * (txAmountTemp >= 0 ? 1 : -1)
                 }
                 
                 newTx.debitCredit = txAmountTemp >= 0 ? .DR : .CR

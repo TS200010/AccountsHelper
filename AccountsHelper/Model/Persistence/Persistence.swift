@@ -57,6 +57,14 @@ final class PersistenceController {
             if let error = error as NSError? {
                 fatalError("❌ Unresolved error \(error), \(error.userInfo)")
             }
+//            let context = self.container.viewContext
+//            context.perform {
+//                do {
+//                    try fixCommissionSigns(context: context)
+//                } catch {
+//                    print("Commission fix failed: \(error)")
+//                }
+//            }
         }
         
         // Merge settings

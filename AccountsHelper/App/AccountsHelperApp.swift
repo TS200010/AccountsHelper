@@ -11,6 +11,24 @@ import CoreData
 
 import CoreData
 
+//@MainActor
+//func fixCommissionSigns(context: NSManagedObjectContext) throws {
+//    let request: NSFetchRequest<Transaction> = Transaction.fetchRequest()
+//
+//    let transactions = try context.fetch(request)
+//
+//    for tx in transactions {
+//        if tx.txAmount < 0 && tx.commissionAmount > 0 {
+//            tx.commissionAmount.negate()
+//            print("Fixed commission sign for transaction \(tx.id)")
+//        }
+//    }
+//
+//    if context.hasChanges {
+//        try context.save()
+//    }
+//}
+
 @main
 struct AccountsHelperApp: App {
     
