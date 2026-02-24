@@ -625,5 +625,6 @@ extension ReconcilliationListView {
         } label: {
             Label("Reset Checked", systemImage: "arrow.uturn.backward.circle")
         }
+        .disabled(row.rec.closed)
     }
 }
