@@ -55,7 +55,9 @@ class CategoryMatcher {
         if let exact = mappings
             .filter({ $0.inputString?.lowercased() == normalized })
             .max(by: { $0.usageCount < $1.usageCount }) {
-
+            if exact.category == .ToBalance {
+                return .unknown
+            }
             exact.incrementUsage()
             saveContextSilently()
             return exact.category
@@ -89,7 +91,9 @@ class CategoryMatcher {
         if let fuzzy = mappings
             .filter({ ($0.inputString?.isEmpty == false) && normalized.contains($0.inputString!.lowercased()) })
             .max(by: { $0.usageCount < $1.usageCount }) {
-
+            if fuzzy.category == .ToBalance {
+                return .unknown
+            }
             fuzzy.incrementUsage()
             saveContextSilently()
             return fuzzy.category
