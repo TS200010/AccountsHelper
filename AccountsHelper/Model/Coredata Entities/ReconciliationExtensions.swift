@@ -249,6 +249,11 @@ extension Reconciliation {
         if previousEndingBalance == 0 && hasLaterReconciliation( ) {
             return false
         }
+        
+        if (transactions?.count ?? 0) > 0 {
+            return false
+        }
+        
         return true
     }
 
