@@ -122,9 +122,9 @@ struct NavigatorMenuView: View {
                           color: .green,
                           optionalSheetBinding: .constant(false))
             
-            SidebarButton(title: "Import VISA PNG Transactions",
-                          systemImage: "photo",
-                          view: .VISAPNGImport,
+            SidebarButton(title: "Import VISA CSV Transactions",
+                          systemImage: "doc.text",
+                          view: .VISACSVImport,
                           color: .yellow,
                           optionalSheetBinding: .constant(false))
             

@@ -61,6 +61,9 @@ struct CentralViews: View {
         case .editTransaction(let tx):
             AddOrEditTransactionView(transaction: tx)
             
+        case .adjustCategory(let tx):
+            AdjustCategoryView(transaction: tx) // scaffold view for now
+            
         case .browseTransactions(let predicate, let mode):
             BrowseTransactionsView(predicate: predicate, mode: mode)
             
@@ -88,9 +91,9 @@ struct CentralViews: View {
             Text("Not implemented on iOS")
             #endif
             
-        case .VISAPNGImport:
+        case .VISACSVImport:
             #if os(macOS)
-            Text("Not implemented as we had so many problems.")
+            TxImportView<VISACSVImporter>()
             #else
             Text("Not implemented on iOS")
             #endif

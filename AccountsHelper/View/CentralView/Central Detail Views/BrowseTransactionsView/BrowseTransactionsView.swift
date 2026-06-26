@@ -222,6 +222,14 @@ extension BrowseTransactionsView {
                 }
                 .disabled(anySelectedTransactionClosed)
                 
+                Button("Adjust Category") {
+                    safeUIUpdate { selectedTransactionIDs = [row.id] }
+                    appState.selectedTransactionID = row.id
+                    appState.pushCentralView(.adjustCategory(existingTransaction: row.transaction))
+                    appState.refreshInspector()
+                }
+                .disabled(anySelectedTransactionClosed)
+                
                 Button(role: .destructive) {
                     // Remove pairing only, not deleting transaction
                     row.transaction.pairID = nil

@@ -13,6 +13,7 @@ enum CentralViewsEnum: Hashable {
     // MARK: --- Cases
     case emptyView
     case editTransaction(existingTransaction: Transaction?)
+    case adjustCategory(existingTransaction: Transaction)
     case editCurrency
     case editPayee
     case editPayer
@@ -21,7 +22,7 @@ enum CentralViewsEnum: Hashable {
     case addTransaction
     case AMEXCSVImport
     case BofSCSVImport
-    case VISAPNGImport
+    case VISACSVImport
     case reconcilliationListView
     case reconciliationTransactionDetail(NSPredicate?, BrowseTransactionsMode = .reconciliationAssignmentBrowsing)
     case browseTransactions(NSPredicate?, BrowseTransactionsMode = .generalBrowsing)
@@ -68,13 +69,14 @@ enum CentralViewsEnum: Hashable {
         switch self {
         case .emptyView: return " "
         case .editTransaction: return "Edit Transaction"
+        case .adjustCategory: return "Adjust Category"
         case .editCurrency: return "Edit Currency"
         case .editPayee: return "Edit Payee"
         case .editPayer: return "Edit Payer"
         case .addTransaction: return "Add Transaction"
         case .AMEXCSVImport: return "AMEX CSV Import"
         case .BofSCSVImport: return "BofS CSV Import"
-        case .VISAPNGImport: return "VISA PNG Import"
+        case .VISACSVImport: return "VISA CSV Import"
         case .reconcilliationListView: return "Reconcile Transactions"
         case .reconciliationTransactionDetail: return "Reconciliation Transaction Detail"
         case .browseTransactions: return "Browse Transactions"

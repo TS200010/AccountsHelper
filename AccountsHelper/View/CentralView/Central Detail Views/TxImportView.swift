@@ -110,8 +110,12 @@ struct TxImportView<Importer: TxImporter>: View {
                 }
             )
             
-            statusMessage = "Import complete.\nProcessed \(importSummary.processedCount) transactions\n"
-            statusMessage += "Merged: \(importSummary.mergedCount)\nKept Existing: \(importSummary.keepExistingCount)\nKept New: \(importSummary.keepNewCount)\nKept Both: \(importSummary.keepBothCount)"
+            statusMessage = "Import complete.\n\nProcessed \(importSummary.processedCount) transactions\n"
+            statusMessage += "Duplicates skipped: \(importSummary.exactDuplicateCount)\n"
+            statusMessage += "Merged: \(importSummary.mergedCount)\n"
+            statusMessage += "Kept Existing: \(importSummary.keepExistingCount)\n"
+            statusMessage += "Kept New: \(importSummary.keepNewCount)\n"
+            statusMessage += "Kept Both: \(importSummary.keepBothCount)"
             if importSummary.processedCount == 0 {
                 statusMessage += "\n\nNo transactions processed. Did you export all Columns?"
             }

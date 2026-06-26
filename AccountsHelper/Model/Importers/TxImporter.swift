@@ -57,15 +57,12 @@ protocol TxImporter {
 
     /// Optional snapshot merge detection
     static func findMergeCandidateInSnapshot(newTx: Transaction, snapshot: [Transaction]) -> Transaction?
+    
+    /// Optional exact duplicate detection
+    static func isExactDuplicate(newTx: Transaction, snapshot: [Transaction]) -> Bool
 }
 
 extension TxImporter {
-    // MARK: --- Temporary Context Creation
-//    static func makeTemporaryContext(parent: NSManagedObjectContext) -> NSManagedObjectContext {
-//        let tempContext = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
-//        tempContext.parent = parent
-//        return tempContext
-//    }
 
     // MARK: --- CSV Parser
     /// Handles quotes, multi-line fields, trims trailing empty headers
@@ -166,6 +163,58 @@ extension TxImporter {
         }
 
         return nil
+    }
+}
+
+extension TxImporter {
+
+    // MARK: --- Exact Duplicate Detection
+    /// Checks if a new transaction is an exact duplicate of any transaction in the snapshot.
+    /// For AMEX, also considers the reference field.
+    static func isExactDuplicate(newTx: Transaction, snapshot: [Transaction]) -> Bool {
+        guard let newDate = newTx.transactionDate else { return false }
+
+        let calendar = Calendar.current
+
+        for existing in snapshot {
+            // Must be same account
+            guard existing.account == newTx.account else { continue }
+
+            // Skip closed transactions
+            guard !existing.closed else { continue }
+
+            // AMEX shortcut: reference-based duplicates
+            if existing.account == .AMEX,
+               let newRef = newTx.reference, !newRef.isEmpty,
+               let existingRef = existing.reference, !existingRef.isEmpty,
+               newRef == existingRef {
+                return true
+            }
+
+            // Must have dates
+            guard let existingDate = existing.transactionDate else { continue }
+
+            // DAILY OD INT strict duplicates (relevant for BofS)
+            if isDailyODInterest(newTx) {
+                if existing.txAmount == newTx.txAmount &&
+                   calendar.isDate(existingDate, inSameDayAs: newDate) {
+                    return true
+                }
+                continue
+            }
+
+            // Normal fuzzy duplicates: same amount + date window
+            guard existing.txAmount == newTx.txAmount else { continue }
+
+            let minDate = calendar.date(byAdding: .day, value: -7, to: newDate)!
+            let maxDate = calendar.date(byAdding: .day, value: 1, to: newDate)!
+
+            if existingDate >= minDate && existingDate <= maxDate {
+                return true
+            }
+        }
+
+        return false
     }
 }
 

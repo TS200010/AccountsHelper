@@ -7,7 +7,7 @@
 
 import Foundation
 import SwiftUI
-extension AddOrEditTransactionView {
+//extension AddOrEditTransactionView {
     
     // MARK: --- LabeledPicker<T>
     #if os(iOS)
@@ -121,4 +121,4 @@ extension AddOrEditTransactionView {
     #endif
 
     
-}
+//}
