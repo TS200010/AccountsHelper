@@ -35,7 +35,7 @@ import ItMkLibrary
     case MiscOther          = 22
     case InterestCharges    = 23
     case ToBalance          = 24
-    case MortgageInterest   = 25
+    case IncTaxMortInt   = 25
     case Phone              = 26
     case Utilities          = 27
     case CouncilTax         = 28
@@ -114,7 +114,7 @@ import ItMkLibrary
         case .MiscOther:        return String(localized: "MiscOther")
         case .InterestCharges:  return String(localized: "InterestCharges")
         case .ToBalance:        return String(localized: "ToBalance")
-        case .MortgageInterest: return String(localized: "MortgageInterest")
+        case .IncTaxMortInt:    return String(localized: "IncTax/MortInt")
         case .Phone:            return String(localized: "Phone")
         case .Utilities:        return String(localized: "Utilities")
         case .CouncilTax:       return String(localized: "CouncilTax")

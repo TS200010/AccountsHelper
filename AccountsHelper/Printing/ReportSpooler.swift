@@ -7,7 +7,7 @@
 
 import Foundation
 import PrintingKit
-import AppKit
+// import AppKit
 
 final class ReportSpooler {
 

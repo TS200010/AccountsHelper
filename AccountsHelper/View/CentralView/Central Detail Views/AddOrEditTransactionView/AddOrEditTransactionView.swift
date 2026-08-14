@@ -90,11 +90,12 @@ struct AddOrEditTransactionView: View {
 //                focusedField: $focusedField
             )
             CounterTransactionView(
-                transactionData: $transactionData,
-                counterTransaction: $counterTransactionActive,
-                counterAccount: $counterAccount,
-                counterFXRate:        $counterFXRate
-
+                transactionData:      $transactionData,
+                counterTransaction:   $counterTransactionActive,
+                counterAccount:       $counterAccount,
+                counterFXRate:        $counterFXRate,
+                counterCategory:      $counterCategory,
+                canRemoveCounter:     !counterExistsOnLoad
             )
         }
     #elseif os(macOS)
@@ -123,8 +124,9 @@ struct AddOrEditTransactionView: View {
     private var advancedSection: some View {
     #if os(macOS)
         GroupBox(label: Label("Advanced", systemImage: "square.and.arrow.down")) {
-            
         }
+    #else
+        Text("Need to implement on iOS")
     #endif
     }
 

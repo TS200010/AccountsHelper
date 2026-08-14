@@ -44,7 +44,6 @@ protocol TxImporter {
     static var importType: ImportType { get }
     
     /// Import CSV and return Transactions, using the mergeHandler when duplicates are found.
-    /// Transactions are created in a temporary child context, then saved into the main context.
     @MainActor
     static func importTransactions(
         fileURL: URL,

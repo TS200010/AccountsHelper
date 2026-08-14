@@ -193,12 +193,18 @@ struct BrowseTransactionsView: View {
         }
 #if os(iOS)
         .sheet(isPresented: $showingEditTransactionView) {
-            Text("EDIT HERE\(String(describing: selectedTransactionIDs.first))")
-            if selectedTransactionIDs.first != nil {
-                AddOrEditTransactionView(transactionID: selectedTransactionIDs.first, context: viewContext )
+//            Text("EDIT HERE\(String(describing: selectedTransactionIDs.first))")
+            if let objectID = selectedTransactionIDs.first,
+               let transaction = try? viewContext.existingObject(with: objectID) as? Transaction {
+                AddOrEditTransactionView(transaction: transaction)
             } else {
                 Text("No transaction selected")
             }
+//            if selectedTransactionIDs.first != nil {
+//                AddOrEditTransactionView(transactionID: selectedTransactionIDs.first, context: viewContext )
+//            } else {
+//                Text("No transaction selected")
+//            }
         }
 #endif
     }
@@ -689,7 +695,7 @@ extension BrowseTransactionsView {
             .onTapGesture {
                 safeUIUpdate { selectedTransactionIDs.wrappedValue = [row.id] }
             }
-            .contextMenu { contextMenu(for: row) }
+            .contextMenu { editContextMenu(for: row) }
         #endif
     }
 

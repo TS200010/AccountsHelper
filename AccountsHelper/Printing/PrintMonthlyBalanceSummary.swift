@@ -8,13 +8,16 @@
 import Foundation
 import SwiftUI
 import PrintingKit
+import CoreData
 
 extension ReconcilliationListView {
     
     func printMonthlyBalanceSummary() {
+#if os(macOS)
         spoolMonthlyBalanceSummary()
         let spooler = ReportSpooler.shared
         spooler.print()
+#endif
     }
 
     func spoolMonthlyBalanceSummary() {

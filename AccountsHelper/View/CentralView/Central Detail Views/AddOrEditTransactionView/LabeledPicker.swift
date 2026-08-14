@@ -37,7 +37,7 @@ import SwiftUI
             HStack {
                 Text(label)
                     .padding(.leading, 14)
-                    .frame(width: labelWidth, alignment: .leading)
+                    .frame(width: gLabelWidth, alignment: .leading)
                     .foregroundColor(.secondary)
                 Spacer()
                 HStack(spacing: 4) {
@@ -48,7 +48,7 @@ import SwiftUI
                         .font(.body)
                 }
             }
-            .frame(height: rowHeight)
+            .frame(height: gRowHeight)
             .background(Color(UIColor.secondarySystemBackground))
             .overlay(
                 RoundedRectangle(cornerRadius: 8)

@@ -21,7 +21,7 @@ extension AddOrEditTransactionView {
         var body: some View {
             HStack {
                 Text(label)
-                    .frame(width: labelWidth, alignment: .leading)
+                    .frame(width: gLabelWidth, alignment: .leading)
                     .foregroundColor(.secondary)
                 Spacer()
                 TextField("", text: $text)
@@ -33,7 +33,7 @@ extension AddOrEditTransactionView {
                     .textInputAutocapitalization(.never)
             }
             .padding(.horizontal)
-            .frame(height: rowHeight)
+            .frame(height: gRowHeight)
             .background(Color(UIColor.secondarySystemBackground))
             .overlay(
                 RoundedRectangle(cornerRadius: 8)

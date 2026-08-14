@@ -450,6 +450,12 @@ private func exportXLSSummary(for reconciliations: [ReconciliationRow]) {
 
     showingXLSConfirmation = true
 }
+    
+#else
+    private func exportXLSSummary(for reconciliations: [ReconciliationRow]) {
+        return
+    }
+
 #endif
 //    private func exportXLSSummary(for row: ReconciliationRow) {
 //        #if os(macOS)

@@ -30,7 +30,7 @@ extension AddOrEditTransactionView {
         var body: some View {
             HStack {
                 Text(label)
-                    .frame(width: labelWidth, alignment: .leading) // left-align to match other fields
+                    .frame(width: gLabelWidth, alignment: .leading) // left-align to match other fields
                     .padding(.leading, 14) // aligns with other controls
                     .foregroundColor(.secondary)
                 Spacer()
@@ -57,7 +57,7 @@ extension AddOrEditTransactionView {
                         
                     }
             }
-            .frame(height: rowHeight)
+            .frame(height: gRowHeight)
             .background(Color(UIColor.secondarySystemBackground))
             .overlay(
                 RoundedRectangle(cornerRadius: 8)
