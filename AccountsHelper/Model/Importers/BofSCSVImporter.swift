@@ -23,9 +23,15 @@ class BofSCSVImporter: TxImporter {
 
         // MARK: --- Setup
 //        let tempContext = makeTemporaryContext(parent: context)
-        let tempContext = context
         var createdTransactions: [Transaction] = []
-        var importSummary = ImportSummary(processedCount: 0, exactDuplicateCount: 0, mergedCount: 0, keepExistingCount: 0, keepNewCount: 0, keepBothCount: 0)
+        var importSummary = ImportSummary(
+            processedCount: 0,
+            exactDuplicateCount: 0,
+            mergedCount: 0,
+            keepExistingCount: 0,
+            keepNewCount: 0,
+            keepBothCount: 0
+        )
 
         do {
             let csvData = try String(contentsOf: fileURL, encoding: .utf8)
@@ -49,21 +55,28 @@ class BofSCSVImporter: TxImporter {
                 throw ImportError.unknownAccount(rawAccountNumber)
             }
             
-            let matcher = CategoryMatcher(context: tempContext)
+            let matcher = CategoryMatcher(context: context)
             var accountTemp = ""
 
-            // Snapshot of existing transactions from parent context
+            
+            // Fetch existing transactions for duplicate checking
             let fetchRequest: NSFetchRequest<Transaction> = Transaction.fetchRequest()
-//            let existingSnapshot = (try? context.fetch(fetchRequest)) ?? []
-            let existingSnapshotIDs =
-                (try? context.fetch(fetchRequest))?.map { $0.objectID } ?? []
+            let existingSnapshot = (try? context.fetch(fetchRequest)) ?? []
+    
+            
+            // Snapshot of existing transactions from parent context
+//            let fetchRequest: NSFetchRequest<Transaction> = Transaction.fetchRequest()
+////            let existingSnapshot = (try? context.fetch(fetchRequest)) ?? []
+//            let existingSnapshotIDs =
+//                (try? context.fetch(fetchRequest))?.map { $0.objectID } ?? []
+            
 
             // MARK: --- Row Processing
             var shouldContinue = true
             for row in rows.dropFirst() where shouldContinue {
                 guard row.count == headers.count else { continue }
 
-                let newTx = Transaction(context: tempContext)
+                let newTx = Transaction(context: context)
                 importSummary.processedCount += 1
 
                 for (index, header) in headers.enumerated() {
@@ -122,18 +135,15 @@ class BofSCSVImporter: TxImporter {
                 newTx.currency = .UKL
                 newTx.exchangeRate = 1
                 
-                let snapshot: [Transaction] =
-                    createdTransactions +
-                    existingSnapshotIDs.compactMap {
-                        tempContext.object(with: $0) as? Transaction
-                    }
+                let snapshot = createdTransactions + existingSnapshot
                 
                 // MARK: --- Exact Duplicate Detection
                 if Self.isExactDuplicate(
                     newTx: newTx,
                     snapshot: snapshot
                 ) {
-                    tempContext.delete(newTx)
+                    context.delete(newTx)
+                    importSummary.exactDuplicateCount += 1
                     print("Skipped exact duplicate transaction: \(newTx.payee ?? "Unknown Payee") on \(newTx.transactionDate ?? Date()) for \(newTx.txAmount)")
                     continue
                 }
@@ -154,17 +164,12 @@ class BofSCSVImporter: TxImporter {
                 // MARK: --- Duplicate Checking
                 if let existing = Self.findMergeCandidateInSnapshot(
                     newTx: newTx,
-                    snapshot:
-                        createdTransactions +
-                        existingSnapshotIDs.compactMap {
-                            tempContext.object(with: $0) as? Transaction
-                        }
-//                    snapshot: createdTransactions + existingSnapshot
+                    snapshot: snapshot
                 ) {
 
                     if existing.comparableFieldsRepresentation() == newTx.comparableFieldsRepresentation() {
                         // Exactly the same → skip
-                        tempContext.delete(newTx)
+                        context.delete(newTx)
                         importSummary.exactDuplicateCount += 1
                         continue
                     }
@@ -177,21 +182,21 @@ class BofSCSVImporter: TxImporter {
                         if !createdTransactions.contains(existing) {
                             createdTransactions.append(existing)
                         }
-                        tempContext.delete(newTx)
+                        context.delete(newTx)
                         importSummary.mergedCount += 1
 
                     case .keepExisting:
                         if !createdTransactions.contains(existing) {
                             createdTransactions.append(existing)
                         }
-                        tempContext.delete(newTx)
+                        context.delete(newTx)
                         importSummary.keepExistingCount += 1
 
                     case .keepNew:
                         if !createdTransactions.contains(newTx) {
                             createdTransactions.append(newTx)
                         }
-                        tempContext.delete(existing)
+                        context.delete(existing)
                         importSummary.keepNewCount += 1
 
                     case .keepBoth:
@@ -213,18 +218,10 @@ class BofSCSVImporter: TxImporter {
             }
 
             // MARK: --- Save Contexts
-            try tempContext.save()
+            print("BofS: attempting save with \(createdTransactions.count) created transactions")
             try context.save()
 
-            // Re-fetch results in parent context
-            let objectIDs = createdTransactions
-                .filter { !$0.isDeleted }
-                .map { $0.objectID }
-//            let objectIDs = createdTransactions.map { $0.objectID }
-            let parentTransactions: [Transaction] = objectIDs.compactMap { id in
-                context.object(with: id) as? Transaction
-            }
-
+            print("BofS RETURN SUMMARY: processed=\(importSummary.processedCount), duplicates=\(importSummary.exactDuplicateCount), merged=\(importSummary.mergedCount), keepExisting=\(importSummary.keepExistingCount), keepNew=\(importSummary.keepNewCount), keepBoth=\(importSummary.keepBothCount)")
             return importSummary
 
         } catch {
