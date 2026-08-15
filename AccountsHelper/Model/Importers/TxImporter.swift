@@ -118,42 +118,12 @@ extension TxImporter {
             
             // Skip closed transactions
             guard !existing.closed else { continue }
-            
-            // AMEX reference is authoritative:
-            // - Same non-empty reference = exact duplicate, so do not offer a merge.
-            // - Different non-empty references = different transactions, so do not offer a merge.
-            // - If either reference is empty, fall through to normal matching.
-            if existing.account == .AMEX {
-                let newRef = newTx.reference?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-                let existingRef = existing.reference?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-
-                if !newRef.isEmpty && !existingRef.isEmpty && newRef != existingRef {
-                    continue
-                }
-            }
                 
             // Must have dates
             guard let existingDate = existing.transactionDate,
                   let newDate = newTx.transactionDate else { continue }
 
-            // -----------------------------
-            // DAILY OD INT — STRICT ONLY and only relavent to BofS Transactions
-            // -----------------------------
-            if isDailyODInterest(newTx) {
-
-                // Strict duplicate: same amount AND same statement day
-                if existing.txAmount == newTx.txAmount &&
-                   calendar.isDate(existingDate, inSameDayAs: newDate) {
-                    return nil
-                }
-
-                // Otherwise: NOT a merge candidate — keep scanning
-                continue
-            }
-
-            // --------------------------------
-            // NORMAL TRANSACTIONS — FUZZY
-            // --------------------------------
+            // NORMAL TRANSACTIONS — FUZZY LOGIC
             guard existing.txAmount == newTx.txAmount else { continue }
 
             let minDate = calendar.date(byAdding: .day, value: -7, to: newDate)!
@@ -185,42 +155,8 @@ extension TxImporter {
             // Skip closed transactions
             guard !existing.closed else { continue }
 
-//            // AMEX shortcut: reference-based duplicates
-//            if existing.account == .AMEX,
-//               let newRef = newTx.reference, !newRef.isEmpty,
-//               let existingRef = existing.reference, !existingRef.isEmpty,
-//               newRef == existingRef {
-//                return true
-//            }
-            // For AMEX, treat references as authoritative:
-            // - If both have non-empty references and they match -> exact duplicate -> skip merging
-            // - If either has a non-empty reference and they differ -> do NOT consider merge candidate (skip this existing)
-            if existing.account == .AMEX {
-                let newRef = newTx.reference?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-                let existingRef = existing.reference?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-                if !newRef.isEmpty && !existingRef.isEmpty {
-                    if newRef == existingRef {
-                        // references match -> not a merge (exact duplicate), stop looking
-                        return true
-                    } else {
-                        // references differ -> explicitly not a merge candidate for AMEX
-                        continue
-                    }
-                }
-                // if refs are empty, fall through to fuzzy matching
-            }
-
             // Must have dates
             guard let existingDate = existing.transactionDate else { continue }
-
-            // DAILY OD INT strict duplicates (relevant for BofS)
-            if isDailyODInterest(newTx) {
-                if existing.txAmount == newTx.txAmount &&
-                   calendar.isDate(existingDate, inSameDayAs: newDate) {
-                    return true
-                }
-                continue
-            }
 
             // Normal fuzzy duplicates: same amount + date window
             guard existing.txAmount == newTx.txAmount else { continue }
@@ -237,13 +173,4 @@ extension TxImporter {
     }
 }
 
-
-// MARK: --- Helpers
-extension TxImporter {
-    
-    private static func isDailyODInterest(_ tx: Transaction) -> Bool {
-        tx.payee?.hasPrefix("DAILY OD INT") == true
-    }
-    
-}
 

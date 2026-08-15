@@ -287,4 +287,85 @@ class AMEXCSVImporter: TxImporter {
         
         return (foreignSpendAmount, foreignCurrency, commissionAmount, exchangeRate)
     }
+    
+    
+    // MARK: --- findMergeCandidateInSnapshot
+    static func findMergeCandidateInSnapshot(
+        newTx: Transaction,
+        snapshot: [Transaction]
+    ) -> Transaction? {
+
+        for existing in snapshot {
+
+            guard existing.account == newTx.account else { continue }
+            guard !existing.closed else { continue }
+
+            let newRef = newTx.reference?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            let existingRef = existing.reference?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+
+            // AMEX references are authoritative when both are present.
+            if !newRef.isEmpty && !existingRef.isEmpty && newRef != existingRef {
+                continue
+            }
+
+            guard
+                let existingDate = existing.transactionDate,
+                let newDate = newTx.transactionDate
+            else { continue }
+
+            guard existing.txAmount == newTx.txAmount else { continue }
+
+            let calendar = Calendar.current
+            let minDate = calendar.date(byAdding: .day, value: -7, to: newDate)!
+            let maxDate = calendar.date(byAdding: .day, value: 1, to: newDate)!
+
+            if existingDate >= minDate && existingDate <= maxDate {
+                return existing
+            }
+        }
+
+        return nil
+    }
+    
+    
+    // MARK: --- isExactDuplicate
+    static func isExactDuplicate(
+        newTx: Transaction,
+        snapshot: [Transaction]
+    ) -> Bool {
+
+        guard let newDate = newTx.transactionDate else { return false }
+
+        let calendar = Calendar.current
+
+        for existing in snapshot {
+
+            guard existing.account == newTx.account else { continue }
+            guard !existing.closed else { continue }
+
+            let newRef = newTx.reference?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            let existingRef = existing.reference?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+
+            // AMEX references are authoritative when both are present.
+            if !newRef.isEmpty && !existingRef.isEmpty {
+                if newRef == existingRef {
+                    return true
+                } else {
+                    continue
+                }
+            }
+
+            guard let existingDate = existing.transactionDate else { continue }
+            guard existing.txAmount == newTx.txAmount else { continue }
+
+            let minDate = calendar.date(byAdding: .day, value: -7, to: newDate)!
+            let maxDate = calendar.date(byAdding: .day, value: 1, to: newDate)!
+
+            if existingDate >= minDate && existingDate <= maxDate {
+                return true
+            }
+        }
+
+        return false
+    }
 }

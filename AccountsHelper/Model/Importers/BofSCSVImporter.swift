@@ -317,5 +317,48 @@ class BofSCSVImporter: TxImporter {
 
         return false
     }
+    
+    // MARK: --- findMergeCandidateInSnapshot
+    static func findMergeCandidateInSnapshot(
+        newTx: Transaction,
+        snapshot: [Transaction]
+    ) -> Transaction? {
+
+        let calendar = Calendar.current
+
+        for existing in snapshot {
+
+            guard existing.account == newTx.account else { continue }
+            guard !existing.closed else { continue }
+
+            // DAILY OD INT — strict duplicate only
+            if newTx.payee?.hasPrefix("DAILY OD INT") == true {
+                if existing.txAmount == newTx.txAmount,
+                   let existingDate = existing.transactionDate,
+                   let newDate = newTx.transactionDate,
+                   calendar.isDate(existingDate, inSameDayAs: newDate) {
+                    return nil
+                }
+
+                continue
+            }
+
+            guard
+                let existingDate = existing.transactionDate,
+                let newDate = newTx.transactionDate
+            else { continue }
+
+            guard existing.txAmount == newTx.txAmount else { continue }
+
+            let minDate = calendar.date(byAdding: .day, value: -7, to: newDate)!
+            let maxDate = calendar.date(byAdding: .day, value: 1, to: newDate)!
+
+            if existingDate >= minDate && existingDate <= maxDate {
+                return existing
+            }
+        }
+
+        return nil
+    }
 }
 
