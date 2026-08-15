@@ -62,13 +62,6 @@ class BofSCSVImporter: TxImporter {
             // Fetch existing transactions for duplicate checking
             let fetchRequest: NSFetchRequest<Transaction> = Transaction.fetchRequest()
             let existingSnapshot = (try? context.fetch(fetchRequest)) ?? []
-    
-            
-            // Snapshot of existing transactions from parent context
-//            let fetchRequest: NSFetchRequest<Transaction> = Transaction.fetchRequest()
-////            let existingSnapshot = (try? context.fetch(fetchRequest)) ?? []
-//            let existingSnapshotIDs =
-//                (try? context.fetch(fetchRequest))?.map { $0.objectID } ?? []
             
 
             // MARK: --- Row Processing
@@ -137,7 +130,11 @@ class BofSCSVImporter: TxImporter {
                 
                 let snapshot = createdTransactions + existingSnapshot
                 
-                // MARK: --- Exact Duplicate Detection
+                // ---------------------------------------------------------
+                // EXACT DUPLICATE
+                // ---------------------------------------------------------
+                // Exact duplicates are skipped without presenting a merge.
+                // This also increments the duplicate counter.
                 if Self.isExactDuplicate(
                     newTx: newTx,
                     snapshot: snapshot
@@ -148,8 +145,11 @@ class BofSCSVImporter: TxImporter {
                     continue
                 }
                 
-                // MARK: --- Pair Detection
-                if let counter = Self.findPairCandidateInSnapshot(
+                // ---------------------------------------------------------
+                // PAIR DETECTION
+                // ---------------------------------------------------------
+                // Pairs 
+                if let counter = Self.scanForTransactionToPairInSnapshot(
                     newTx: newTx,
                     snapshot: snapshot
                 ) {
@@ -161,7 +161,11 @@ class BofSCSVImporter: TxImporter {
                     counter.category = newTx.account.pairCode
                 }
 
-                // MARK: --- Duplicate Checking
+                // ---------------------------------------------------------
+                // MERGE CANDIDATE
+                // ---------------------------------------------------------
+                // Only transactions which are not exact duplicates reach
+                // the merge candidate logic.
                 if let existing = Self.findMergeCandidateInSnapshot(
                     newTx: newTx,
                     snapshot: snapshot
@@ -231,7 +235,7 @@ class BofSCSVImporter: TxImporter {
     }
     
     // MARK: --- findPairCandidateInSnapshot
-    static func findPairCandidateInSnapshot(
+    static func scanForTransactionToPairInSnapshot(
         newTx: Transaction,
         snapshot: [Transaction]
     ) -> Transaction? {
