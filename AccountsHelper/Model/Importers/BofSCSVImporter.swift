@@ -165,6 +165,7 @@ class BofSCSVImporter: TxImporter {
                     if existing.comparableFieldsRepresentation() == newTx.comparableFieldsRepresentation() {
                         // Exactly the same → skip
                         tempContext.delete(newTx)
+                        importSummary.exactDuplicateCount += 1
                         continue
                     }
 

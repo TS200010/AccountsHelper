@@ -119,17 +119,6 @@ extension TxImporter {
             // Skip closed transactions
             guard !existing.closed else { continue }
             
-            // For AMEX, If reference exists and matches, treat as exact duplicate — skip
-            // This is just a quick exit for accidental repeated import
-//            if existing.account == .AMEX {
-//                if let newRef = newTx.reference, !newRef.isEmpty,
-//                   let existingRef = existing.reference, !existingRef.isEmpty,
-//                   newRef == existingRef {
-//                    // Matching reference — no need to merge
-//                    return nil
-//                }
-//            }
-            
             // AMEX reference is authoritative:
             // - Same non-empty reference = exact duplicate, so do not offer a merge.
             // - Different non-empty references = different transactions, so do not offer a merge.
@@ -138,12 +127,8 @@ extension TxImporter {
                 let newRef = newTx.reference?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
                 let existingRef = existing.reference?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
 
-                if !newRef.isEmpty && !existingRef.isEmpty {
-                    if newRef == existingRef {
-                        return nil
-                    } else {
-                        continue
-                    }
+                if !newRef.isEmpty && !existingRef.isEmpty && newRef != existingRef {
+                    continue
                 }
             }
                 

@@ -124,17 +124,29 @@ class AMEXCSVImporter: TxImporter {
                 
                 // TODO: Date, Payee and Exchange rate should come from the importing TX as the starting point
                 // Check for duplicates in createdTransactions + existing context
-                if let existing = Self.findMergeCandidateInSnapshot(newTx: newTx, snapshot: createdTransactions + existingSnapshot) {
-                    
-//                    print("Existing: \(existing.comparableFieldsRepresentation())")
-//                    print("New: \(newTx.comparableFieldsRepresentation())")
-                    
-                    if existing.comparableFieldsRepresentation() == newTx.comparableFieldsRepresentation() {
-                        // Already identical, skip
-                        context.delete(newTx)
-                        continue
-                    }
-                    
+
+                let snapshot = createdTransactions + existingSnapshot
+
+                // ---------------------------------------------------------
+                // EXACT DUPLICATE
+                // ---------------------------------------------------------
+                // Exact duplicates are skipped without presenting a merge.
+                // This also increments the duplicate counter.
+                if Self.isExactDuplicate(newTx: newTx, snapshot: snapshot) {
+                    context.delete(newTx)
+                    importSummary.exactDuplicateCount += 1
+                    continue
+                }
+
+                // ---------------------------------------------------------
+                // MERGE CANDIDATE
+                // ---------------------------------------------------------
+                // Only transactions which are not exact duplicates reach
+                // the merge candidate logic.
+                if let existing = Self.findMergeCandidateInSnapshot(
+                    newTx: newTx,
+                    snapshot: snapshot
+                ) {
                     let result = await mergeHandler(existing, newTx)
 
                     switch result {
@@ -168,15 +180,16 @@ class AMEXCSVImporter: TxImporter {
                             createdTransactions.append(newTx)
                         }
                         importSummary.keepBothCount += 1
-                        
+
                     case .cancelMerge:
                         shouldContinue = false
                     }
                 } else {
+                    // No duplicate and no merge candidate.
                     createdTransactions.append(newTx)
                 }
+                
             }
-            
             try context.save()
         } catch {
             print("Failed to import AMEX CSV: \(error)")
