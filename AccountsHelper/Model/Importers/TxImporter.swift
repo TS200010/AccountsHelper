@@ -120,12 +120,30 @@ extension TxImporter {
             guard !existing.closed else { continue }
             
             // For AMEX, If reference exists and matches, treat as exact duplicate — skip
+            // This is just a quick exit for accidental repeated import
+//            if existing.account == .AMEX {
+//                if let newRef = newTx.reference, !newRef.isEmpty,
+//                   let existingRef = existing.reference, !existingRef.isEmpty,
+//                   newRef == existingRef {
+//                    // Matching reference — no need to merge
+//                    return nil
+//                }
+//            }
+            
+            // AMEX reference is authoritative:
+            // - Same non-empty reference = exact duplicate, so do not offer a merge.
+            // - Different non-empty references = different transactions, so do not offer a merge.
+            // - If either reference is empty, fall through to normal matching.
             if existing.account == .AMEX {
-                if let newRef = newTx.reference, !newRef.isEmpty,
-                   let existingRef = existing.reference, !existingRef.isEmpty,
-                   newRef == existingRef {
-                    // Matching reference — no need to merge
-                    return nil
+                let newRef = newTx.reference?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                let existingRef = existing.reference?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+
+                if !newRef.isEmpty && !existingRef.isEmpty {
+                    if newRef == existingRef {
+                        return nil
+                    } else {
+                        continue
+                    }
                 }
             }
                 
@@ -182,12 +200,29 @@ extension TxImporter {
             // Skip closed transactions
             guard !existing.closed else { continue }
 
-            // AMEX shortcut: reference-based duplicates
-            if existing.account == .AMEX,
-               let newRef = newTx.reference, !newRef.isEmpty,
-               let existingRef = existing.reference, !existingRef.isEmpty,
-               newRef == existingRef {
-                return true
+//            // AMEX shortcut: reference-based duplicates
+//            if existing.account == .AMEX,
+//               let newRef = newTx.reference, !newRef.isEmpty,
+//               let existingRef = existing.reference, !existingRef.isEmpty,
+//               newRef == existingRef {
+//                return true
+//            }
+            // For AMEX, treat references as authoritative:
+            // - If both have non-empty references and they match -> exact duplicate -> skip merging
+            // - If either has a non-empty reference and they differ -> do NOT consider merge candidate (skip this existing)
+            if existing.account == .AMEX {
+                let newRef = newTx.reference?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                let existingRef = existing.reference?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+                if !newRef.isEmpty && !existingRef.isEmpty {
+                    if newRef == existingRef {
+                        // references match -> not a merge (exact duplicate), stop looking
+                        return true
+                    } else {
+                        // references differ -> explicitly not a merge candidate for AMEX
+                        continue
+                    }
+                }
+                // if refs are empty, fall through to fuzzy matching
             }
 
             // Must have dates
