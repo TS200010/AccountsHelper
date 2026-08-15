@@ -109,7 +109,7 @@ extension TxImporter {
         snapshot: [Transaction]
     ) -> Transaction? {
 
-        let calendar = Calendar.current
+//        let calendar = Calendar.current
 
         for existing in snapshot {
 
@@ -120,16 +120,20 @@ extension TxImporter {
             guard !existing.closed else { continue }
                 
             // Must have dates
-            guard let existingDate = existing.transactionDate,
-                  let newDate = newTx.transactionDate else { continue }
+//            guard let existingDate = existing.transactionDate,
+//                  let newDate = newTx.transactionDate else { continue }
 
             // NORMAL TRANSACTIONS — FUZZY LOGIC
-            guard existing.txAmount == newTx.txAmount else { continue }
-
-            let minDate = calendar.date(byAdding: .day, value: -7, to: newDate)!
-            let maxDate = calendar.date(byAdding: .day, value: 1, to: newDate)!
-
-            if existingDate >= minDate && existingDate <= maxDate {
+//            guard existing.txAmount == newTx.txAmount else { continue }
+//
+//            let minDate = calendar.date(byAdding: .day, value: -7, to: newDate)!
+//            let maxDate = calendar.date(byAdding: .day, value: 1, to: newDate)!
+//
+//            if existingDate >= minDate && existingDate <= maxDate {
+//                return existing
+//            }
+            
+            if matchesAmountAndDate(newTx: newTx, existing: existing) {
                 return existing
             }
         }
@@ -144,9 +148,9 @@ extension TxImporter {
     /// Checks if a new transaction is an exact duplicate of any transaction in the snapshot.
     /// For AMEX, also considers the reference field.
     static func isExactDuplicate(newTx: Transaction, snapshot: [Transaction]) -> Bool {
-        guard let newDate = newTx.transactionDate else { return false }
+//        guard let newDate = newTx.transactionDate else { return false }
 
-        let calendar = Calendar.current
+//        let calendar = Calendar.current
 
         for existing in snapshot {
             // Must be same account
@@ -156,15 +160,19 @@ extension TxImporter {
             guard !existing.closed else { continue }
 
             // Must have dates
-            guard let existingDate = existing.transactionDate else { continue }
+//            guard let existingDate = existing.transactionDate else { continue }
 
             // Normal fuzzy duplicates: same amount + date window
-            guard existing.txAmount == newTx.txAmount else { continue }
-
-            let minDate = calendar.date(byAdding: .day, value: -7, to: newDate)!
-            let maxDate = calendar.date(byAdding: .day, value: 1, to: newDate)!
-
-            if existingDate >= minDate && existingDate <= maxDate {
+//            guard existing.txAmount == newTx.txAmount else { continue }
+//
+//            let minDate = calendar.date(byAdding: .day, value: -7, to: newDate)!
+//            let maxDate = calendar.date(byAdding: .day, value: 1, to: newDate)!
+//
+//            if existingDate >= minDate && existingDate <= maxDate {
+//                return true
+//            }
+            
+            if matchesAmountAndDate(newTx: newTx, existing: existing) {
                 return true
             }
         }
@@ -173,4 +181,26 @@ extension TxImporter {
     }
 }
 
-
+extension TxImporter {
+    
+    // MARK: --- matchesAmountAndDate
+    static func matchesAmountAndDate(
+        newTx: Transaction,
+        existing: Transaction
+    ) -> Bool {
+        guard
+            let existingDate = existing.transactionDate,
+            let newDate = newTx.transactionDate,
+            existing.txAmount == newTx.txAmount
+        else {
+            return false
+        }
+        
+        let calendar = Calendar.current
+        let minDate = calendar.date(byAdding: .day, value: -7, to: newDate)!
+        let maxDate = calendar.date(byAdding: .day, value: 1, to: newDate)!
+        
+        return existingDate >= minDate && existingDate <= maxDate
+    }
+    
+}

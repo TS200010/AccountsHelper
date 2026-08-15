@@ -307,21 +307,25 @@ class AMEXCSVImporter: TxImporter {
             if !newRef.isEmpty && !existingRef.isEmpty && newRef != existingRef {
                 continue
             }
-
-            guard
-                let existingDate = existing.transactionDate,
-                let newDate = newTx.transactionDate
-            else { continue }
-
-            guard existing.txAmount == newTx.txAmount else { continue }
-
-            let calendar = Calendar.current
-            let minDate = calendar.date(byAdding: .day, value: -7, to: newDate)!
-            let maxDate = calendar.date(byAdding: .day, value: 1, to: newDate)!
-
-            if existingDate >= minDate && existingDate <= maxDate {
+            
+            if matchesAmountAndDate(newTx: newTx, existing: existing) {
                 return existing
             }
+//
+//            guard
+//                let existingDate = existing.transactionDate,
+//                let newDate = newTx.transactionDate
+//            else { continue }
+//
+//            guard existing.txAmount == newTx.txAmount else { continue }
+//
+//            let calendar = Calendar.current
+//            let minDate = calendar.date(byAdding: .day, value: -7, to: newDate)!
+//            let maxDate = calendar.date(byAdding: .day, value: 1, to: newDate)!
+//
+//            if existingDate >= minDate && existingDate <= maxDate {
+//                return existing
+//            }
         }
 
         return nil
