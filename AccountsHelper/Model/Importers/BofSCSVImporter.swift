@@ -14,6 +14,7 @@ class BofSCSVImporter: TxImporter {
     static var account: ReconcilableAccounts = .unknown
     static var importType: ImportType = .csv
 
+    // MARK: --- importTransactions
     @MainActor
     static func importTransactions(
         fileURL: URL,
@@ -22,7 +23,6 @@ class BofSCSVImporter: TxImporter {
     ) async -> ImportSummary {
 
         // MARK: --- Setup
-//        let tempContext = makeTemporaryContext(parent: context)
         var createdTransactions: [Transaction] = []
         var importSummary = ImportSummary(
             processedCount: 0,

@@ -57,7 +57,7 @@ enum CentralViewsEnum: Hashable {
     // MARK: --- Equatable
     static func == (lhs: CentralViewsEnum, rhs: CentralViewsEnum) -> Bool {
         switch (lhs, rhs) {
-        case (.browseTransactions(let lp, let lMode), .browseTransactions(let rp, let rMode)):
+        case (.browseTransactions(let lp, _), .browseTransactions(let rp, _)):
             return lp?.predicateFormat == rp?.predicateFormat
         default:
             return lhs.asString == rhs.asString

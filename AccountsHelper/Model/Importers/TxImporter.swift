@@ -64,7 +64,6 @@ protocol TxImporter {
 extension TxImporter {
 
     // MARK: --- CSV Parser
-    /// Handles quotes, multi-line fields, trims trailing empty headers
     static func parseCSV(csvData: String) -> [[String]] {
         var rows: [[String]] = []
         var currentRow: [String] = []
@@ -103,7 +102,7 @@ extension TxImporter {
         return rows
     }
 
-    // MARK: --- Default Merge Candidate Matching
+    // MARK: --- Default findMergeCandidateInSnapshot
     static func findMergeCandidateInSnapshot(
         newTx: Transaction,
         snapshot: [Transaction]
@@ -119,20 +118,6 @@ extension TxImporter {
             // Skip closed transactions
             guard !existing.closed else { continue }
                 
-            // Must have dates
-//            guard let existingDate = existing.transactionDate,
-//                  let newDate = newTx.transactionDate else { continue }
-
-            // NORMAL TRANSACTIONS — FUZZY LOGIC
-//            guard existing.txAmount == newTx.txAmount else { continue }
-//
-//            let minDate = calendar.date(byAdding: .day, value: -7, to: newDate)!
-//            let maxDate = calendar.date(byAdding: .day, value: 1, to: newDate)!
-//
-//            if existingDate >= minDate && existingDate <= maxDate {
-//                return existing
-//            }
-            
             if matchesAmountAndDate(newTx: newTx, existing: existing) {
                 return existing
             }
@@ -140,17 +125,9 @@ extension TxImporter {
 
         return nil
     }
-}
 
-extension TxImporter {
-
-    // MARK: --- Exact Duplicate Detection
-    /// Checks if a new transaction is an exact duplicate of any transaction in the snapshot.
-    /// For AMEX, also considers the reference field.
-    static func isExactDuplicate(newTx: Transaction, snapshot: [Transaction]) -> Bool {
-//        guard let newDate = newTx.transactionDate else { return false }
-
-//        let calendar = Calendar.current
+    // MARK: --- Default isExactDuplicate
+    static func  isExactDuplicate(newTx: Transaction, snapshot: [Transaction]) -> Bool {
 
         for existing in snapshot {
             // Must be same account
@@ -158,19 +135,6 @@ extension TxImporter {
 
             // Skip closed transactions
             guard !existing.closed else { continue }
-
-            // Must have dates
-//            guard let existingDate = existing.transactionDate else { continue }
-
-            // Normal fuzzy duplicates: same amount + date window
-//            guard existing.txAmount == newTx.txAmount else { continue }
-//
-//            let minDate = calendar.date(byAdding: .day, value: -7, to: newDate)!
-//            let maxDate = calendar.date(byAdding: .day, value: 1, to: newDate)!
-//
-//            if existingDate >= minDate && existingDate <= maxDate {
-//                return true
-//            }
             
             if matchesAmountAndDate(newTx: newTx, existing: existing) {
                 return true
@@ -179,9 +143,7 @@ extension TxImporter {
 
         return false
     }
-}
 
-extension TxImporter {
     
     // MARK: --- matchesAmountAndDate
     static func matchesAmountAndDate(

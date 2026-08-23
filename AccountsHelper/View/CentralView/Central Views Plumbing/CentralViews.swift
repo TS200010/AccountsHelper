@@ -127,7 +127,7 @@ struct CentralViews: View {
             MergeTransactionsView(transactions: txs, onComplete: onComplete)
             
             // TODO: Remove the let here
-        case .categoriesSummary(let predicate):
+        case .categoriesSummary:
             if let recID = appState.selectedReconciliationID,
                let rec = try? viewContext.existingObject(with: recID) as? Reconciliation {
 

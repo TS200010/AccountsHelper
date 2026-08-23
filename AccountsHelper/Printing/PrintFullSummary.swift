@@ -67,7 +67,7 @@ extension ReconcilliationListView {
         let spooler = ReportSpooler.shared
         spooler.clear() // optional: start fresh
 
-        for (index, reco) in reconciliations.enumerated() {
+        for (_, reco) in reconciliations.enumerated() {
             // Create VM
             let vm = CategoriesSummaryVM(reconciliation: reco, showCurrencySymbols: showCurrencySymbols)
             
