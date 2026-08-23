@@ -74,7 +74,7 @@ extension Transaction {
             let int64Value = nsNumber.int64Value
             let clamped = min(Int64(Int32.max), max(Int64(Int32.min), int64Value))
             exchangeRateCD = Int32(clamped)
-            print("ExchangeRateCD Setter: \(exchangeRateCD)")
+//            print("ExchangeRateCD Setter: \(exchangeRateCD)")
         }
     }
 
@@ -107,7 +107,7 @@ extension Transaction {
         get { Decimal(txAmountCD) / 100 }
         set {
             txAmountCD = decimalToCents(newValue)
-            print("txAmountCD Setter: \(txAmountCD) from newValue: \(newValue)")
+//            print("txAmountCD Setter: \(txAmountCD) from newValue: \(newValue)")
         }
     }
 
@@ -121,16 +121,16 @@ extension Transaction {
         get { txAmount - splitAmount }
     }
 
-    // Raw Amounts in GBP
-    var splitAmountInGBP: Decimal {
+    // Raw Amounts in UKL
+    var splitAmountInUKL: Decimal {
         assert(exchangeRate != 0)
-        let converted = splitAmount / exchangeRate   // convert to GBP
+        let converted = splitAmount / exchangeRate   // convert to UKL
 //        let value = converted + commissionAmount     // add commission
         if converted.isNaN { return Decimal(0) }
         return converted
     }
     
-    var txAmountInGBP: Decimal {
+    var txAmountInUKL: Decimal {
         assert(exchangeRate != 0)
         let value = txAmount / exchangeRate
 //        let value = txAmount / exchangeRate + commissionAmount
@@ -138,8 +138,8 @@ extension Transaction {
         return value
     }
 
-    // Computed Amounts in GBP
-    var splitRemainderAmountInGBP: Decimal {
+    // Computed Amounts in UKL
+    var splitRemainderAmountInUKL: Decimal {
         assert(exchangeRate != 0)
         let converted = splitRemainderAmount / exchangeRate
         let value = converted// + commissionAmount     // add commission
@@ -147,8 +147,8 @@ extension Transaction {
         return value
     }
 
-    var totalAmountInGBP: Decimal {
-        let total = splitAmountInGBP + splitRemainderAmountInGBP + commissionAmount
+    var totalAmountInUKL: Decimal {
+        let total = splitAmountInUKL + splitRemainderAmountInUKL + commissionAmount
         var roundedTotal = Decimal()
         var totalCopy = total
         NSDecimalRound(&roundedTotal, &totalCopy, 2, .plain)
@@ -171,7 +171,7 @@ extension Transaction {
     
     
     // MARK: --- CommissionAmountAsString
-    // Commission amount always in GBP
+    // Commission amount always in UKL
     func commissionAmountAsString( withSymbol: ShowCurrencySymbolsEnum = .always ) -> String? {
         let amount = NSDecimalNumber(decimal: commissionAmount)
         if amount == 0 { return gDefaultZeroAmountRepresentation }
@@ -187,7 +187,7 @@ extension Transaction {
         let fx = NSDecimalNumber(decimal: exchangeRate)
         if fx == 0 || fx == 1 { return gDefaultZeroAmountRepresentation }
         switch currency {
-        case .GBP:
+        case .UKL:
             return String(format: "%.4f", fx.doubleValue)
         case .JPY:
             return String(format: "%.4f", fx.doubleValue)
@@ -201,7 +201,7 @@ extension Transaction {
         let fx = NSDecimalNumber(decimal: exchangeRate)
         if fx == 0 || fx == 1 { return gDefaultZeroAmountRepresentation }
         switch currency {
-        case .GBP:
+        case .UKL:
             return String(format: "%.2f", fx.doubleValue)
         case .JPY:
             return String(format: "%.0f", fx.doubleValue)
@@ -254,18 +254,18 @@ extension Transaction {
     
     // MARK: --- TxAmountDualCurrencyAsString
     func totalAmountDualCurrencyAsString( withSymbol: ShowCurrencySymbolsEnum = .always ) -> String {
-        // NOTE: Here we are correctly mixin txAmount and totalAmount as we want to display the original transaction amount in say Yen and also the GBP amount posted on statements.
+        // NOTE: Here we are correctly mixin txAmount and totalAmount as we want to display the original transaction amount in say Yen and also the UKL amount posted on statements.
         var s1 = txAmountAsString(withSymbol: withSymbol)
         // There should be no commission in this case so it is safe to retrun txAmountAsString
-        if currency == .GBP { return s1 }
+        if currency == .UKL { return s1 }
         if withSymbol == .never { s1 = "" }
         if s1 != "" { s1 += "\n" }
         // Now we convert the totalAmount for display as stated earlier.
-        let s2 = AmountFormatter.anyAmountAsString( amount: totalAmountInGBP, currency: .GBP, withSymbol: withSymbol )
+        let s2 = AmountFormatter.anyAmountAsString( amount: totalAmountInUKL, currency: .UKL, withSymbol: withSymbol )
 #if os(macOS)
         return "\(s1)\(s2)"
 #else
-//            return wip + " " + transaction.totalAmountInGBP.formattedAsCurrency( .GBP )
+//            return wip + " " + transaction.totalAmountInUKL.formattedAsCurrency( .UKL )
         return "\(s1)"
 #endif
     }
@@ -353,10 +353,11 @@ extension Transaction {
             transaction.txAmountCD = isCredit ? amount : -amount
             
             switch currency {
-            case .GBP: transaction.exchangeRateCD = 100
+            case .UKL: transaction.exchangeRateCD = 100
             case .USD: transaction.exchangeRateCD = Int32.random(in: 120...150)
             case .JPY: transaction.exchangeRateCD = Int32.random(in: 15_000...21_000)
             case .EUR: transaction.exchangeRateCD = Int32.random(in: 120...150)
+            case .CHF: transaction.exchangeRateCD = Int32.random(in: 120...150)
             case .unknown: transaction.exchangeRateCD = 0
             }
             
@@ -412,8 +413,6 @@ extension Transaction {
         var components: [String] = []
 
         for field in MergeField.allCases {
-            // Skip fields that shouldn't affect equality
-            if field == .timestamp { continue }
 
             guard let info = MergeField.all[field] else { continue }
 
@@ -426,5 +425,134 @@ extension Transaction {
         // Sort so order is deterministic
         components.sort()
         return components.joined(separator: "|")
+    }
+}
+
+// MARK: --- Counter Trainsaction PairID Management
+extension Transaction {
+    /// Returns the single other transaction that shares the same `pairID` in the given context.
+    /// - If `pairID` is nil, returns nil.
+    /// - If zero or more than one other transaction exists, returns nil.
+    /// - Does not create, delete, or mutate any objects.
+    func counterTransaction(in context: NSManagedObjectContext) -> Transaction? {
+        guard let pid = self.pairID else { return nil }
+
+        let request: NSFetchRequest<Transaction> = Transaction.fetchRequest()
+        // Find transactions with same pairID but exclude self
+        request.predicate = NSPredicate(format: "pairID == %@ AND SELF != %@", pid as CVarArg, self)
+        request.fetchLimit = 1
+
+        do {
+            let results = try context.fetch(request)
+            return results.count == 1 ? results.first : nil
+        } catch {
+            // Do not mutate anything; surface the error for diagnostics
+            print("counterTransaction fetch error: \(error)")
+            return nil
+        }
+    }
+
+    /// Assigns a pairID when creating a counterpart, enforcing the invariant that no more than two transactions share a pairID.
+    /// - Parameters:
+    ///   - other: the counterpart transaction to pair with (if nil, no action is taken)
+    ///   - context: the managed object context to use for fetches and validation
+    /// - Throws: `PairingError` when invariant violations would occur, or any fetch error encountered
+    func assignPairIDforCounterpart(
+        with other: Transaction?,
+        in context: NSManagedObjectContext
+    ) {
+        guard let other = other else { return }
+        
+        
+        let selfPID = self.pairID
+        let otherPID = other.pairID
+        
+        // Case: both nil -> generate new UUID and assign to both
+        if selfPID == nil && otherPID == nil {
+            let pairID = UUID()
+            self.pairID = pairID
+            other.pairID = pairID
+            return
+        }
+        
+        // Case: exactly one non-nil -> copy the existing PID to the other transaction
+        if let candidate = selfPID ?? otherPID {
+            // Count existing transactions that already use this candidate
+            let request: NSFetchRequest<Transaction> = Transaction.fetchRequest()
+            request.predicate = NSPredicate(format: "pairID == %@", candidate as CVarArg)
+            
+            do {
+                let existing = try context.fetch(request)
+                
+                // Determine how many additional assignments would be needed (0,1,2)
+                var additions = 0
+                if selfPID != candidate { additions += 1 }
+                if otherPID != candidate { additions += 1 }
+                
+                let resultantCount = existing.count + additions
+                if resultantCount > 2 {
+                    print( "Assigning pairID \(candidate.uuidString) would exceed the maximum of 2 transactions per pair")
+                    return
+                }
+                
+                // Assign missing pairID(s)
+                if selfPID == nil {
+                    self.pairID = candidate
+                }
+                if otherPID == nil {
+                    other.pairID = candidate
+                }
+            } catch {
+                print("assignPairID fetch error: \(error)")
+            }
+            return
+        }
+        
+        // Case: both non-nil
+        if let s = selfPID, let o = otherPID {
+            if s == o {
+                // already same pairID - nothing to do
+                return
+            } else {
+                print("Conflicting pairID values: \(s.uuidString) vs \(o.uuidString)")
+            }
+        }
+    }
+    
+}
+
+extension Transaction {
+    /// Returns true if pairID is nil or exactly two transactions share the pairID.
+    /// On error, prints the error and returns false.
+    func isPairValid(in context: NSManagedObjectContext) -> Bool {
+        guard let pid = self.pairID else { return true }
+        let request: NSFetchRequest<Transaction> = Transaction.fetchRequest()
+        request.predicate = NSPredicate(format: "pairID == %@", pid as CVarArg)
+        do {
+            let results = try context.fetch(request)
+            return results.count == 2
+        } catch {
+            print("pair validation error: \(error)")
+            return false
+        }
+    }
+}
+
+// MARK: --- TransactionPosting generation
+extension Transaction {
+    var postings: [TransactionPosting] {
+        var result: [TransactionPosting] = []
+
+        // Split portion
+        if splitAmount != 0 {
+            let convertedSplit = convertToPaymentCurrency(amount: splitAmount)
+            result.append(TransactionPosting(category: splitCategory, amount: convertedSplit))
+        }
+
+        // Remainder + commission
+        let convertedRemainder = convertToPaymentCurrency(amount: splitRemainderAmount) + commissionAmount
+        result.append(TransactionPosting(category: splitRemainderCategory, amount: convertedRemainder))
+
+        return result
     }
 }

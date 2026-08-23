@@ -35,7 +35,7 @@ import ItMkLibrary
     case MiscOther          = 22
     case InterestCharges    = 23
     case ToBalance          = 24
-    case MortgageInterest   = 25
+    case IncTaxMortInt   = 25
     case Phone              = 26
     case Utilities          = 27
     case CouncilTax         = 28
@@ -43,8 +43,8 @@ import ItMkLibrary
     case ToYokko            = 40
     case ToAJBell           = 41
     
-    case ToGBPCash          = 50
-    case ToYenCash          = 51
+    case ToCashUKL          = 50
+    case ToCashYEN          = 51
     case ToBofSPV_82        = 52
     case ToBofSCA_64        = 53
     case ToLloydsC_68       = 54
@@ -52,9 +52,15 @@ import ItMkLibrary
     case ToBofSISS_43       = 56
     case ToBofSYP_06        = 57
     case ToTMB              = 58
+    case ToCashUSD          = 59
+    case ToCashEUR          = 100
+    case ToItMkEquity       = 101
     
     case IntDivIncome       = 60
-    case OtherIncome        = 61
+    case OtherIncomePV      = 61
+    case ItMkIncome         = 62
+    case OtherIncomeCA      = 63
+    case OtherIncomeCash    = 64
     
     case StatePensionT      = 70
     case StatePensionY      = 71
@@ -108,23 +114,29 @@ import ItMkLibrary
         case .MiscOther:        return String(localized: "MiscOther")
         case .InterestCharges:  return String(localized: "InterestCharges")
         case .ToBalance:        return String(localized: "ToBalance")
-        case .MortgageInterest: return String(localized: "MortgageInterest")
+        case .IncTaxMortInt:    return String(localized: "IncTax/MortInt")
         case .Phone:            return String(localized: "Phone")
         case .Utilities:        return String(localized: "Utilities")
         case .CouncilTax:       return String(localized: "CouncilTax")
         case .ToYokko:          return String(localized: "ToYokko")
         case .ToAJBell:         return String(localized: "ToAJBell")
-        case .ToGBPCash:        return String(localized: "ToGBPCash")
-        case .ToYenCash:        return String(localized: "ToYenCash")
+        case .ToCashUKL:        return String(localized: "ToUKLCash")
+        case .ToCashYEN:        return String(localized: "ToYenCash")
         case .ToBofSPV_82:      return String(localized: "ToBofSPV 82")
         case .ToBofSCA_64:      return String(localized: "ToBofSCA 64")
-        case .ToLloydsC_68:       return String(localized: "ToLloydsC 68")
+        case .ToLloydsC_68:     return String(localized: "ToLloydsC 68")
         case .ToBofSIASA_62:    return String(localized: "ToBofSIASA 62")
         case .ToBofSISS_43:     return String(localized: "ToBofSISS 43")
         case .ToBofSYP_06:      return String(localized: "ToBofSYP 06")
         case .ToTMB:            return String(localized: "ToTMB")
+        case .ToCashUSD:        return String(localized: "ToUSDCash")
+        case .ToCashEUR:        return String(localized: "ToEurCash")
+        case .ToItMkEquity:     return String(localized: "ToItMkEquity")
         case .IntDivIncome:     return String(localized: "IntDivIncome")
-        case .OtherIncome:      return String(localized: "OtherIncome")
+        case .OtherIncomePV:    return String(localized: "OtherIncomePV")
+        case .ItMkIncome:       return String(localized: "ItMkIncome")
+        case .OtherIncomeCA:    return String(localized: "OtherIncomeCA")
+        case .OtherIncomeCash:  return String(localized: "OtherIncomeCash")
         case .StatePensionT:    return String(localized: "StatePensionT")
         case .StatePensionY:    return String(localized: "StatePensionY")
         case .NCRPension:       return String(localized: "NCRPension")
@@ -132,7 +144,6 @@ import ItMkLibrary
         case .AMEXPayment:      return String(localized: "AMEXPayment")
         case .OpeningBalance:   return String(localized: "OpeningBalance")
         case .unknown:          return String(localized: "Unknown")
-
         }
     }
 }

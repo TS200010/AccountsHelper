@@ -9,6 +9,8 @@ import CoreData
 
 struct CategoriesSummaryView: View {
     
+    let vm: CategoriesSummaryVM
+    
     // MARK: --- Environment
     @Environment(\.managedObjectContext) internal var viewContext
     @Environment(AppState.self) internal var appState
@@ -22,7 +24,7 @@ struct CategoriesSummaryView: View {
 //    @FetchRequest private var transactions: FetchedResults<Transaction>
 
     // MARK: --- Resolved aggregate
-    private var reconciliation: Reconciliation? {
+    var reconciliation: Reconciliation? {
         guard let id = appState.selectedReconciliationID else { return nil }
         return try? viewContext.existingObject(with: id) as? Reconciliation
     }
@@ -41,67 +43,12 @@ struct CategoriesSummaryView: View {
         }
     }
     
-//    // MARK: --- Init
-//    init(predicate: NSPredicate? = nil, isPrinting: Bool = false) {
-//        _transactions = FetchRequest(
-//            sortDescriptors: [NSSortDescriptor(keyPath: \Transaction.transactionDate, ascending: true)],
-//            predicate: predicate
-//        )
-//    }
-    
     // MARK: --- Local Variables
     private var currency: Currency? {
         transactions.first?.account.currency
     }
-    
-    // MARK: --- SummaryTotals
-    internal struct SummaryTotals {
-        var startBalance: Decimal = 0
-        var endBalance: Decimal = 0
-        var totalCR: Decimal = 0
-        var totalDR: Decimal = 0
-        var total: Decimal { get { totalCR + totalDR } }
-        var currency: Currency = .unknown
-    }
-    
-    // MARK: --- Computed summaryTotals
-    internal var summaryTotals: SummaryTotals {
-        var result = SummaryTotals()
-        result.currency = currency ?? .unknown
-        
-        // Identify reconciliation if present
-        let reconciliation: Reconciliation? = {
-            if let recID = appState.selectedReconciliationID,
-               let rec = try? viewContext.existingObject(with: recID) as? Reconciliation {
-                return rec
-            }
-            return nil
-        }()
-        
-        // Compute start balance
-        if let rec = reconciliation {
-            result.startBalance = rec.previousEndingBalance
-        }
-        
-        // Sum all tx amounts
-        for posting in transactions.postings {
-            let amount = posting.amount
-            if amount < 0 { result.totalCR += amount }
-            else if amount > 0 { result.totalDR += amount }
-        }
-//        for tx in transactions {
-//            let amount = tx.txAmountInGBP
-//            if amount < 0 {
-//                result.totalCR += amount
-//            } else if amount > 0 {
-//                result.totalDR += amount
-//            }
-//        }
-        
-        // Compute ending balance
-        result.endBalance = result.startBalance - result.total
-        return result
-    }
+
+
     
     // MARK: --- CategoryRow
     internal struct CategoryRow: Identifiable, Hashable {
@@ -138,22 +85,6 @@ struct CategoriesSummaryView: View {
                                currency: currentCurrency)
         }
     }
-//    internal var categoryRows: [CategoryRow] {
-//        let grouped = Dictionary(grouping: transactions) { (tx: Transaction) in
-//            tx.category
-//        }
-//        let currentCurrency = currency ?? .unknown
-//        
-//        return Category.allCases.map { category in
-//            let txs = grouped[category] ?? []
-//            let total = txs.reduce(Decimal(0)) { sum, tx in
-//                sum + tx.txAmount
-//            }
-//            let ids = txs.map { $0.objectID }
-//            
-//            return CategoryRow(category: category, total: total, transactionIDs: ids, currency: currentCurrency )
-//        }
-//    }
     
     // MARK: --- Body
     var body: some View {
@@ -161,8 +92,7 @@ struct CategoriesSummaryView: View {
             headerView
             categoriesTable
                 .frame(minWidth: 300, idealWidth: 500, maxWidth: 600) // adjust as needed
-            
-//                .navigationTitle("Transactions Summary")
+
         }
         .toolbar { printToolbarItem }
     }
@@ -174,7 +104,9 @@ extension CategoriesSummaryView {
     private var printToolbarItem: some ToolbarContent {
         ToolbarItem(placement: .automatic) {
             Button {
-                printCategoriesSummary()
+                let report = CategoriesSummaryReportRenderer.buildReport(from: vm)
+                printReport(report)
+//                printCategoriesSummary()
             } label: {
                 Label("Print Summary", systemImage: "printer")
             }
@@ -184,17 +116,17 @@ extension CategoriesSummaryView {
     // MARK: --- HeaderView (Balances and Totals)
     private var headerView: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Starting Balance: \(summaryTotals.startBalance.formattedAsCurrency(summaryTotals.currency))")
+            Text("Starting Balance: \(vm.totals.startBalance.formattedAsCurrency(vm.totals.currency))")
                 .font(.headline)
             
             HStack(spacing: 40) {
-                Text("Total CRs: \(summaryTotals.totalCR.formattedAsCurrency(summaryTotals.currency))")
-                Text("Total DRs: \(summaryTotals.totalDR.formattedAsCurrency(summaryTotals.currency))")
-                Text("Net Total: \(summaryTotals.total.formattedAsCurrency(summaryTotals.currency))")
+                Text("Total CRs: \(vm.totals.totalCR.formattedAsCurrency(vm.totals.currency))")
+                Text("Total DRs: \(vm.totals.totalDR.formattedAsCurrency(vm.totals.currency))")
+                Text("Net Total: \(vm.totals.total.formattedAsCurrency(vm.totals.currency))")
             }
             .font(.subheadline)
             
-            Text("Ending Balance: \(summaryTotals.endBalance.formattedAsCurrency(summaryTotals.currency))")
+            Text("Ending Balance: \(vm.totals.endBalance.formattedAsCurrency(vm.totals.currency))")
                 .font(.headline)
         }
         .padding(.horizontal, 10)
@@ -215,13 +147,36 @@ extension CategoriesSummaryView {
         }
         .id(showCurrencySymbols) // Forces the Table to rebuild when this changes
         .onChange(of: selectedCategoryID) { _, newValue in
-            if let id = newValue,
-               let row = categoryRows.first(where: { $0.id == id }) {
-                appState.selectedInspectorTransactionIDs = row.transactionIDs
-                appState.selectedInspectorView = .viewCategoryBreakdown
-            } else {
+            guard let id = newValue,
+                  let row = categoryRows.first(where: { $0.id == id }),
+                  let reconciliation = reconciliation else {
                 appState.selectedInspectorTransactionIDs = []
+                return
             }
+
+            // Build the same predicate we use for the context menu
+            let predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+                NSPredicate(format: "reconciliation == %@", reconciliation),
+                NSCompoundPredicate(orPredicateWithSubpredicates: [
+                    NSPredicate(format: "categoryCD == %d", row.id),
+                    NSPredicate(format: "splitCategoryCD == %d", row.id)
+                ])
+//                NSPredicate(format: "categoryCD == %d", row.id)
+            ])
+
+            // Create fetch request and assign predicate
+            let fetchRequest: NSFetchRequest<Transaction> = Transaction.fetchRequest()
+            fetchRequest.predicate = predicate
+
+            // Fetch transactions for the inspector
+            let transactionsForInspector = (try? viewContext.fetch(fetchRequest)) ?? []
+
+            // Pass their objectIDs to the inspector
+            appState.selectedInspectorTransactionIDs = transactionsForInspector.map { $0.objectID }
+
+            // Update the inspector view
+            appState.selectedInspectorView = .viewCategoryBreakdown
+
         }
         #if os(macOS)
         .tableStyle(.inset(alternatesRowBackgrounds: true))
@@ -240,7 +195,24 @@ extension CategoriesSummaryView {
         .contentShape(Rectangle())
         .contextMenu {
             Button("Transactions") {
-                let predicate = NSPredicate(format: "categoryCD == %d", row.id)
+                guard let reconciliation = reconciliation else { return }
+
+                let predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+                    // Must belong to this reconciliation
+                    NSPredicate(format: "reconciliation == %@", reconciliation),
+
+                    // Match the row's category in any relevant field
+                    NSCompoundPredicate(orPredicateWithSubpredicates: [
+                        NSPredicate(format: "categoryCD == %d", row.id),
+                        NSPredicate(format: "splitCategoryCD == %d", row.id)
+                    ])
+                    // Must match the row's category
+//                    NSPredicate(format: "categoryCD == %d", row.id),
+
+                    // Optional: if you want to limit to a specific account as well
+                    // NSPredicate(format: "accountCD == %d", someAccountID)
+                ])
+//                let predicate = NSPredicate(format: "categoryCD == %d", row.id)
                 appState.pushCentralView(.browseTransactions(predicate))
             }
         }

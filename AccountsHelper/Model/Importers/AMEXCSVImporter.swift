@@ -9,7 +9,7 @@ import Foundation
 import CoreData
 
 class AMEXCSVImporter: TxImporter {
-    
+
     static var displayName: String = "AMEX CSV Importer"
     static var account: ReconcilableAccounts = .AMEX
     static var importType: ImportType = .csv
@@ -19,16 +19,18 @@ class AMEXCSVImporter: TxImporter {
         fileURL: URL,
         context: NSManagedObjectContext,
         mergeHandler: @MainActor (Transaction, Transaction) async -> MergeResult
-    ) async -> [Transaction] {
-        var createdTransactions: [Transaction] = []
+    ) async -> ImportSummary {
         
+        var createdTransactions: [Transaction] = []
+        var importSummary = ImportSummary(processedCount: 0, exactDuplicateCount: 0, mergedCount: 0, keepExistingCount: 0, keepNewCount: 0, keepBothCount: 0)
+
         do {
             let csvData = try String(contentsOf: fileURL, encoding: .utf8)
             let rows = parseCSV(csvData: csvData)
-            guard let headers = rows.first else { return [] }
+            guard let headers = rows.first else { return importSummary }
             guard headers.count > 5 else {
                 print("Please export ALL fields from the AMEX WebSite")
-                return []
+                return importSummary
             }
 
             let matcher = CategoryMatcher(context: context)
@@ -42,6 +44,7 @@ class AMEXCSVImporter: TxImporter {
                 guard row.count == headers.count else { continue }
                 
                 let newTx = Transaction(context: context)
+                importSummary.processedCount += 1
                 
                 // Temp variables
                 var addressTemp = ""
@@ -104,15 +107,16 @@ class AMEXCSVImporter: TxImporter {
                 newTx.address = addressTemp
                 newTx.extendedDetails = extendedDetailsTemp
                 
-                if currencyParsedTemp == .GBP || currencyParsedTemp == .unknown {
-                    newTx.currency = .GBP
+                if currencyParsedTemp == .UKL || currencyParsedTemp == .unknown {
+                    newTx.currency = .UKL
                     newTx.exchangeRate = 1
                     newTx.txAmount = txAmountTemp
                 } else {
                     newTx.currency = currencyParsedTemp
                     newTx.exchangeRate = exchangeRateParsedTemp
                     newTx.txAmount = txAmountParsedTemp
-                    newTx.commissionAmount = commissionAmountParsedTemp
+                    // Commission has the same sign as the txAmount ALWAYS 
+                    newTx.commissionAmount = commissionAmountParsedTemp * (txAmountTemp >= 0 ? 1 : -1)
                 }
                 
                 newTx.debitCredit = txAmountTemp >= 0 ? .DR : .CR
@@ -120,17 +124,29 @@ class AMEXCSVImporter: TxImporter {
                 
                 // TODO: Date, Payee and Exchange rate should come from the importing TX as the starting point
                 // Check for duplicates in createdTransactions + existing context
-                if let existing = Self.findMergeCandidateInSnapshot(newTx: newTx, snapshot: createdTransactions + existingSnapshot) {
-                    
-                    print("Existing: \(existing.comparableFieldsRepresentation())")
-                    print("New: \(newTx.comparableFieldsRepresentation())")
-                    
-                    if existing.comparableFieldsRepresentation() == newTx.comparableFieldsRepresentation() {
-                        // Already identical, skip
-                        context.delete(newTx)
-                        continue
-                    }
-                    
+
+                let snapshot = createdTransactions + existingSnapshot
+
+                // ---------------------------------------------------------
+                // EXACT DUPLICATE
+                // ---------------------------------------------------------
+                // Exact duplicates are skipped without presenting a merge.
+                // This also increments the duplicate counter.
+                if Self.isExactDuplicate(newTx: newTx, snapshot: snapshot) {
+                    context.delete(newTx)
+                    importSummary.exactDuplicateCount += 1
+                    continue
+                }
+
+                // ---------------------------------------------------------
+                // MERGE CANDIDATE
+                // ---------------------------------------------------------
+                // Only transactions which are not exact duplicates reach
+                // the merge candidate logic.
+                if let existing = Self.findMergeCandidateInSnapshot(
+                    newTx: newTx,
+                    snapshot: snapshot
+                ) {
                     let result = await mergeHandler(existing, newTx)
 
                     switch result {
@@ -140,18 +156,21 @@ class AMEXCSVImporter: TxImporter {
                             createdTransactions.append(existing)
                         }
                         context.delete(newTx)
+                        importSummary.mergedCount += 1
 
                     case .keepExisting:
                         if !createdTransactions.contains(existing) {
                             createdTransactions.append(existing)
                         }
                         context.delete(newTx)
+                        importSummary.keepExistingCount += 1
 
                     case .keepNew:
                         if !createdTransactions.contains(newTx) {
                             createdTransactions.append(newTx)
                         }
                         context.delete(existing)
+                        importSummary.keepNewCount += 1
 
                     case .keepBoth:
                         if !createdTransactions.contains(existing) {
@@ -160,21 +179,25 @@ class AMEXCSVImporter: TxImporter {
                         if !createdTransactions.contains(newTx) {
                             createdTransactions.append(newTx)
                         }
-                        
+                        importSummary.keepBothCount += 1
+
                     case .cancelMerge:
                         shouldContinue = false
                     }
                 } else {
+                    // No duplicate and no merge candidate.
                     createdTransactions.append(newTx)
                 }
+                
             }
-            
             try context.save()
         } catch {
             print("Failed to import AMEX CSV: \(error)")
         }
         
-        return createdTransactions
+        return importSummary
+        
+//        return createdTransactions
     }
 
     
@@ -263,5 +286,90 @@ class AMEXCSVImporter: TxImporter {
         }
         
         return (foreignSpendAmount, foreignCurrency, commissionAmount, exchangeRate)
+    }
+    
+    
+    // MARK: --- findMergeCandidateInSnapshot
+    static func findMergeCandidateInSnapshot(
+        newTx: Transaction,
+        snapshot: [Transaction]
+    ) -> Transaction? {
+
+        for existing in snapshot {
+
+            guard existing.account == newTx.account else { continue }
+            guard !existing.closed else { continue }
+
+            let newRef = newTx.reference?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            let existingRef = existing.reference?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+
+            // AMEX references are authoritative when both are present.
+            if !newRef.isEmpty && !existingRef.isEmpty && newRef != existingRef {
+                continue
+            }
+            
+            if matchesAmountAndDate(newTx: newTx, existing: existing) {
+                return existing
+            }
+//
+//            guard
+//                let existingDate = existing.transactionDate,
+//                let newDate = newTx.transactionDate
+//            else { continue }
+//
+//            guard existing.txAmount == newTx.txAmount else { continue }
+//
+//            let calendar = Calendar.current
+//            let minDate = calendar.date(byAdding: .day, value: -7, to: newDate)!
+//            let maxDate = calendar.date(byAdding: .day, value: 1, to: newDate)!
+//
+//            if existingDate >= minDate && existingDate <= maxDate {
+//                return existing
+//            }
+        }
+
+        return nil
+    }
+    
+    
+    // MARK: --- isExactDuplicate
+    static func isExactDuplicate(
+        newTx: Transaction,
+        snapshot: [Transaction]
+    ) -> Bool {
+
+        guard let newDate = newTx.transactionDate else { return false }
+
+        let calendar = Calendar.current
+
+        for existing in snapshot {
+
+            guard existing.account == newTx.account else { continue }
+            guard !existing.closed else { continue }
+
+            let newRef = newTx.reference?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            let existingRef = existing.reference?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+
+            // AMEX references are authoritative when both are present.
+            if !newRef.isEmpty && !existingRef.isEmpty {
+                if newRef == existingRef {
+                    return true
+                } else {
+                    continue
+                }
+            }
+
+            guard let existingDate = existing.transactionDate else { continue }
+            guard existing.txAmount == newTx.txAmount else { continue }
+
+            let minDate = calendar.date(byAdding: .day, value: -7, to: newDate)!
+            let maxDate = calendar.date(byAdding: .day, value: 1, to: newDate)!
+
+            if existingDate >= minDate && existingDate <= maxDate {
+                return true
+            }
+        }
+
+        return false
     }
 }

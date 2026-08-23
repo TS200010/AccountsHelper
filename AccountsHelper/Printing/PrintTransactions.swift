@@ -47,10 +47,24 @@ extension BrowseTransactionsView {
         }
         let netTotal = totalCR + totalDR
         
+        // MARK: --- Create Report String
         let report = NSMutableString()
         
         // MARK: --- Build the report header
-        report.append(reportHeader(title: "Full Transactions Report", viewContext: viewContext, appState: appState) )
+        let headerData: ReportHeaderData
+            headerData = ReportHeaderData(
+                title: "Full Transactions Report",
+                accountDescription: nil,
+                periodMonth: nil,
+                periodYear: nil,
+                statementDate: nil
+            )
+        
+        
+        report.append( reportHeader( headerData ) )
+        
+
+//        report.append(reportHeader(title: "Full Transactions Report", viewContext: viewContext, appState: appState) )
         
         // MARK: --- Build column headings
         report.append("\n")
@@ -71,7 +85,7 @@ extension BrowseTransactionsView {
             let dateStr     = tx.transactionDate?.formatted(date: .numeric, time: .omitted) ?? ""
             let categoryStr = tx.category.description
             let amountStr   = tx.txAmountAsString( withSymbol: showCurrencySymbols )
-            let fxStr       = tx.currency != .GBP ? (tx.exchangeRateAsString() ?? "") : ""
+            let fxStr       = tx.currency != .UKL ? (tx.exchangeRateAsString() ?? "") : ""
             let splitStr    = tx.splitAmount != 0 ?  tx.splitAmountAsString( withSymbol: showCurrencySymbols ) : ""
             let splitCatStr = tx.splitAmount != 0 ?  tx.splitCategory.description : ""
             let payeeStr    = String((tx.payee ?? "" ).prefix(15))
@@ -92,7 +106,7 @@ extension BrowseTransactionsView {
         func appendSummaryLine(title: String, amount: Decimal) {
             let amountStr = AmountFormatter.anyAmountAsString(
                 amount: amount,
-                currency: transactions.first?.currency ?? .GBP,
+                currency: transactions.first?.currency ?? .UKL,
                 withSymbol: showCurrencySymbols
             )
             

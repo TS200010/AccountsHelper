@@ -14,7 +14,7 @@ struct ArraySumByCategoryIncludingSplitsTests {
 
     // MARK: --- Test Sum By Category Including Splits
     @Test
-    func testSumByCategoryIncludingSplitsInGBP() async throws {
+    func testSumByCategoryIncludingSplitsInUKL() async throws {
         // Arrange: create in-memory context
         let context = CoreDataTestHelpers.makeInMemoryContext()
 
@@ -22,7 +22,7 @@ struct ArraySumByCategoryIncludingSplitsTests {
         let tx1 = Transaction(context: context)
         tx1.txAmount = 10.00
         tx1.splitAmount = 4.00
-        tx1.exchangeRate = 1.00      // GBP
+        tx1.exchangeRate = 1.00      // UKL
         tx1.category = .FoodHousehold
         tx1.splitCategory = .Maintenance
         tx1.commissionAmount = 0.50
@@ -41,10 +41,10 @@ struct ArraySumByCategoryIncludingSplitsTests {
         let transactions = [tx1, tx2]
 
         // Act
-        let totals = transactions.sumByCategoryIncludingSplitsInGBP()
+        let totals = transactions.sumByCategoryIncludingSplitsInUKL()
 
         // Assert
-        // splitAmountInGBP includes commission
+        // splitAmountInUKL includes commission
         #expect(totals[.Maintenance] == Decimal(4.50 + 10.00))   // includes commission
         #expect(totals[.FoodHousehold] == Decimal(6.00 + 15.00)) // excludes commission
     }

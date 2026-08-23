@@ -10,10 +10,10 @@ import Foundation
 enum ShowCurrencySymbolsEnum: String, CaseIterable {
     case always
     case never
-    case whenNotGBP
+    case whenNotUKL
     
     func show( currency: Currency ) -> Bool {
-        return self == .always || ( self == .whenNotGBP && currency.code != "GBP" )
+        return self == .always || ( self == .whenNotUKL && currency.code != "UKL" )
     }
     
     func next() -> ShowCurrencySymbolsEnum {
@@ -29,7 +29,7 @@ enum ShowCurrencySymbolsEnum: String, CaseIterable {
         switch self {
         case .always: return "sterlingsign.circle.fill"
         case .never: return "xmark.circle"
-        case .whenNotGBP: return "sterlingsign.square"
+        case .whenNotUKL: return "sterlingsign.square"
         }
     }
     

@@ -64,7 +64,7 @@ extension TransactionValidatable {
     
     /// Validates that the exchange rate is sensible
     func isExchangeRateValid() -> Bool {
-        currency == .GBP
+        currency == .UKL
         || (exchangeRate != Decimal(0)
             && (currency == .JPY ? exchangeRate < 300 : true))
     }

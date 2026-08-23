@@ -62,12 +62,12 @@ struct BofSCSVImporterParsingTests {
         }
 
         let baseDate = Date()
-        let newTx = TxMock(txAmount: 100, paymentMethod: .BofSPV, transactionDate: baseDate)
+        let newTx = TxMock(txAmount: 100, paymentMethod: .BofSPV_82, transactionDate: baseDate)
 
         let candidates = [
-            TxMock(txAmount: 100, paymentMethod: .BofSPV, transactionDate: Calendar.current.date(byAdding: .day, value: -3, to: baseDate)!),
-            TxMock(txAmount: 100, paymentMethod: .BofSPV, transactionDate: Calendar.current.date(byAdding: .day, value: -10, to: baseDate)!),
-            TxMock(txAmount: 50,  paymentMethod: .BofSPV, transactionDate: baseDate)
+            TxMock(txAmount: 100, paymentMethod: .BofSPV_82, transactionDate: Calendar.current.date(byAdding: .day, value: -3, to: baseDate)!),
+            TxMock(txAmount: 100, paymentMethod: .BofSPV_82, transactionDate: Calendar.current.date(byAdding: .day, value: -10, to: baseDate)!),
+            TxMock(txAmount: 50,  paymentMethod: .BofSPV_82, transactionDate: baseDate)
         ]
 
         let merged = candidates.first { candidate in
@@ -90,12 +90,12 @@ struct BofSCSVImporterParsingTests {
         }
 
         let baseDate = Date()
-        let newTx = TxMock(txAmount: 100, paymentMethod: .BofSPV, transactionDate: baseDate)
+        let newTx = TxMock(txAmount: 100, paymentMethod: .BofSPV_82, transactionDate: baseDate)
 
         let candidates = [
-            TxMock(txAmount: 50, paymentMethod: .BofSPV, transactionDate: baseDate),
+            TxMock(txAmount: 50, paymentMethod: .BofSPV_82, transactionDate: baseDate),
             TxMock(txAmount: 100, paymentMethod: .AMEX, transactionDate: baseDate),
-            TxMock(txAmount: 100, paymentMethod: .BofSPV, transactionDate: Calendar.current.date(byAdding: .day, value: -10, to: baseDate)!)
+            TxMock(txAmount: 100, paymentMethod: .BofSPV_82, transactionDate: Calendar.current.date(byAdding: .day, value: -10, to: baseDate)!)
         ]
 
         let merged = candidates.first { candidate in
@@ -132,7 +132,7 @@ struct BofSCSVImporterParsingTests {
         let tx = results.first!
         #expect(tx.payee == "Test Payee")
         #expect(tx.txAmount == Decimal(100))
-        #expect(tx.currency == .GBP)
+        #expect(tx.currency == .UKL)
         #expect(tx.payer == .tony)
     }
 

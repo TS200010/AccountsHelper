@@ -25,11 +25,63 @@ struct InspectCategoryBreakdown: View {
     
     // MARK: --- Transactions from AppState
     private var transactions: [Transaction] {
-        appState.selectedInspectorTransactionIDs.compactMap { id in
-            try? viewContext.existingObject(with: id) as? Transaction
+        
+//        for id in appState.selectedInspectorTransactionIDs {
+//            if let obj = try? viewContext.existingObject(with: id) {
+//                print("ID:", id)
+//                print("Entity:", obj.entity.name ?? "nil")
+//                print("Object:", obj)
+//                print("---")
+//            }
+//        }
+        
+        // DEBUG: check for duplicate IDs in AppState
+//        let duplicateIDs = Dictionary(
+//            grouping: appState.selectedInspectorTransactionIDs,
+//            by: { $0 }
+//        ).filter { $1.count > 1 }
+
+//        if !duplicateIDs.isEmpty {
+//            print("⚠️ Duplicate NSManagedObjectIDs in selectedInspectorTransactionIDs:")
+//            for (id, occurrences) in duplicateIDs {
+//                print("ID \(id) occurs \(occurrences.count) times")
+//            }
+//        } else {
+//            print("✅ No duplicate IDs in selectedInspectorTransactionIDs")
+//        }
+        
+        // Step 1: Fetch all Transactions from IDs
+        let fetchedTransactions: [Transaction] = appState.selectedInspectorTransactionIDs.compactMap { id in
+            do {
+                return try viewContext.existingObject(with: id) as? Transaction
+            } catch {
+                print("Warning: Transaction with ID \(id) not found")
+                return nil
+            }
         }
-        .sorted { ($0.transactionDate ?? Date.distantPast) < ($1.transactionDate ?? Date.distantPast) }
+
+        // Step 2: Detect duplicate objectIDs
+//        let duplicates = Dictionary(grouping: fetchedTransactions, by: { $0.objectID })
+//            .filter { $1.count > 1 }
+//        if !duplicates.isEmpty {
+//            print("⚠️ Duplicate Transactions detected:")
+//            for (id, txs) in duplicates {
+//                print("ID: \(id) appears \(txs.count) times. Payees: \(txs.compactMap { $0.payee })")
+//            }
+//        }
+
+        // Step 3: Deduplicate just in case
+//        let uniqueTransactions = Array(Set(fetchedTransactions))
+
+        // Step 4: Sort by date
+        return fetchedTransactions.sorted { ($0.transactionDate ?? Date.distantPast) < ($1.transactionDate ?? Date.distantPast) }
     }
+//    private var transactions: [Transaction] {
+//        appState.selectedInspectorTransactionIDs.compactMap { id in
+//            try? viewContext.existingObject(with: id) as? Transaction
+//        }
+//        .sorted { ($0.transactionDate ?? Date.distantPast) < ($1.transactionDate ?? Date.distantPast) }
+//    }
     
     // MARK: --- Body
     var body: some View {
@@ -53,7 +105,7 @@ struct InspectCategoryBreakdown: View {
                                     Text(transaction.transactionDate != nil ? dateFormatter.string(from: transaction.transactionDate!) : "N/A")
                                         .font(.body)
                                     Spacer()
-                                    let amount = (transaction.totalAmountInGBP as NSDecimalNumber?)?.doubleValue ?? 0
+                                    let amount = (transaction.totalAmountInUKL as NSDecimalNumber?)?.doubleValue ?? 0
                                     Text(String(format: "%.2f %@", amount, transaction.currency.description))
                                         .font(.body)
                                         .bold()
@@ -64,6 +116,10 @@ struct InspectCategoryBreakdown: View {
                                     .font(.body)
                                     .foregroundColor(.secondary)
                                     .frame(maxWidth: .infinity, alignment: .leading)
+                                
+                                // MARK: --- Split List
+                                splitList(for: transaction )
+ 
                                 
                             }
                             .padding()
@@ -92,6 +148,34 @@ struct InspectCategoryBreakdown: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .foregroundColor(.gray)
+        }
+    }
+    
+    // MARK: --- Split List
+    @ViewBuilder
+    private func splitList(for transaction: Transaction) -> some View {
+        // Filter out zero amounts if needed
+        let filteredPostings = transaction.postings.filter { $0.amount != 0 }
+        
+        @AppStorageEnum("showCurrencySymbols", defaultValue: .always)
+        var showCurrencySymbols: ShowCurrencySymbolsEnum
+
+        VStack(alignment: .leading, spacing: 2) {
+            ForEach(filteredPostings, id: \.self) { posting in
+                HStack {
+                    Text(posting.category.description)
+                    Spacer()
+                    Text(AmountFormatter.anyAmountAsString(
+                            amount: posting.amount,
+                            currency: transaction.currency,
+                            withSymbol: showCurrencySymbols ))
+                        .bold()
+                }
+                .padding(.vertical, 2)
+                .padding(.horizontal, 6)
+                .background(Color.gray.opacity(0.1))
+                .cornerRadius(6)
+            }
         }
     }
 }

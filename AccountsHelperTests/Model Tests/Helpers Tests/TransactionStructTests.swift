@@ -20,14 +20,14 @@ struct TransactionStructTests {
             accountNumber: "12345",
             address: "1 Test St",
             category: .FoodHousehold,
-            currency: .GBP,
+            currency: .UKL,
             debitCredit: .DR,
             exchangeRate: 1.0,
             explanation: "Groceries",
             extendedDetails: "Tesco",
             payee: "Tesco",
             payer: .tony,
-            paymentMethod: .CashGBP,
+            paymentMethod: .CashUKL,
             reference: "Ref123",
             splitAmount: 10,
             splitCategory: .MiscOther,
@@ -44,7 +44,7 @@ struct TransactionStructTests {
     func testDefaultInitializer() async throws {
         let tx = TransactionStruct()
         #expect(tx.category == .unknown)
-        #expect(tx.currency == .GBP)
+        #expect(tx.currency == .UKL)
         #expect(tx.debitCredit == .DR)
         #expect(tx.exchangeRate == 1.0)
         #expect(tx.txAmount == 0)
@@ -57,7 +57,7 @@ struct TransactionStructTests {
         #expect(tx.splitCategory == .MiscOther)
         #expect(tx.txAmount == 50)
         #expect(tx.splitAmount == 10)
-        #expect(tx.totalInGBP == 52.5) // 50*1 + 2.5
+        #expect(tx.totalInUKL == 52.5) // 50*1 + 2.5
         #expect(tx.isSplit)
     }
 
@@ -77,7 +77,7 @@ struct TransactionStructTests {
         #expect(tx.category == .Travel)
         #expect(tx.splitAmount == 25)
         #expect(tx.splitCategory == .MiscOther)
-        #expect(tx.totalInGBP == 123.0)
+        #expect(tx.totalInUKL == 123.0)
     }
 
     // MARK: --- Reset Tests
@@ -89,7 +89,7 @@ struct TransactionStructTests {
         #expect(tx.txAmount == 0)
         #expect(tx.category == .unknown)
         #expect(tx.splitCategory == .unknown)
-        #expect(tx.currency == .GBP)
+        #expect(tx.currency == .UKL)
         #expect(tx.debitCredit == .DR)
         #expect(tx.exchangeRate == 1.0)
         #expect(tx.splitAmount == 0)
@@ -111,7 +111,7 @@ struct TransactionStructTests {
         #expect(cdTx.category == .FoodHousehold)
         #expect(cdTx.splitAmount == 10)
         #expect(cdTx.splitCategory == .MiscOther)
-//        #expect(cdTx.totalInGBP == 52.5)
+//        #expect(cdTx.totalInUKL == 52.5)
         #expect(cdTx.payee == "Tesco")
         #expect(cdTx.payer == .tony)
     }
@@ -135,8 +135,8 @@ struct TransactionStructTests {
     }
 
     @Test
-    func testTotalInGBP() async throws {
+    func testTotalInUKL() async throws {
         let tx = TransactionStruct(exchangeRate: 1.1, txAmount: 100, commissionAmount: 5)
-        #expect(tx.totalInGBP == 115)
+        #expect(tx.totalInUKL == 115)
     }
 }

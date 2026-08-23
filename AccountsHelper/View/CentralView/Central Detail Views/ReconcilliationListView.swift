@@ -106,12 +106,6 @@ extension ReconcilliationListView {
         }
         .frame(minWidth: 400, minHeight: 300)
     }
-//    private var editReconciliationSheet: some View {
-//        NavigationStack {
-//            EditReconcilationView()
-//        }
-//        .frame(minWidth: 400, minHeight: 300)
-//    }
 }
 
 // MARK: --- CONFIRMATION DIALOGS
@@ -148,6 +142,8 @@ extension ReconcilliationListView {
         Button("OK", role: .cancel) { }
     }
 }
+
+
 // MARK: --- CONTENT VIEW
 extension ReconcilliationListView {
     
@@ -224,7 +220,7 @@ extension ReconcilliationListView {
                         
                         TableColumn("Ending Balance") { row in
                             //                        Text(row.rec.endingBalance.formattedAsCurrency(row.rec.currency))
-                            Text(row.rec.endingBalanceAsString())
+                            Text(row.rec.closingBalanceAsString())
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .foregroundColor(row.rec.closed ? .blue : (hasInvalidTransactions(row) ? .red : .primary))
                                 .contentShape(Rectangle())
@@ -265,6 +261,7 @@ extension ReconcilliationListView {
 
 // MARK: --- FETCH HELPERS
 extension ReconcilliationListView {
+    
     // MARK: --- refreshRows
     private func refreshRows() {
         do {
@@ -281,6 +278,7 @@ extension ReconcilliationListView {
         }
     }
     
+    
     // MARK: --- GroupedReconciliationRows
     private var groupedReconciliationRows: [(period: AccountingPeriod, rows: [ReconciliationRow])] {
         let dict = Dictionary(grouping: reconciliationRows) { $0.rec.accountingPeriod }
@@ -291,10 +289,12 @@ extension ReconcilliationListView {
             }
     }
     
+    
     // MARK: --- HasInvalidTransactions
     private func hasInvalidTransactions(_ row: ReconciliationRow) -> Bool {
         !(row.rec.isValid( ))
     }
+    
     
     // MARK: --- DeleteReconciliation
     private func deleteReconciliation(_ objectID: NSManagedObjectID) {
@@ -325,6 +325,7 @@ extension ReconcilliationListView {
             }
         }
     }
+    
     
     // MARK: --- CloseReconciliation
     private func closeReconciliation(_ objectID: NSManagedObjectID) {
@@ -358,6 +359,7 @@ extension ReconcilliationListView {
     }
 }
 
+
 // MARK: --- CONTEXT MENU HELPERS
 extension ReconcilliationListView {
     
@@ -387,7 +389,7 @@ extension ReconcilliationListView {
                 txAmount: \(newTx.txAmount)
                 debitCredit: \(newTx.debitCredit)
                 currency: \(newTx.currency)
-                gap (GBP): \(gap)
+                gap (UKL): \(gap)
                 """)
             
             try context.save()
@@ -397,6 +399,7 @@ extension ReconcilliationListView {
             print("Failed to add balancing transaction: \(error)")
         }
     }
+    
     
     // MARK: --- CategoryTotals
     fileprivate func categoryTotals(for row: ReconciliationRow) -> [Category: Decimal] {
@@ -409,31 +412,76 @@ extension ReconcilliationListView {
         return totals
     }
     
+    
     // MARK: --- ExportXLSSummary
-    private func exportXLSSummary(for row: ReconciliationRow) {
-        #if os(macOS)
-        let totals = categoryTotals(for: row)
+#if os(macOS)
+private func exportXLSSummary(for reconciliations: [ReconciliationRow]) {
+    guard !reconciliations.isEmpty else { return }
 
-        let text = Category.allCases.map { category in
+    // 1. Build header row: "Category" + account names
+    let headerRow = ["Category"] + reconciliations.map { $0.rec.account.description }
+    var rows: [String] = [headerRow.joined(separator: "\t")]
+
+    // 2. Loop through all categories
+    for category in Category.allCases {
+        var rowValues: [String] = [category.description]
+        
+        for row in reconciliations {
+            let totals = categoryTotals(for: row)
             let total = totals[category] ?? 0
-            return """
-            \(category.description)\t\(AmountFormatter.anyAmountAsString(
+            let formatted = AmountFormatter.anyAmountAsString(
                 amount: total,
                 currency: row.rec.account.currency,
                 withSymbol: .never
-            ))
-"""
-//            return "\(category.description)\t\(total.string2f)"
-        }.joined(separator: "\n")
-
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.setString(text, forType: .string)
-
-        showingXLSConfirmation = true
-        #endif
+            )
+            rowValues.append(formatted)
+        }
+        
+        rows.append(rowValues.joined(separator: "\t"))
     }
+
+    // 3. Join all rows into tab-delimited text
+    let text = rows.joined(separator: "\n")
+
+    // 4. Copy to pasteboard
+    let pasteboard = NSPasteboard.general
+    pasteboard.clearContents()
+    pasteboard.setString(text, forType: .string)
+
+    showingXLSConfirmation = true
 }
+    
+#else
+    private func exportXLSSummary(for reconciliations: [ReconciliationRow]) {
+        return
+    }
+
+#endif
+//    private func exportXLSSummary(for row: ReconciliationRow) {
+//        #if os(macOS)
+//        let totals = categoryTotals(for: row)
+//
+//        let text = Category.allCases.map { category in
+//            let total = totals[category] ?? 0
+//            return """
+//            \(category.description)\t\(AmountFormatter.anyAmountAsString(
+//                amount: total,
+//                currency: row.rec.account.currency,
+//                withSymbol: .never
+//            ))
+//"""
+////            return "\(category.description)\t\(total.string2f)"
+//        }.joined(separator: "\n")
+//
+//        let pasteboard = NSPasteboard.general
+//        pasteboard.clearContents()
+//        pasteboard.setString(text, forType: .string)
+//
+//        showingXLSConfirmation = true
+//        #endif
+//    }
+}
+
 
 // MARK: --- VIEW CONTEXT MENU
 extension ReconcilliationListView {
@@ -457,9 +505,11 @@ extension ReconcilliationListView {
             
             let windowDays = 14
             let calendar = Calendar.current
-            let start = calendar.date(byAdding: .day, value: -windowDays, to: row.rec.transactionStartDate)!
+            let start = row.rec.earliestOpenTransactionDate()
+//            let start = calendar.date(byAdding: .day, value: -windowDays, to: row.rec.transactionStartDate)!
             let end   = calendar.date(byAdding: .day, value:  windowDays, to: row.rec.transactionEndDate)!
 
+            print( start as NSDate, end as NSDate )
             let predicate = NSPredicate(
                 format: "accountCD == %d AND transactionDate >= %@ AND transactionDate <= %@",
                 row.rec.account.rawValue,
@@ -471,37 +521,6 @@ extension ReconcilliationListView {
             Label("Transactions", systemImage: "list.bullet")
         }
 
-        Button {
-            appState.selectedReconciliationID = row.id
-            context.perform {
-                do {
-                    // Remove all transactions from this reconciliation
-                    for tx in row.rec.transactions?.allObjects as? [Transaction] ?? [] {
-                        tx.reconciliation = nil
-                    }
-                    try context.save()
-                    
-                    DispatchQueue.main.async {
-                        refreshRows()
-                        appState.refreshInspector()
-                    }
-                    
-                    // Optional: register undo
-                    undoManager?.registerUndo(withTarget: context) { ctx in
-                        for tx in row.rec.transactions?.allObjects as? [Transaction] ?? [] {
-                            tx.reconciliation = row.rec
-                        }
-                        try? ctx.save()
-                    }
-                    undoManager?.setActionName("Reset Checked Transactions")
-                } catch {
-                    print("Failed to reset transactions: \(error)")
-                    context.rollback()
-                }
-            }
-        } label: {
-            Label("Reset Checked", systemImage: "arrow.uturn.backward.circle")
-        }
         
         Button {
             let predicate = NSPredicate(
@@ -515,7 +534,16 @@ extension ReconcilliationListView {
             Label("Categories Summary", systemImage: "doc.text.magnifyingglass")
         }
         
-        Button { exportXLSSummary(for: row) } label: {
+        Button { printMonthlyBalanceSummary() } label: {
+            Label("Monthly Balance Summary", systemImage: "chart.bar")
+        }
+        
+        Button {
+            if let firstRow = reconciliationRows.first {
+                // Get all rows in the same period as the first row
+                let rowsInPeriod = groupedReconciliationRows.first { $0.period == firstRow.rec.accountingPeriod }?.rows ?? []
+                exportXLSSummary(for: rowsInPeriod)
+            } } label: {
             Label("XLS Summary", systemImage: "doc.on.doc")
         }
 
@@ -556,6 +584,13 @@ extension ReconcilliationListView {
         
         Divider()
         
+        Button { printFullSummary() } label: {
+            Label("Print Full Summary", systemImage: "checkmark.square.fill")
+        }
+
+        
+        Divider()
+        
         Button(role: .destructive) {
             appState.selectedReconciliationID = row.id
             showingDeleteConfirmation = true
@@ -563,5 +598,39 @@ extension ReconcilliationListView {
             Label("Delete", systemImage: "trash")
         }
         .disabled(!row.rec.canDelete( ))
+
+        
+        Button (role: .destructive) {
+            appState.selectedReconciliationID = row.id
+            context.perform {
+                do {
+                    // Remove all transactions from this reconciliation
+                    for tx in row.rec.transactions?.allObjects as? [Transaction] ?? [] {
+                        tx.reconciliation = nil
+                    }
+                    try context.save()
+                    
+                    DispatchQueue.main.async {
+                        refreshRows()
+                        appState.refreshInspector()
+                    }
+                    
+                    // Optional: register undo
+                    undoManager?.registerUndo(withTarget: context) { ctx in
+                        for tx in row.rec.transactions?.allObjects as? [Transaction] ?? [] {
+                            tx.reconciliation = row.rec
+                        }
+                        try? ctx.save()
+                    }
+                    undoManager?.setActionName("Reset Checked Transactions")
+                } catch {
+                    print("Failed to reset transactions: \(error)")
+                    context.rollback()
+                }
+            }
+        } label: {
+            Label("Reset Checked", systemImage: "arrow.uturn.backward.circle")
+        }
+        .disabled(row.rec.closed)
     }
 }

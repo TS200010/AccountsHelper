@@ -8,7 +8,7 @@
 import Foundation
 import CoreData
 
-@Observable 
+@Observable
 class TransactionRow: Identifiable, Hashable {
     
     let transaction: Transaction
@@ -43,17 +43,18 @@ class TransactionRow: Identifiable, Hashable {
         guard let reconciliation = transaction.reconciliation else { return "" }
         return reconciliation.accountingPeriod.shortDescription
     }
+    
 
     // MARK: --- DisplayAmount
     var displayAmount: String {
         var wip: String = transaction.txAmount.formattedAsCurrency( transaction.currency )
-        if transaction.currency == .GBP {
+        if transaction.currency == .UKL {
             return wip
         } else {
 #if os(macOS)
-            return wip + "\n" + transaction.totalAmountInGBP.formattedAsCurrency( .GBP )
+            return wip + "\n" + transaction.totalAmountInUKL.formattedAsCurrency( .UKL )
 #else
-//            return wip + " " + transaction.totalAmountInGBP.formattedAsCurrency( .GBP )
+//            return wip + " " + transaction.totalAmountInUKL.formattedAsCurrency( .UKL )
             return wip
 #endif
         }
@@ -72,8 +73,8 @@ class TransactionRow: Identifiable, Hashable {
     var displaySplitAmount: String {
         if transaction.splitAmount == Decimal(0) { return "" }
 
-        var splitPart = transaction.splitAmountInGBP.formattedAsCurrency( .GBP ) + " " + transaction.splitCategory.description
-        var remainderPart = transaction.splitRemainderAmountInGBP.formattedAsCurrency( .GBP ) + " " + transaction.splitRemainderCategory.description
+        var splitPart = transaction.splitAmountInUKL.formattedAsCurrency( .UKL ) + " " + transaction.splitCategory.description
+        var remainderPart = transaction.splitRemainderAmountInUKL.formattedAsCurrency( .UKL ) + " " + transaction.splitRemainderCategory.description
 
     #if os(macOS)
             return splitPart + "\n" + remainderPart
@@ -118,12 +119,14 @@ class TransactionRow: Identifiable, Hashable {
 
     // MARK: --- TransactionDate
     var transactionDate: String { transaction.transactionDateAsString() ?? "" }
+    
+    var timestamp: String { transaction.timestampAsString() ?? "" }
 
     // MARK: --- TxAmount
     var txAmount: String { transaction.txAmountAsString() }
 
     // MARK: --- ExchangeRate
-    var exchangeRate: String { transaction.currency == .GBP ? "" : (transaction.exchangeRateAsString() ?? "") }
+    var exchangeRate: String { transaction.currency == .UKL ? "" : (transaction.exchangeRateAsString() ?? "") }
 
     static func == (lhs: TransactionRow, rhs: TransactionRow) -> Bool { lhs.id == rhs.id }
     func hash(into hasher: inout Hasher) { hasher.combine(id) }

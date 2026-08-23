@@ -18,22 +18,6 @@ import UIKit
 #endif
 
 
-// MARK: --- BrowseTransactionsMode
-enum BrowseTransactionsMode {
-    case generalBrowsing
-    case reconciliationAssignmentBrowsing
-}
-
-// MARK: --- To work aroound a SwiftUI bug
-fileprivate func safeUIUpdate(_ action: @escaping () -> Void) {
-    action()
-//    DispatchQueue.main.async {
-//        withAnimation(.none) {
-//            action()
-//        }
-//    }
-}
-
 // MARK: --- RectCorner OptionSet
 struct RectCorner: OptionSet {
     let rawValue: Int
@@ -45,59 +29,6 @@ struct RectCorner: OptionSet {
     static let allCorners: RectCorner = [.topLeft, .topRight, .bottomLeft, .bottomRight]
 }
 
-
-// MARK: --- SortColumn
-enum SortColumn: CaseIterable, Identifiable {
-    case category, currency, debitCredit, exchangeRate,
-         payee, payer, account, reconciliation, transactionDate, txAmount
-
-    var id: Self { self }
-
-    var systemImage: String {
-        switch self {
-        case .category:        return "folder"
-        case .currency:        return "dollarsign.circle"
-        case .debitCredit:     return "arrow.left.arrow.right"
-        case .exchangeRate:    return "chart.line.uptrend.xyaxis"
-        case .account:   return "creditcard"
-        case .payee:           return "person"
-        case .payer:           return "person.crop.circle"
-        case .reconciliation:  return "checkmark.seal"
-        case .transactionDate: return "calendar"
-        case .txAmount:        return "sum"
-        }
-    }
-
-    var title: String {
-        switch self {
-        case .category:        return "Category"
-        case .currency:        return "Currency"
-        case .debitCredit:     return "Debit/Credit"
-        case .exchangeRate:    return "Fx"
-        case .payee:           return "Payee"
-        case .payer:           return "Payer"
-        case .account:   return "Account"
-        case .reconciliation:  return "Reconciliation"
-        case .transactionDate: return "Date"
-        case .txAmount:        return "Amount"
-        }
-    }
-
-    fileprivate func stringKey(for row: TransactionRow) -> String? {
-        switch self {
-        case .category:        return row.category
-        case .currency:        return row.currency
-        case .debitCredit:     return row.debitCredit
-        case .exchangeRate:    return row.exchangeRate
-        case .payee:           return row.payee
-        case .payer:           return row.payer
-        case .account:         return row.account
-        case .reconciliation:  return row.reconciliationPeriod
-        case .transactionDate: return row.transactionDate
-        case .txAmount:        return row.txAmount
-        }
-    }
-}
 
 // MARK: --- BrowseTransactionsView
 struct BrowseTransactionsView: View {
@@ -126,7 +57,7 @@ struct BrowseTransactionsView: View {
     // Focus State
     @FocusState private var focusedRowIndex: Int?
     // Sort State
-    @State private var ascending: Bool = true
+    @State private var ascending: Bool = false
     @State private var sortColumn: SortColumn = .transactionDate
     // Merge State
     @State private var mergeCandidates: [Transaction] = []
@@ -145,20 +76,23 @@ struct BrowseTransactionsView: View {
     @State private var selectedAccount: ReconcilableAccounts? = nil
     // Column Width State
     #if os(macOS)
-    @State private var availableWidth: CGFloat = 0
-    @State private var scaledColumnWidths: [String: CGFloat] = [:]
-    @State private var columnWidths: [String: CGFloat] = [
+    @State var availableWidth: CGFloat = 0
+//    @State var scaledColumnWidths: [String: CGFloat] = [:]
+    private static let defaultColumnWidths : [String: CGFloat] = [
         "Account": 80,
         "Date": 100,
         "✓": 5,
+        "Link": 5,
         "Amount": 130,
         "Balance": 130,
         "Fx": 60,
         "Category": 80,
         "Split": 200,
-        "Payee": 300,
+        "Payee": 200,
         "Reconciliation": 60
     ]
+    @State private var columnWidths: [String: CGFloat] = Self.defaultColumnWidths
+
     #endif
     // Checked Selection State
     @State private var selectionActive: Bool = false
@@ -183,15 +117,13 @@ struct BrowseTransactionsView: View {
     }
 
     // MARK: --- Initialiser
-    init(predicate: NSPredicate? = nil, mode: BrowseTransactionsMode ) {
+    init( predicate: NSPredicate? = nil, mode: BrowseTransactionsMode ) {
         _transactions = FetchRequest(
-            sortDescriptors: [NSSortDescriptor(keyPath: \Transaction.transactionDate, ascending: true)],
+            sortDescriptors: [NSSortDescriptor(keyPath: \Transaction.transactionDate, ascending: false)],
             predicate: predicate
         )
-//        self.predicateIn = predicate
         self.mode = mode
     }
-    
     @FetchRequest(
         sortDescriptors: [
             NSSortDescriptor(keyPath: \Reconciliation.periodYear, ascending: false),
@@ -200,8 +132,10 @@ struct BrowseTransactionsView: View {
         animation: .default
     )
     
+    // MARK: --- Reconcilations
     private var reconciliations: FetchedResults<Reconciliation>
     
+    // MARK: --- AccountingPeriods
     private var accountingPeriods: [AccountingPeriod] {
         var uniquePeriods = Set<AccountingPeriod>()
         for rec in reconciliations {
@@ -213,11 +147,9 @@ struct BrowseTransactionsView: View {
     }
     
    
+    // MARK: --- UpdateRunningTotals
     private func updateRunningTotals() {
         guard allowSelection else { return } // Do nothing if selection Not allowed. We have no checked total.
-//        checkedTotal = transactions.filter { $0.checked }.map { $0.txAmountInGBP }.reduce(0, +)
-//        checkedTotal = transactions.filter { $0.reconciliation == appState.selectedReconciliationID }.map { $0.txAmountInGBP }.reduce(0, +)
-//        checkedTotal = selectedReconciliation?.sumInNativeCurrency() ?? 0
         negativeCheckedTotal = selectedReconciliation?.sumNegativeAmountsInNativeCurrency() ?? 0
         positiveCheckedTotal = selectedReconciliation?.sumPositiveAmountsInNativeCurrency() ?? 0
     }
@@ -261,12 +193,18 @@ struct BrowseTransactionsView: View {
         }
 #if os(iOS)
         .sheet(isPresented: $showingEditTransactionView) {
-            Text("EDIT HERE\(String(describing: selectedTransactionIDs.first))")
-            if selectedTransactionIDs.first != nil {
-                AddOrEditTransactionView(transactionID: selectedTransactionIDs.first, context: viewContext )
+//            Text("EDIT HERE\(String(describing: selectedTransactionIDs.first))")
+            if let objectID = selectedTransactionIDs.first,
+               let transaction = try? viewContext.existingObject(with: objectID) as? Transaction {
+                AddOrEditTransactionView(transaction: transaction)
             } else {
                 Text("No transaction selected")
             }
+//            if selectedTransactionIDs.first != nil {
+//                AddOrEditTransactionView(transactionID: selectedTransactionIDs.first, context: viewContext )
+//            } else {
+//                Text("No transaction selected")
+//            }
         }
 #endif
     }
@@ -277,9 +215,9 @@ extension BrowseTransactionsView {
 
     // MARK: --- ContextMenu
     @ViewBuilder
-    private func contextMenu(for row: TransactionRow) -> some View {
+    private func editContextMenu(for row: TransactionRow) -> some View {
         
-        if selectedTransactionIDs.contains(row.id) {
+        if  selectedTransactionIDs.contains(row.id) {
             
             if selectedTransactionIDs.count == 1 {
                 Button("Edit Transaction") {
@@ -289,6 +227,23 @@ extension BrowseTransactionsView {
                     appState.refreshInspector()
                 }
                 .disabled(anySelectedTransactionClosed)
+                
+                Button("Adjust Category") {
+                    safeUIUpdate { selectedTransactionIDs = [row.id] }
+                    appState.selectedTransactionID = row.id
+                    appState.pushCentralView(.adjustCategory(existingTransaction: row.transaction))
+                    appState.refreshInspector()
+                }
+                .disabled(anySelectedTransactionClosed)
+                
+                Button(role: .destructive) {
+                    // Remove pairing only, not deleting transaction
+                    row.transaction.pairID = nil
+                    try? viewContext.save()
+                    appState.refreshInspector()
+                } label: {
+                    Label("Unlink Pair", systemImage: "link.badge.minus")
+                }
             }
             
             if selectedTransactionIDs.count == 2 {
@@ -310,8 +265,20 @@ extension BrowseTransactionsView {
                 Label("Delete Transaction(s)", systemImage: "trash")
             }
             .disabled(anySelectedTransactionClosed)
+            
+            Button("Force Unclose") {
+                safeUIUpdate {
+                    row.checked = false
+                    row.transaction.closed = false
+                    try? viewContext.save()
+                    appState.refreshInspector()
+                }
+            }
+            .foregroundColor(.red)
+            .disabled(row.transaction.closed)
         }
     }
+
 
     // MARK: --- MultiLineTableCell
     @ViewBuilder
@@ -331,12 +298,9 @@ extension BrowseTransactionsView {
         }
         .padding(.leading, alignment == .trailing ? 0 : 6)
         .padding(.trailing, alignment == .trailing ? 6 : 0)
-        .frame(maxWidth: .infinity,
-               alignment: alignment == .trailing ? .trailing : .leading)
-//        .padding(.leading, 6)
-//        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: alignment == .trailing ? .trailing : .leading)
         .contentShape(Rectangle())
-        .contextMenu { contextMenu(for: row) }
+//        .contextMenu { editContextMenu(for: row) }
     }
 
     // MARK: --- TableCell
@@ -351,7 +315,7 @@ extension BrowseTransactionsView {
                     : (row.transaction.closed ? .blue : (row.transaction.isValid() ? .primary : .red))
                 )
             #if os(macOS)
-                .opacity((selectionActive && row.checked) ? 0.5 : 1.0)  
+                .opacity((selectionActive && row.checked) ? 0.5 : 1.0)
                 .lineLimit(1)
                 .truncationMode(.tail)
             #else
@@ -362,7 +326,7 @@ extension BrowseTransactionsView {
         .padding(.leading, 6)
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
-        .contextMenu { contextMenu(for: row) }
+//        .contextMenu { editContextMenu(for: row) }
     }
 
     // MARK: --- TransactionsTable
@@ -377,12 +341,14 @@ extension BrowseTransactionsView {
                         // Load saved widths
                         if let saved = UserDefaults.standard.dictionary(forKey: gColumnWidthsKey) as? [String: Double] {
                             columnWidths = saved.mapValues { CGFloat($0) }
+                        } else {
+                            columnWidths = Self.defaultColumnWidths
                         }
-                        updateScaledWidths(for: availableWidth)
+//                        updateScaledWidths(for: availableWidth)
                     }
                     .onChange(of: width) { _, newWidth in
                         availableWidth = newWidth
-                        updateScaledWidths(for: newWidth)
+                        updateColumnWidths(for: newWidth)
                     }
                 
                 VStack(spacing: 0) {
@@ -396,26 +362,28 @@ extension BrowseTransactionsView {
                         
                         HStack(spacing: 0) {
                             TableHeaderCell("Account", width: 80)
-                                .frame(width: scaledColumnWidths["Account"] ?? 80)
+                                .frame(width: columnWidths["Account"] ?? 80)
                                 .if( gViewCheck ) { view in view.border( .green )}
                             TableHeaderCell("Date", width: 100)
-                                .frame(width: scaledColumnWidths["Date"] ?? 100)
+                                .frame(width: columnWidths["Date"] ?? 100)
                             TableHeaderCell("✓", width: 5)
-                                .frame(width: scaledColumnWidths["✓"] ?? 5)
+                                .frame(width: columnWidths["✓"] ?? 5)
+                            TableHeaderCell("Link", width: 5)
+                                .frame(width: columnWidths["Link"] ?? 5)
                             TableHeaderCell("Reconciliation", width: 60)
-                                .frame(width: scaledColumnWidths["Reconciliation"] ?? 60)
+                                .frame(width: columnWidths["Reconciliation"] ?? 60)
                             TableHeaderCell("Amount", width: 130)
-                                .frame(width: scaledColumnWidths["Amount"] ?? 130)
+                                .frame(width: columnWidths["Amount"] ?? 130)
                             TableHeaderCell("Payee", width: 100)
-                                .frame(width: scaledColumnWidths["Payee"] ?? 100)
+                                .frame(width: columnWidths["Payee"] ?? 100)
                             TableHeaderCell("Balance", width: 130)
-                                .frame(width: scaledColumnWidths["Balance"] ?? 130)
+                                .frame(width: columnWidths["Balance"] ?? 130)
                             TableHeaderCell("Fx", width: 60)
-                                .frame(width: scaledColumnWidths["Fx"] ?? 60)
+                                .frame(width: columnWidths["Fx"] ?? 60)
                             TableHeaderCell("Category", width: 80)
-                                .frame(width: scaledColumnWidths["Category"] ?? 80)
+                                .frame(width: columnWidths["Category"] ?? 80)
                             TableHeaderCell("Split", width: 200)
-                                .frame(width: scaledColumnWidths["Split"] ?? 200)
+                                .frame(width: columnWidths["Split"] ?? 200)
 
                         }
                         .if( gViewCheck ) { view in view.border( .cyan )}
@@ -434,7 +402,6 @@ extension BrowseTransactionsView {
                                     index: index
                                 )
                                 .focusable(true)
-//                                .focusRing(.none) // Disable blue focusRing
                                 .focused($focusedRowIndex, equals: index)
                                 .onTapGesture { focusedRowIndex = index }
                                 .onMoveCommand { direction in
@@ -461,19 +428,20 @@ extension BrowseTransactionsView {
                                     default: break
                                     }
                                 }
+                                .contextMenu { editContextMenu(for: row) }
                             }
                         }
                     }
                     .frame(minHeight: 300)
                 }
                 .onAppear {
-                    updateScaledWidths(for: availableWidth)
+                    updateColumnWidths(for: availableWidth)
                 }
                 .onChange(of: availableWidth) { _, newWidth in
-                    updateScaledWidths(for: newWidth)
+                    updateColumnWidths(for: newWidth)
                 }
                 // --- Constrain VStack to the width of the available window
-                .frame(minWidth: proxy.size.width, alignment: .leading)
+                .frame(width: proxy.size.width, alignment: .leading)
                 .if(gViewCheck) { view in view.border(.red).padding(.leading, 0) }
             }
             .contextMenu { SortContextMenu() }
@@ -509,64 +477,44 @@ extension BrowseTransactionsView {
         #endif
     }
     
-    // MARK: --- UpdateScaledWidths
+    // MARK: --- updateColumnWidths
 #if os(macOS)
-    private func updateScaledWidths(for availableWidth: CGFloat) {
-        let minWidth: CGFloat = 60
-        let totalRequested = columnWidths.values.reduce(0, +)
+    private func updateColumnWidths(for availableWidth: CGFloat) {
+        let minWidth: CGFloat = 5
+        let totalMin = CGFloat(columnWidths.count) * minWidth
 
-        // Scale to fit availableWidth proportionally
-        // 16 is to not entirely fill available space
-        let scaleFactor = (availableWidth - 50) / totalRequested
-        scaledColumnWidths = columnWidths.mapValues { max(minWidth, $0 * scaleFactor) }
+        guard availableWidth > totalMin else {
+            columnWidths = columnWidths.mapValues { _ in minWidth }
+            return
+        }
+
+        let totalRequested = columnWidths.values.reduce(0, +)
+        let scale = min(1.0, availableWidth / totalRequested)
+
+        var widths = columnWidths.mapValues { max(minWidth, $0 * scale) }
+
+        // FINAL SAFETY CLAMP
+        let total = widths.values.reduce(0, +)
+        if total > availableWidth {
+            let excess = total - availableWidth
+            widths["Split"]! -= excess
+        }
+
+        columnWidths = widths
+        print(availableWidth, columnWidths.values.reduce(0, +))
     }
 #endif
-
 
 
     // MARK: --- ResizeColumn
 #if os(macOS)
     private func resizeColumn(title: String, delta: CGFloat) {
-        guard let currentWidth = columnWidths[title], availableWidth > 0 else { return }
-
         let minWidth: CGFloat = 60
-        let newWidth = max(minWidth, currentWidth + delta)
-        columnWidths[title] = newWidth
-
-        // Total width after resize
-        let totalWidth = columnWidths.values.reduce(0, +)
-
-        // If total exceeds availableWidth, shrink flexible columns
-        if totalWidth > availableWidth {
-            var remainingExcess = totalWidth - availableWidth
-
-            // Flexible columns excluding the dragged one
-            let flexibleColumns = columnWidths.keys.filter { $0 != title }
-
-            for key in flexibleColumns.reversed() { // shrink from right
-                guard let width = columnWidths[key] else { continue }
-                let shrinkable = max(width - minWidth, 0)
-                if shrinkable >= remainingExcess {
-                    columnWidths[key] = width - remainingExcess
-                    remainingExcess = 0
-                    break
-                } else {
-                    columnWidths[key] = width - shrinkable
-                    remainingExcess -= shrinkable
-                }
-            }
-
-            // Clamp dragged column if still over
-            if remainingExcess > 0 {
-                columnWidths[title] = max(minWidth, newWidth - remainingExcess)
-            }
-        }
-
-        scaledColumnWidths = columnWidths
-        // Save
-        UserDefaults.standard.set(columnWidths.mapValues { Double($0) }, forKey: gColumnWidthsKey)
+        guard let current = columnWidths[title] else { return }
+        
+        columnWidths[title] = max(minWidth, current + delta)
     }
-    #endif
+#endif
 
     // MARK: --- TransactionRowView
     @ViewBuilder
@@ -579,14 +527,14 @@ extension BrowseTransactionsView {
     ) -> some View {
         #if os(macOS)
         ZStack {                                     // Wrap so background can fill full width
-            rowBackground(for: index, row: row)
+//            rowBackground(for: index, row: row)
             HStack(spacing: 0) {
                 tableCell(row.account, for: row)
-                    .frame(width: scaledColumnWidths["Account"] ?? 80)
+                    .frame(width: columnWidths["Account"] ?? 80)
                     .if( gViewCheck ) { view in view.border( .yellow )}
                 
                 tableCell(row.transactionDate, for: row)
-                    .frame(width: scaledColumnWidths["Date"] ?? 100)
+                    .frame(width: columnWidths["Date"] ?? 100)
                 
                 HStack {
                     Spacer(minLength: 0)
@@ -601,12 +549,12 @@ extension BrowseTransactionsView {
                                 if newValue {
                                     // Assign transaction to reconciliation
                                     rec.addToTransactions(row.transaction)
-//                                    row.transaction.reconciliation = rec
+                                    //                                    row.transaction.reconciliation = rec
                                 } else {
                                     // Remove only if it currently belongs to this reconciliation
                                     if row.transaction.reconciliation == rec {
                                         rec.removeFromTransactions(row.transaction)
-//                                        row.transaction.reconciliation = nil
+                                        //                                        row.transaction.reconciliation = nil
                                     }
                                 }
                                 
@@ -615,94 +563,85 @@ extension BrowseTransactionsView {
                                 updateRunningTotals()
                             }
                         }
-                ))
-                    
-//                    Toggle("", isOn: Binding(
-//                        get: { row.checked },
-//                        set: { newValue in
-//                            if selectionActive {
-//                                if let recID = appState.selectedReconciliationID,
-//                                   let rec = reconciliations.first(where: { $0.objectID == recID }) {
-//                                    if newValue {
-//                                        row.transaction.reconciliation = rec
-//                                    } else {
-//                                        // Remove only if it currently belongs to this reconciliation
-//                                        if row.transaction.reconciliation == rec {
-//                                            row.transaction.reconciliation = nil
-//                                        }
-//                                    }
-//                                    try? viewContext.save()
-//                                    updateRunningTotal()
-//                                }
-//                            }
-////                            if selectionActive {
-////                                row.checked = newValue
-////                                row.transaction.checked = newValue
-////                                if allowSelection && newValue {
-////                                    if let recID = appState.selectedReconciliationID,
-////                                       let rec = reconciliations.first(where: { $0.objectID == recID }) {
-////                                        row.transaction.reconciliation = rec
-//////                                        row.transaction.periodKey = rec.periodKey
-////                                    }
-////                                } else {
-//////                                    row.transaction.periodKey = ""
-////                                    row.transaction.reconciliation = nil
-////                                }
-////
-////                                try? viewContext.save()
-////                                updateRunningTotal()
-////                            }
-//                        }
-//                    ))
+                    ))
                     .toggleStyle(.checkbox)
                     .disabled(!allowSelection || row.transaction.closed)
                     .labelsHidden()
                     .frame(width: 20, height: 20)
                     Spacer(minLength: 0)
                 }
-                .frame(width: scaledColumnWidths["✓"] ?? 5)
+                .frame(width: columnWidths["✓"] ?? 5)
                 .disabled(row.transaction.closed)
                 
+                Group {
+                    if row.transaction.pairID == nil {
+                        // empty
+                        Text("-")
+                    } else if !row.transaction.isPairValid(in: viewContext) {
+                        // pairID present but invalid (not exactly 2 members)
+//                        Text("X")
+                        Image(systemName: "link.circle.fill")
+                            .font(.system(size: 14, weight: .regular))
+                            .foregroundColor(.red)
+                    } else if row.transaction.counterTransaction(in: viewContext) != nil {
+                        Image(systemName: "link.circle")
+                            .font(.system(size: 14, weight: .regular))
+                    } else {
+                        // Probably never get here
+                        Image(systemName: "exclamationmark.triangle")
+                            .font(.system(size: 14, weight: .regular))
+                            .foregroundColor(.yellow)
+                    }
+                }
+                .frame(width: columnWidths["Link"] ?? 50, height: macOSRowHeight, alignment: .center)
+                .padding(.horizontal, 4)
+                
                 tableCell(row.reconciliationPeriodShortDescription, for: row)
-                    .frame(width: scaledColumnWidths["Reconciliation"] ?? 60)
+                    .frame(width: columnWidths["Reconciliation"] ?? 60)
             
                 multiLineTableCell( row.transaction.totalAmountDualCurrencyAsString(withSymbol: showCurrencySymbols), for: row, alignment: .trailing )
                     .multilineTextAlignment(.trailing)
-                    .frame(width: scaledColumnWidths["Amount"] ?? 130)
+                    .frame(width: columnWidths["Amount"] ?? 130)
                 
                 tableCell(row.payee, for: row)
-                    .frame(width: scaledColumnWidths["Payee"] ?? 100)
+                    .frame(width: columnWidths["Payee"] ?? 100)
                 
                 tableCell(
                     AmountFormatter.anyAmountAsString(
                         amount: row.runningBalance,
-                        currency: .GBP,
+                        currency: .UKL,
                         withSymbol: showCurrencySymbols
                     ), for: row, alignment: .trailing
                 )
-                    .frame(width: scaledColumnWidths["Balance"] ?? 130)
+                    .frame(width: columnWidths["Balance"] ?? 130)
                 
                 tableCell(row.exchangeRate, for: row)
-                    .frame(width: scaledColumnWidths["Fx"] ?? 60)
+                    .frame(width: columnWidths["Fx"] ?? 60)
                 
                 tableCell(row.category, for: row)
-                    .frame(width: scaledColumnWidths["Category"] ?? 80)
+                    .frame(width: columnWidths["Category"] ?? 80)
                 
                 multiLineTableCell( row.transaction.splitAmountAndCategoryAsString(withSymbol: showCurrencySymbols), for: row, alignment: .leading )
-                    .frame(width: scaledColumnWidths["Split"] ?? 200)
+                    .frame(width: columnWidths["Split"] ?? 200)
                 
 
             }
             .padding(.leading, 16)
+            .background(
+                rowBackground(for: index, row: row)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            )
             .contentShape(Rectangle())
+            
         }
         .if( gViewCheck ) { view in view.border( .green )}
         .onTapGesture {
             #if os(macOS)
             if selectionActive {
+
                 guard let recID = appState.selectedReconciliationID,
                       let rec = reconciliations.first(where: { $0.objectID == recID }) else { return }
-
+                
                 if row.transaction.reconciliation == rec {
                     // Unassign transaction from reconciliation
                     row.transaction.reconciliation = nil
@@ -710,14 +649,16 @@ extension BrowseTransactionsView {
                     // Assign transaction to reconciliation
                     row.transaction.reconciliation = rec
                 }
-
+                
                 try? viewContext.save()
                 updateRunningTotals()  // This now uses reconciliation as the source of truth
                 
-//                // Toggle only the checkbox when selection mode is active
-//                row.checked.toggle()
-//                row.transaction.checked = row.checked
-//                try? viewContext.save()
+                // Update selection safely on the main thread
+                safeUIUpdate {
+                    selectedTransactionIDs.wrappedValue = [row.id]
+                    lastClickedRowIndex = index
+                }
+                
             } else {
                 safeUIUpdate {
                     let modifiers = NSEvent.modifierFlags
@@ -748,15 +689,13 @@ extension BrowseTransactionsView {
             safeUIUpdate { selectedTransactionIDs.wrappedValue = [row.id] }
             #endif
         }
-
-        .contextMenu { contextMenu(for: row) }
         #else
         tableCell(row.iOSRowForDisplay, for: row)
             .contentShape(Rectangle())
             .onTapGesture {
                 safeUIUpdate { selectedTransactionIDs.wrappedValue = [row.id] }
             }
-            .contextMenu { contextMenu(for: row) }
+            .contextMenu { editContextMenu(for: row) }
         #endif
     }
 
@@ -774,9 +713,7 @@ extension BrowseTransactionsView {
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .font(.custom("SF Mono Medium", size: 14))
-                .frame(width: (scaledColumnWidths[title] ?? width) - handleWidth, height: macOSRowHeight, alignment: .leading)
-//                .background(Color.gray.opacity(0.1))
-//                .border(Color.gray.opacity(0.3), width: 0.5)
+                .frame(width: (columnWidths[title] ?? width) - handleWidth, height: macOSRowHeight, alignment: .leading)
             
             // --- Drag handle
             Rectangle()
@@ -786,9 +723,19 @@ extension BrowseTransactionsView {
                 .gesture(
                     DragGesture(minimumDistance: 0)
                         .onChanged { value in
-//                            let val2 = (value.translation.width > 0 ? 1 : -1 )
-//                            resizeColumn(title: title, delta: CGFloat(val2))
                             resizeColumn(title: title, delta: value.translation.width)
+                            updateColumnWidths(for: availableWidth)
+                        }
+                        .onEnded { _ in
+                            let minWidth: CGFloat = 60
+                            for key in columnWidths.keys {
+                                columnWidths[key] = max(columnWidths[key]!, minWidth)
+                            }
+
+                            UserDefaults.standard.set(
+                                columnWidths.mapValues { Double($0) },
+                                forKey: gColumnWidthsKey
+                            )
                         }
                 )
                 .onHover { hovering in
@@ -796,7 +743,7 @@ extension BrowseTransactionsView {
                     if !hovering { NSCursor.arrow.set() }
                 }
         }
-        .frame(width: scaledColumnWidths[title] ?? width, height: macOSRowHeight)
+        .frame(width: columnWidths[title] ?? width, height: macOSRowHeight)
     }
 #endif
 
@@ -976,25 +923,65 @@ extension BrowseTransactionsView {
     // MARK: --- BuildFilteredPredicate
     private func buildFilteredPredicate() -> NSPredicate? {
         var predicates: [NSPredicate] = []
-        
-        // --- Payment Method Filter
-        if let method = selectedAccount {
-            predicates.append(NSPredicate(format: "accountCD == %@", NSNumber(value: method.rawValue)))
-        }
-        
-        // --- Accounting Period / Date Filter
-        if let method = selectedAccount, let period = selectedAccountingPeriod {
-            if let reconciliation = try? Reconciliation.fetchOne(for: period, account: method, context: viewContext) {
-                let start = reconciliation.transactionStartDate as NSDate
-                let end = reconciliation.transactionEndDate as NSDate
-                predicates.append(NSPredicate(format: "transactionDate >= %@ AND transactionDate <= %@", start, end))
+
+        // Accounting Period filter
+        if let period = selectedAccountingPeriod {
+
+            let request: NSFetchRequest<Reconciliation> = Reconciliation.fetchRequest()
+            request.predicate = NSPredicate(
+                format: "periodYear == %d AND periodMonth == %d",
+                period.year,
+                period.month
+            )
+
+            let reconciliations = (try? viewContext.fetch(request)) ?? []
+
+            var accountPeriodPredicates: [NSPredicate] = []
+
+            for rec in reconciliations {
+
+                // If a specific account is selected, ignore others
+                if let selectedAccount,
+                   rec.accountCD != selectedAccount.rawValue {
+                    continue
+                }
+
+                let start = rec.transactionStartDate
+                let end = rec.transactionEndDate
+
+                accountPeriodPredicates.append(
+                    NSPredicate(
+                        format: "accountCD == %d AND transactionDate >= %@ AND transactionDate <= %@",
+                        rec.accountCD,
+                        start as NSDate,
+                        end as NSDate
+                    )
+                )
             }
+
+            // If no valid reconciliations, return nothing
+            guard !accountPeriodPredicates.isEmpty else {
+                return NSPredicate(value: false)
+            }
+
+            predicates.append(
+                NSCompoundPredicate(orPredicateWithSubpredicates: accountPeriodPredicates)
+            )
         }
-        
+
+        // No period selected ("All")
+        else if let selectedAccount {
+            // Only account filter applies when period == All
+            predicates.append(
+                NSPredicate(format: "accountCD == %d", selectedAccount.rawValue)
+            )
+        }
+
+        // Final predicate
         guard !predicates.isEmpty else { return nil }
         return NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
     }
-    
+
     
     // MARK: --- RefreshFetchRequest
     private func refreshFetchRequest() {
@@ -1006,30 +993,35 @@ extension BrowseTransactionsView {
     // MARK: --- WorkingToolbar
     private var workingToolbar: some View {
         
+        func accountsForPeriod(_ period: AccountingPeriod?) -> [ReconcilableAccounts] {
+            guard let period = selectedAccountingPeriod else {
+                // All periods: return all accounts that have any reconciliation
+                let request: NSFetchRequest<Reconciliation> = Reconciliation.fetchRequest()
+                let recs = (try? viewContext.fetch(request)) ?? []
+                let accounts = Set(recs.compactMap { ReconcilableAccounts(rawValue: $0.accountCD) })
+                return Array(accounts).sorted { $0.description < $1.description }
+            }
+
+            // Fetch all reconciliations for this period
+            let recs = (try? Reconciliation.fetchAll(for: period, context: viewContext)) ?? []
+
+            // Map to account enum, remove duplicates
+            let accounts = Set(recs.compactMap { ReconcilableAccounts(rawValue: $0.accountCD) })
+            return Array(accounts).sorted { $0.description < $1.description }
+        }
+        
         // Compute checked totals as strings
         
         var checkedTotalAsString: String {
-            return AmountFormatter.anyAmountAsString(amount: checkedTotal, currency: .GBP, withSymbol: showCurrencySymbols)
+            return AmountFormatter.anyAmountAsString(amount: checkedTotal, currency: .UKL, withSymbol: showCurrencySymbols)
         }
         
         var positiveCheckedTotalAsString: String {
-            return AmountFormatter.anyAmountAsString(amount: positiveCheckedTotal, currency: .GBP, withSymbol: showCurrencySymbols)
-//            let total = transactions
-//                .filter { $0.reconciliation == appState.selectedReconciliationID }
-//                .map { $0.txAmountInGBP }
-//                .filter { $0 > 0 }
-//                .reduce(0, +)
-//            return AmountFormatter.anyAmountAsString(amount: total, currency: .GBP, withSymbol: showCurrencySymbols)
+            return AmountFormatter.anyAmountAsString(amount: positiveCheckedTotal, currency: .UKL, withSymbol: showCurrencySymbols)
         }
 
         var negativeCheckedTotalAsString: String {
-            return AmountFormatter.anyAmountAsString(amount: negativeCheckedTotal, currency: .GBP, withSymbol: showCurrencySymbols)
-//            let total = transactions
-//                .filter { $0.reconciliation == appState.selectedReconciliationID }
-//                .map { $0.txAmountInGBP }
-//                .filter { $0 < 0 }
-//                .reduce(0, +)
-//            return AmountFormatter.anyAmountAsString(amount: total, currency: .GBP, withSymbol: showCurrencySymbols)
+            return AmountFormatter.anyAmountAsString(amount: negativeCheckedTotal, currency: .UKL, withSymbol: showCurrencySymbols)
         }
         
         var openingBalanceAsString: String {
@@ -1054,25 +1046,46 @@ extension BrowseTransactionsView {
             if allowFiltering {
                 // --- Account Picker
                 Picker("Account", selection: $selectedAccount) {
-                    Text("All").tag(nil as ReconcilableAccounts?)
-                    ForEach(ReconcilableAccounts.allCases.filter { $0 != .unknown }, id: \.self) { method in
-                        Text(method.description).tag(method as ReconcilableAccounts?)
+                    Text("All accounts").tag(nil as ReconcilableAccounts?)
+
+                    ForEach(accountsForPeriod(selectedAccountingPeriod), id: \.self) { account in
+                        Text(account.description)
+                            .tag(Optional(account))
                     }
                 }
                 .pickerStyle(MenuPickerStyle())
-                
-                // --- Accounting Period Picker (only show if a payment method is selected)
-                if let method = selectedAccount {
-                    Picker("Period", selection: $selectedAccountingPeriod) {
-                        Text("All").tag(nil as AccountingPeriod?)
-                        
-                        // Only show periods that have reconciliations for this method
-                        ForEach(accountingPeriodsForAccount(method), id: \.self) { period in
-                            Text(period.displayStringWithOpening).tag(Optional(period))
-                        }
+
+                // --- Accounting Period Picker (always visible)
+                Picker("Period", selection: $selectedAccountingPeriod) {
+                    Text("All periods").tag(nil as AccountingPeriod?)
+                    ForEach(uniqueAccountingPeriods, id: \.self) { period in
+                        Text(period.displayStringWithOpening)
+                            .tag(Optional(period))
                     }
-                    .pickerStyle(MenuPickerStyle())
                 }
+                .pickerStyle(MenuPickerStyle())
+
+//                // --- Account Picker
+//                Picker("Account", selection: $selectedAccount) {
+//                    Text("All").tag(nil as ReconcilableAccounts?)
+//                    ForEach(ReconcilableAccounts.allCases.filter { $0 != .unknown }, id: \.self) { method in
+//                        Text(method.description).tag(method as ReconcilableAccounts?)
+//                    }
+//                }
+//                .pickerStyle(MenuPickerStyle())
+//                
+//                // --- Accounting Period Picker (only show if a payment method is selected)
+//                if let method = selectedAccount {
+//                    Picker("Period", selection: $selectedAccountingPeriod) {
+//                        Text("All").tag(nil as AccountingPeriod?)
+//                        
+//                        // Only show periods that have reconciliations for this method
+//                        ForEach(accountingPeriodsForAccount(method), id: \.self) { period in
+//                            Text(period.displayStringWithOpening).tag(Optional(period))
+//                        }
+//                    }
+//                    .pickerStyle(MenuPickerStyle())
+//                }
             }
             
             // --- Checked Total
@@ -1101,7 +1114,7 @@ extension BrowseTransactionsView {
                     .foregroundColor(.orange)
 
                 // Target / Ending Balance
-                Text("Target:\n \(rec.endingBalanceAsString())")
+                Text("Target:\n \(rec.closingBalanceAsString())")
                     .fontWeight(.semibold)
                     .foregroundColor(.blue)
 
@@ -1158,9 +1171,13 @@ extension BrowseTransactionsView {
                 guard let lDate = lhs.transaction.transactionDate,
                       let rDate = rhs.transaction.transactionDate else { return false }
                 return ascending ? (lDate < rDate) : (lDate > rDate)
+            case .timestamp:
+                guard let lDate = lhs.transaction.timestamp,
+                      let rDate = rhs.transaction.timestamp else { return false }
+                return ascending ? (lDate < rDate) : (lDate > rDate)
             case .txAmount:
-                let lAmount = lhs.transaction.txAmountInGBP
-                let rAmount = rhs.transaction.txAmountInGBP
+                let lAmount = lhs.transaction.txAmountInUKL
+                let rAmount = rhs.transaction.txAmountInUKL
                 return ascending ? (lAmount < rAmount) : (lAmount > rAmount)
             default:
                 if let l = sortColumn.stringKey(for: lhs),
@@ -1172,7 +1189,7 @@ extension BrowseTransactionsView {
             }
         }
         
-        // MARK: --- Compute running balances (GBP only)
+        // MARK: --- Compute running balances (UKL only)
         if let account = selectedAccount, sortColumn == .transactionDate {
             // Get previous reconciliation balance if available
             var balance: Decimal = 0
@@ -1185,7 +1202,7 @@ extension BrowseTransactionsView {
             
             // Apply running balance
             for i in 0..<rows.count {
-                rows[i].runningBalance = balance - rows[i].transaction.txAmountInGBP
+                rows[i].runningBalance = balance - rows[i].transaction.txAmountInUKL
                 balance = rows[i].runningBalance
             }
         }
@@ -1194,51 +1211,82 @@ extension BrowseTransactionsView {
     }
 }
 
+
+
 // MARK: --- VIEW HELPERS
 extension BrowseTransactionsView {
+    
     
     // Helper for the row background
     @ViewBuilder
     private func rowBackground(for index: Int, row: TransactionRow) -> some View {
 #if os(macOS)
-        let rowWidth = scaledColumnWidths.values.reduce(0, +)
-        if selectionActive {
-            // In selection mode, no row highlight
-            Color.clear
-                .frame(width: rowWidth, height: macOSRowHeight)
-        } else {
-            if selectedTransactionIDs.contains(row.id) {
-                let prevSelected = index > 0 && selectedTransactionIDs.contains(filteredTransactionRows[index-1].id)
-                let nextSelected = index < filteredTransactionRows.count-1 && selectedTransactionIDs.contains(filteredTransactionRows[index+1].id)
-                if !prevSelected && !nextSelected {
-                    // Single row selected — round all corners
-                    RoundedRectangle(cornerRadius: 8)
-                        .foregroundColor(.blue)
-                        .frame(width: rowWidth, height: macOSRowHeight)
-                } else if !prevSelected && nextSelected {
-                    // Top row of multi-selection — round top corners only
-                    Color.blue
-                        .frame(width: rowWidth, height: macOSRowHeight)
-                        .clipShape(RoundedCorner(corners: [.topLeft, .topRight], radius: 8))
-                } else if prevSelected && !nextSelected {
-                    // Bottom row of multi-selection — round bottom corners only
-                    Color.blue
-                        .frame(width: rowWidth, height: macOSRowHeight)
-                        .clipShape(RoundedCorner(corners: [.bottomLeft, .bottomRight], radius: 8))
-                } else {
-                    // Middle row of multi-selection — no rounding
-                    Color.blue
-                        .frame(width: rowWidth, height: macOSRowHeight)
-                }
-            } else if index % 2 == 0 {
-                Color.clear
-                    .frame(width: rowWidth, height: macOSRowHeight)
+        
+//        if selectionActive {
+//            Rectangle()
+//                .fill(Color.clear)
+////            Color.clear
+//        } else
+        if selectedTransactionIDs.contains(row.id) {
+            let prevSelected = index > 0 && selectedTransactionIDs.contains(filteredTransactionRows[index-1].id)
+            let nextSelected = index < filteredTransactionRows.count-1 && selectedTransactionIDs.contains(filteredTransactionRows[index+1].id)
+            
+            if !prevSelected && !nextSelected {
+                RoundedRectangle(cornerRadius: 8)
+                    .foregroundColor(.blue)
+            } else if !prevSelected && nextSelected {
+                Color.blue
+                    .clipShape(RoundedCorner(corners: [.topLeft, .topRight], radius: 8))
+            } else if prevSelected && !nextSelected {
+                Color.blue
+                    .clipShape(RoundedCorner(corners: [.bottomLeft, .bottomRight], radius: 8))
             } else {
-                Color.gray.opacity(0.05)
-                    .frame(width: rowWidth, height: macOSRowHeight)
-                
+                Color.blue
             }
+        } else if index % 2 == 0 {
+            Color.clear
+        } else {
+            Color.gray.opacity(0.05)
         }
+    
+//        let rowWidth = scaledColumnWidths.values.reduce(0, +)
+//        if selectionActive {
+//            // In selection mode, no row highlight
+//            Color.clear
+//                .frame(width: rowWidth, height: macOSRowHeight)
+//        } else {
+//            if selectedTransactionIDs.contains(row.id) {
+//                let prevSelected = index > 0 && selectedTransactionIDs.contains(filteredTransactionRows[index-1].id)
+//                let nextSelected = index < filteredTransactionRows.count-1 && selectedTransactionIDs.contains(filteredTransactionRows[index+1].id)
+//                if !prevSelected && !nextSelected {
+//                    // Single row selected — round all corners
+//                    RoundedRectangle(cornerRadius: 8)
+//                        .foregroundColor(.blue)
+//                        .frame(width: rowWidth, height: macOSRowHeight)
+//                } else if !prevSelected && nextSelected {
+//                    // Top row of multi-selection — round top corners only
+//                    Color.blue
+//                        .frame(width: rowWidth, height: macOSRowHeight)
+//                        .clipShape(RoundedCorner(corners: [.topLeft, .topRight], radius: 8))
+//                } else if prevSelected && !nextSelected {
+//                    // Bottom row of multi-selection — round bottom corners only
+//                    Color.blue
+//                        .frame(width: rowWidth, height: macOSRowHeight)
+//                        .clipShape(RoundedCorner(corners: [.bottomLeft, .bottomRight], radius: 8))
+//                } else {
+//                    // Middle row of multi-selection — no rounding
+//                    Color.blue
+//                        .frame(width: rowWidth, height: macOSRowHeight)
+//                }
+//            } else if index % 2 == 0 {
+//                Color.clear
+//                    .frame(width: rowWidth, height: macOSRowHeight)
+//            } else {
+//                Color.gray.opacity(0.05)
+//                    .frame(width: rowWidth, height: macOSRowHeight)
+//                
+//            }
+//        }
 #else
         // TODO: Set to frame width
         let rowWidth:CGFloat = 0 // Not actuallty needed at the moment
@@ -1323,4 +1371,3 @@ extension BrowseTransactionsView {
         }
     }
 }
- 

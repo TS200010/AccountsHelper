@@ -29,7 +29,7 @@ struct CurrencyTests {
 
     @Test
     func testDescription() async throws {
-        #expect(Currency.GBP.description == "GBP")
+        #expect(Currency.UKL.description == "UKL")
         #expect(Currency.USD.description == "USD")
         #expect(Currency.JPY.description == "JPY")
         #expect(Currency.EUR.description == "EUR")
@@ -38,7 +38,7 @@ struct CurrencyTests {
 
     @Test
     func testFromString() async throws {
-        #expect(Currency.fromString("GBP") == .GBP)
+        #expect(Currency.fromString("UKL") == .UKL)
         #expect(Currency.fromString("USD") == .USD)
         #expect(Currency.fromString("JPY") == .JPY)
         #expect(Currency.fromString("JAPANESE YEN") == .JPY)
@@ -49,14 +49,14 @@ struct CurrencyTests {
 
     @Test
     func testFromIntAndInt32() async throws {
-        #expect(Currency.fromInt(1) == .GBP)
+        #expect(Currency.fromInt(1) == .UKL)
         #expect(Currency.fromInt(2) == .USD)
         #expect(Currency.fromInt(3) == .JPY)
         #expect(Currency.fromInt(4) == .EUR)
         #expect(Currency.fromInt(99) == .unknown)
         #expect(Currency.fromInt(123) == .unknown)
 
-        #expect(Currency.fromInt32(1) == .GBP)
+        #expect(Currency.fromInt32(1) == .UKL)
         #expect(Currency.fromInt32(2) == .USD)
         #expect(Currency.fromInt32(3) == .JPY)
         #expect(Currency.fromInt32(4) == .EUR)
@@ -66,7 +66,7 @@ struct CurrencyTests {
 
     @Test
     func testStringInitializer() async throws {
-        #expect(Currency("GBP") == .GBP)
+        #expect(Currency("UKL") == .UKL)
         #expect(Currency("JPY") == .JPY)
         #expect(Currency("EUR") == .EUR)
         #expect(Currency("UnknownValue") == .unknown)

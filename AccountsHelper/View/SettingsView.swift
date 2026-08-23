@@ -120,6 +120,8 @@ struct GeneralSettingsView: View {
                     UserDefaults.standard.removeObject(forKey: columnWidthsKey)
                     // Optional: post notification to notify BrowseTransactionsView
 //                    NotificationCenter.default.post(name: .resetColumnWidths, object: nil)
+                    UserDefaults.standard.removeObject(forKey: gColumnWidthsKey)
+
                 }
                 .foregroundColor(.red)
             }

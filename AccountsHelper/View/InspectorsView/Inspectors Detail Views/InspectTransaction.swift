@@ -36,11 +36,6 @@ struct InspectTransaction: View {
                             .padding(.bottom, 10)
                         
                         // MARK: --- General Section
-//                        inspectorSection("General") {
-//                            transactionRow("Timestamp:", transaction.timestamp?.formatted(date: .abbreviated, time: .standard) ?? "N/A")
-//                            Divider()
-//                            transactionRow("TX Date:", transaction.transactionDate?.formatted(date: .abbreviated, time: .standard) ?? "N/A")
-//                        }
                         inspectorSection("General") {
                             transactionRow("Timestamp:", transaction.timestamp.map { dateOnlyFormatter.string(from: $0) } ?? "N/A")
                             Divider()
@@ -74,7 +69,7 @@ struct InspectTransaction: View {
                             Divider()
                             transactionRow("Comm Amt:", String(format: "%.2f", (transaction.commissionAmount as NSDecimalNumber?)?.doubleValue ?? 0))
                             Divider()
-                            transactionRow("Total in GBP:", String(format: "%.2f", (transaction.totalAmountInGBP as NSDecimalNumber?)?.doubleValue ?? 0))
+                            transactionRow("Total in UKL:", String(format: "%.2f", (transaction.totalAmountInUKL as NSDecimalNumber?)?.doubleValue ?? 0))
                         }
                         
                         // MARK: --- Parties Section
@@ -98,11 +93,35 @@ struct InspectTransaction: View {
                             Divider()
                             transactionRow("Explanation:", transaction.explanation ?? "N/A")
                         }
+
+                        // MARK: --- Counter Transaction Section (read-only)
+                        inspectorSection("Counter Transaction") {
+                            // Use existing helper to fetch the paired transaction; do not create/mutate
+                            if let counter = transaction.counterTransaction(in: viewContext) {
+                                transactionRow("Account:", counter.account.description)
+                                Divider()
+                                transactionRow("Currency:", counter.currency.description)
+                                Divider()
+                                transactionRow("Fx:", counter.exchangeRateAsStringLong() ?? "N/A")
+                                Divider()
+                                transactionRow("TX Amt:", String(format: "%.2f", (counter.txAmount as NSDecimalNumber?)?.doubleValue ?? 0))
+                                Divider()
+                                transactionRow("PairID (this transaction):", transaction.pairID?.description ?? "N/A")
+                                Divider()
+                                transactionRow("PairID (counter):", counter.pairID?.description ?? "N/A")
+                            } else {
+                                transactionRow("Counter:", "None")
+                                Divider()
+                                transactionRow("PairID (this transaction):", transaction.pairID?.description ?? "N/A")
+                                Divider()
+                                transactionRow("PairID (counter):", "N/A")
+                            }
+                        }
                         
                         // MARK: --- Status Section
                         inspectorSection("Status") {
                             transactionRow("Closed:", transaction.closed.description)
-//                            transactionRow("PeriodKey:", transaction.periodKey ?? "N/A")
+                            transactionRow("PeriodKey:", transaction.reconciliation?.periodKey ?? "None")
                         }
                         
                         Spacer(minLength: 20)

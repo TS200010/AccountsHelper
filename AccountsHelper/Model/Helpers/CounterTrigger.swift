@@ -16,10 +16,10 @@ struct CounterTrigger {
 
 struct CounterTriggers {
     static let all: [CounterTrigger] = [
-        .init(account: .BofSPV, category: .VisaPayment, suggestedCounterPayment: .VISA),
-        .init(account: .BofSPV, category: .AMEXPayment, suggestedCounterPayment: .AMEX),
-        .init(account: .BofSPV, category: .ToYenCash,   suggestedCounterPayment: .CashYEN),
-        .init(account: .BofSPV, category: .ToGBPCash,   suggestedCounterPayment: .CashGBP)
+        .init(account: .BofSPV_82, category: .VisaPayment, suggestedCounterPayment: .VISA),
+        .init(account: .BofSPV_82, category: .AMEXPayment, suggestedCounterPayment: .AMEX),
+        .init(account: .BofSPV_82, category: .ToCashYEN,   suggestedCounterPayment: .CashYEN),
+        .init(account: .BofSPV_82, category: .ToCashUKL,   suggestedCounterPayment: .CashUKL)
     ]
     
     static func trigger(for account: ReconcilableAccounts, category: Category) -> ReconcilableAccounts? {

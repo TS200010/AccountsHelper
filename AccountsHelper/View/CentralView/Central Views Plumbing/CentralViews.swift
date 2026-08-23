@@ -7,12 +7,16 @@
 
 import SwiftUI
 import ItMkLibrary
+import CoreData
 
 // MARK: --- CentralViews
 struct CentralViews: View {
     
     // MARK: --- Environment
+    @Environment(\.managedObjectContext) private var viewContext
     @Environment(AppState.self) var appState
+    @AppStorageEnum("showCurrencySymbols", defaultValue: .always)
+    private var showCurrencySymbols: ShowCurrencySymbolsEnum
 
     // MARK: --- Body
     var body: some View {
@@ -58,6 +62,9 @@ struct CentralViews: View {
         case .editTransaction(let tx):
             AddOrEditTransactionView(transaction: tx)
             
+        case .adjustCategory(let tx):
+            AdjustCategoryView(transaction: tx) // scaffold view for now
+            
         case .browseTransactions(let predicate, let mode):
             BrowseTransactionsView(predicate: predicate, mode: mode)
             
@@ -85,9 +92,9 @@ struct CentralViews: View {
             Text("Not implemented on iOS")
             #endif
             
-        case .VISAPNGImport:
+        case .VISACSVImport:
             #if os(macOS)
-            Text("Not implemented as we had so many problems.")
+            TxImportView<VISACSVImporter>()
             #else
             Text("Not implemented on iOS")
             #endif
@@ -121,7 +128,20 @@ struct CentralViews: View {
             
             // TODO: Remove the let here
         case .categoriesSummary(let predicate):
-            CategoriesSummaryView( /*predicate: predicate*/ )
+            if let recID = appState.selectedReconciliationID,
+               let rec = try? viewContext.existingObject(with: recID) as? Reconciliation {
+
+                let vm = CategoriesSummaryVM(
+                    reconciliation: rec,
+                    showCurrencySymbols: showCurrencySymbols
+                )
+
+                CategoriesSummaryView(vm: vm)
+
+            } else {
+                Text("No reconciliation selected")
+            }
+//            CategoriesSummaryView( /*predicate: predicate*/ )
             
         case .exportCD:
             ExportCD()

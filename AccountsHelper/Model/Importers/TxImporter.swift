@@ -8,6 +8,7 @@
 import Foundation
 import CoreData
 
+// MARK: --- ImportType
 enum ImportType {
     case csv
     case png
@@ -16,6 +17,7 @@ enum ImportType {
     // etc
 }
 
+// MARK: --- MergeResult
 enum MergeResult {
     case merged
     case keepExisting
@@ -24,37 +26,42 @@ enum MergeResult {
     case cancelMerge
 }
 
-// MARK: --- IxImporter Protocol
+// MARK: --- ImportSummary
+struct ImportSummary {
+    var processedCount: Int
+    var exactDuplicateCount: Int
+    var mergedCount: Int
+    var keepExistingCount: Int
+    var keepNewCount: Int
+    var keepBothCount: Int
+}
 
+// MARK: --- IxImporter Protocol
 @MainActor
 protocol TxImporter {
     static var displayName: String { get }
     static var account: ReconcilableAccounts { get }
     static var importType: ImportType { get }
-
+    
     /// Import CSV and return Transactions, using the mergeHandler when duplicates are found.
-    /// Transactions are created in a temporary child context, then saved into the main context.
     @MainActor
     static func importTransactions(
         fileURL: URL,
         context: NSManagedObjectContext,
         mergeHandler: @MainActor (Transaction, Transaction) async -> MergeResult
-    ) async -> [Transaction]
+    ) async -> ImportSummary
 
     /// Basic CSV parsing
     static func parseCSV(csvData: String) -> [[String]]
 
     /// Optional snapshot merge detection
     static func findMergeCandidateInSnapshot(newTx: Transaction, snapshot: [Transaction]) -> Transaction?
+    
+    /// Optional exact duplicate detection
+    static func isExactDuplicate(newTx: Transaction, snapshot: [Transaction]) -> Bool
 }
 
 extension TxImporter {
-    // MARK: --- Temporary Context Creation
-    static func makeTemporaryContext(parent: NSManagedObjectContext) -> NSManagedObjectContext {
-        let tempContext = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
-        tempContext.parent = parent
-        return tempContext
-    }
 
     // MARK: --- CSV Parser
     /// Handles quotes, multi-line fields, trims trailing empty headers
@@ -97,23 +104,103 @@ extension TxImporter {
     }
 
     // MARK: --- Default Merge Candidate Matching
-    static func findMergeCandidateInSnapshot(newTx: Transaction, snapshot: [Transaction]) -> Transaction? {
+    static func findMergeCandidateInSnapshot(
+        newTx: Transaction,
+        snapshot: [Transaction]
+    ) -> Transaction? {
+
+//        let calendar = Calendar.current
+
         for existing in snapshot {
-            guard existing.txAmount == newTx.txAmount,
-                  existing.account == newTx.account,
-                  let existingDate = existing.transactionDate,
-                  let newDate = newTx.transactionDate else {
-                continue
-            }
 
-            // Allow transactionDate ± range: -7 days to +1 day
-            let minDate = Calendar.current.date(byAdding: .day, value: -7, to: newDate)!
-            let maxDate = Calendar.current.date(byAdding: .day, value: 1, to: newDate)!
+            // Must be same account
+            guard existing.account == newTx.account else { continue }
+            
+            // Skip closed transactions
+            guard !existing.closed else { continue }
+                
+            // Must have dates
+//            guard let existingDate = existing.transactionDate,
+//                  let newDate = newTx.transactionDate else { continue }
 
-            if existingDate >= minDate && existingDate <= maxDate {
+            // NORMAL TRANSACTIONS — FUZZY LOGIC
+//            guard existing.txAmount == newTx.txAmount else { continue }
+//
+//            let minDate = calendar.date(byAdding: .day, value: -7, to: newDate)!
+//            let maxDate = calendar.date(byAdding: .day, value: 1, to: newDate)!
+//
+//            if existingDate >= minDate && existingDate <= maxDate {
+//                return existing
+//            }
+            
+            if matchesAmountAndDate(newTx: newTx, existing: existing) {
                 return existing
             }
         }
+
         return nil
     }
+}
+
+extension TxImporter {
+
+    // MARK: --- Exact Duplicate Detection
+    /// Checks if a new transaction is an exact duplicate of any transaction in the snapshot.
+    /// For AMEX, also considers the reference field.
+    static func isExactDuplicate(newTx: Transaction, snapshot: [Transaction]) -> Bool {
+//        guard let newDate = newTx.transactionDate else { return false }
+
+//        let calendar = Calendar.current
+
+        for existing in snapshot {
+            // Must be same account
+            guard existing.account == newTx.account else { continue }
+
+            // Skip closed transactions
+            guard !existing.closed else { continue }
+
+            // Must have dates
+//            guard let existingDate = existing.transactionDate else { continue }
+
+            // Normal fuzzy duplicates: same amount + date window
+//            guard existing.txAmount == newTx.txAmount else { continue }
+//
+//            let minDate = calendar.date(byAdding: .day, value: -7, to: newDate)!
+//            let maxDate = calendar.date(byAdding: .day, value: 1, to: newDate)!
+//
+//            if existingDate >= minDate && existingDate <= maxDate {
+//                return true
+//            }
+            
+            if matchesAmountAndDate(newTx: newTx, existing: existing) {
+                return true
+            }
+        }
+
+        return false
+    }
+}
+
+extension TxImporter {
+    
+    // MARK: --- matchesAmountAndDate
+    static func matchesAmountAndDate(
+        newTx: Transaction,
+        existing: Transaction
+    ) -> Bool {
+        guard
+            let existingDate = existing.transactionDate,
+            let newDate = newTx.transactionDate,
+            existing.txAmount == newTx.txAmount
+        else {
+            return false
+        }
+        
+        let calendar = Calendar.current
+        let minDate = calendar.date(byAdding: .day, value: -7, to: newDate)!
+        let maxDate = calendar.date(byAdding: .day, value: 1, to: newDate)!
+        
+        return existingDate >= minDate && existingDate <= maxDate
+    }
+    
 }
