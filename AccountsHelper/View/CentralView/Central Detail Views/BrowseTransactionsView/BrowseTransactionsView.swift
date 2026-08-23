@@ -19,14 +19,110 @@ import UIKit
 
 
 // MARK: --- RectCorner OptionSet
-struct RectCorner: OptionSet {
+//struct RectCorner: Sendable {
+//    let rawValue: Int
+//    
+//    static let topLeft     = RectCorner(rawValue: 1 << 0)
+//    static let topRight    = RectCorner(rawValue: 1 << 1)
+//    static let bottomLeft  = RectCorner(rawValue: 1 << 2)
+//    static let bottomRight = RectCorner(rawValue: 1 << 3)
+//    static let allCorners: RectCorner = [.topLeft, .topRight, .bottomLeft, .bottomRight]
+//}
+
+// MARK: --- RectCorner
+struct RectCorner: Sendable {
     let rawValue: Int
-    
+
     static let topLeft     = RectCorner(rawValue: 1 << 0)
     static let topRight    = RectCorner(rawValue: 1 << 1)
     static let bottomLeft  = RectCorner(rawValue: 1 << 2)
     static let bottomRight = RectCorner(rawValue: 1 << 3)
-    static let allCorners: RectCorner = [.topLeft, .topRight, .bottomLeft, .bottomRight]
+
+    static let allCorners = RectCorner(
+        rawValue:
+            topLeft.rawValue |
+            topRight.rawValue |
+            bottomLeft.rawValue |
+            bottomRight.rawValue
+    )
+
+    func contains(_ corner: RectCorner) -> Bool {
+        (rawValue & corner.rawValue) != 0
+    }
+    
+    static func + (lhs: RectCorner, rhs: RectCorner) -> RectCorner {
+        RectCorner(rawValue: lhs.rawValue | rhs.rawValue)
+    }
+}
+
+extension RectCorner: OptionSet {}
+
+// MARK: --- RoundedCorner
+struct RoundedCorner: Shape {
+    var corners: RectCorner
+    var radius: CGFloat
+    
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        
+        let tl = corners.contains(.topLeft) ? radius : 0
+        let tr = corners.contains(.topRight) ? radius : 0
+        let bl = corners.contains(.bottomLeft) ? radius : 0
+        let br = corners.contains(.bottomRight) ? radius : 0
+        
+        path.move(to: CGPoint(x: rect.minX + tl, y: rect.minY))
+        
+        // Top edgex
+        path.addLine(to: CGPoint(x: rect.maxX - tr, y: rect.minY))
+        if tr > 0 {
+            path.addArc(
+                center: CGPoint(x: rect.maxX - tr, y: rect.minY + tr),
+                radius: tr,
+                startAngle: .degrees(-90),
+                endAngle: .degrees(0),
+                clockwise: false
+            )
+        }
+        
+        // Right edge
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - br))
+        if br > 0 {
+            path.addArc(
+                center: CGPoint(x: rect.maxX - br, y: rect.maxY - br),
+                radius: br,
+                startAngle: .degrees(0),
+                endAngle: .degrees(90),
+                clockwise: false
+            )
+        }
+        
+        // Bottom edge
+        path.addLine(to: CGPoint(x: rect.minX + bl, y: rect.maxY))
+        if bl > 0 {
+            path.addArc(
+                center: CGPoint(x: rect.minX + bl, y: rect.maxY - bl),
+                radius: bl,
+                startAngle: .degrees(90),
+                endAngle: .degrees(180),
+                clockwise: false
+            )
+        }
+        
+        // Left edge
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + tl))
+        if tl > 0 {
+            path.addArc(
+                center: CGPoint(x: rect.minX + tl, y: rect.minY + tl),
+                radius: tl,
+                startAngle: .degrees(180),
+                endAngle: .degrees(270),
+                clockwise: false
+            )
+        }
+        
+        path.closeSubpath()
+        return path
+    }
 }
 
 
@@ -1303,71 +1399,5 @@ extension BrowseTransactionsView {
 #endif
     }
     
-    // MARK: --- RoundedCorner
-    struct RoundedCorner: Shape {
-        var corners: RectCorner
-        var radius: CGFloat
-        
-        func path(in rect: CGRect) -> Path {
-            var path = Path()
-            
-            let tl = corners.contains(.topLeft) ? radius : 0
-            let tr = corners.contains(.topRight) ? radius : 0
-            let bl = corners.contains(.bottomLeft) ? radius : 0
-            let br = corners.contains(.bottomRight) ? radius : 0
-            
-            path.move(to: CGPoint(x: rect.minX + tl, y: rect.minY))
-            
-            // Top edge
-            path.addLine(to: CGPoint(x: rect.maxX - tr, y: rect.minY))
-            if tr > 0 {
-                path.addArc(
-                    center: CGPoint(x: rect.maxX - tr, y: rect.minY + tr),
-                    radius: tr,
-                    startAngle: .degrees(-90),
-                    endAngle: .degrees(0),
-                    clockwise: false
-                )
-            }
-            
-            // Right edge
-            path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - br))
-            if br > 0 {
-                path.addArc(
-                    center: CGPoint(x: rect.maxX - br, y: rect.maxY - br),
-                    radius: br,
-                    startAngle: .degrees(0),
-                    endAngle: .degrees(90),
-                    clockwise: false
-                )
-            }
-            
-            // Bottom edge
-            path.addLine(to: CGPoint(x: rect.minX + bl, y: rect.maxY))
-            if bl > 0 {
-                path.addArc(
-                    center: CGPoint(x: rect.minX + bl, y: rect.maxY - bl),
-                    radius: bl,
-                    startAngle: .degrees(90),
-                    endAngle: .degrees(180),
-                    clockwise: false
-                )
-            }
-            
-            // Left edge
-            path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + tl))
-            if tl > 0 {
-                path.addArc(
-                    center: CGPoint(x: rect.minX + tl, y: rect.minY + tl),
-                    radius: tl,
-                    startAngle: .degrees(180),
-                    endAngle: .degrees(270),
-                    clockwise: false
-                )
-            }
-            
-            path.closeSubpath()
-            return path
-        }
-    }
+
 }

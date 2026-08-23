@@ -104,7 +104,7 @@ struct InspectorReconciliation: View {
                                 } else {
                                     Text("Unbalanced").foregroundColor(.red)
                                     Image(systemName: "exclamationmark.triangle.fill\n").foregroundColor(.red).font(.title3)
-                                    Text("\(reconciliationGap)")
+                                    Text("\(reconciliationGap.formattedAsCurrency(rec.currency))")
                                 }
                             }
                             .font(.body)

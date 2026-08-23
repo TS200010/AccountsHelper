@@ -14,6 +14,7 @@ class AMEXCSVImporter: TxImporter {
     static var account: ReconcilableAccounts = .AMEX
     static var importType: ImportType = .csv
 
+    // MARK: --- importTransactions
     @MainActor
     static func importTransactions(
         fileURL: URL,
@@ -121,9 +122,7 @@ class AMEXCSVImporter: TxImporter {
                 
                 newTx.debitCredit = txAmountTemp >= 0 ? .DR : .CR
                 
-                
                 // TODO: Date, Payee and Exchange rate should come from the importing TX as the starting point
-                // Check for duplicates in createdTransactions + existing context
 
                 let snapshot = createdTransactions + existingSnapshot
 
@@ -196,12 +195,10 @@ class AMEXCSVImporter: TxImporter {
         }
         
         return importSummary
-        
-//        return createdTransactions
     }
 
     
-    // MARK: - CSV Parser (handles quotes and multi-line fields)
+    // MARK: --- parseCSV
     static func parseCSV(csvData: String) -> [[String]] {
         var rows: [[String]] = []
         var currentRow: [String] = []
@@ -228,11 +225,10 @@ class AMEXCSVImporter: TxImporter {
             currentRow.append(currentField)
             rows.append(currentRow)
         }
-        
         return rows
     }
 
-    
+    // MARK: --- parseExtendedDetails
     static func parseExtendedDetails(_ details: String) -> (foreignSpendAmount: Decimal?, foreignCurrency: Currency?, commissionAmount: Decimal?, exchangeRate: Decimal?) {
         
         var foreignSpendAmount: Decimal?
@@ -311,21 +307,6 @@ class AMEXCSVImporter: TxImporter {
             if matchesAmountAndDate(newTx: newTx, existing: existing) {
                 return existing
             }
-//
-//            guard
-//                let existingDate = existing.transactionDate,
-//                let newDate = newTx.transactionDate
-//            else { continue }
-//
-//            guard existing.txAmount == newTx.txAmount else { continue }
-//
-//            let calendar = Calendar.current
-//            let minDate = calendar.date(byAdding: .day, value: -7, to: newDate)!
-//            let maxDate = calendar.date(byAdding: .day, value: 1, to: newDate)!
-//
-//            if existingDate >= minDate && existingDate <= maxDate {
-//                return existing
-//            }
         }
 
         return nil
@@ -369,7 +350,6 @@ class AMEXCSVImporter: TxImporter {
                 return true
             }
         }
-
         return false
     }
 }

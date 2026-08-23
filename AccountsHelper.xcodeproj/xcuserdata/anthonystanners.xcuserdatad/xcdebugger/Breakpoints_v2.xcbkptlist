@@ -3,4 +3,22 @@
    uuid = "E3AD3340-9A5A-4F4E-8E26-588541BFCDF6"
    type = "1"
    version = "2.0">
+   <Breakpoints>
+      <BreakpointProxy
+         BreakpointExtensionID = "Xcode.Breakpoint.FileBreakpoint">
+         <BreakpointContent
+            uuid = "B083E587-4E6B-4755-AEEC-8783B06D59DA"
+            shouldBeEnabled = "No"
+            ignoreCount = "0"
+            continueAfterRunningActions = "No"
+            filePath = "AccountsHelper/View/CentralView/Central Detail Views/BrowseTransactionsView/BrowseTransactionsView.swift"
+            startingColumnNumber = "9223372036854775807"
+            endingColumnNumber = "9223372036854775807"
+            startingLineNumber = "1402"
+            endingLineNumber = "1402"
+            landmarkName = "BrowseTransactionsView"
+            landmarkType = "21">
+         </BreakpointContent>
+      </BreakpointProxy>
+   </Breakpoints>
 </Bucket>
